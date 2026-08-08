@@ -777,7 +777,7 @@
 // entre sí. sw.js sigue siendo aparte por necesidad (un service worker no
 // puede leer esta constante, vive en otro archivo) — al subir de versión,
 // solo hace falta tocar ESTA línea y la de sw.js, no una tercera copia más.
-const APP_VERSION = 'v2.28';
+const APP_VERSION = 'v2.29';
 // ?debug en la URL: números de índice en los círculos + tabla de métricas
 // del grafo de adyacencia en consola al generar el tablero.
 const DEBUG = new URLSearchParams(location.search).has('debug');
@@ -811,6 +811,12 @@ let players = [{name:'J1',initial:'J',score:0,colorIndex:0},{name:'J2',initial:'
 // la partida nueva — el mismo tipo de fallo que ya se corrigió para el
 // dado (resetRollState), pero sin cubrir la secuencia completa de la IA.
 let gameGeneration = 0;
+// Estado explícito de la partida — 'setup' | 'playing' | 'finished'. Toda
+// acción que solo tiene sentido durante partida activa (dado, canvas, IA,
+// cambio de turno) debe comprobarlo, en vez de inferirlo indirectamente de
+// otras variables (diceRolled, isAITurn, etc. por separado, que es como
+// estaba antes y podía desincronizarse).
+let gameStatus = 'setup';
 
 // El color de un jugador es su identidad (colorIndex, fijado al escribir su
 // nombre) — NO su posición actual en el array, que cambia si el orden de
@@ -1111,6 +1117,7 @@ function startGame() {
   setSelectedCircle(null);
 
   if (!generateCircles()) return; // aviso ya mostrado, vuelta al menú ya hecha
+  gameStatus = 'playing';
   updateDiceDisplay(0);
   updateActiveCards();
   updateTurnInfo();
@@ -1229,6 +1236,7 @@ function generateCircles() {
     document.getElementById('gameUI').classList.remove('is-active');
     document.getElementById('setupPanel').style.display = 'flex';
     document.body.classList.remove('in-game');
+    gameStatus = 'setup';
     return false;
   }
 
@@ -1399,8 +1407,22 @@ function resetRollState() {
   }
 }
 
+// Única fuente de verdad de "¿se puede tirar el dado ahora?" — antes esta
+// misma condición estaba repartida entre el guard de rollDice() y la
+// sincronización del atributo disabled del botón por separado, con riesgo
+// de que se desincronizaran entre sí.
+function canRollDice() {
+  return gameStatus === 'playing' &&
+    !isAITurn() &&
+    !isRolling &&
+    !(diceRolled && linesLeft > 0);
+}
+
 function rollDice(isAICall) {
-  if ((isAITurn() && !isAICall) || isRolling || (diceRolled && linesLeft > 0)) return; // ya tiró y le quedan líneas, o no es tu turno
+  const allowed = isAICall
+    ? (gameStatus === 'playing' && isAITurn() && !isRolling && !(diceRolled && linesLeft > 0))
+    : canRollDice();
+  if (!allowed) return;
   isRolling = true;
   const dice = document.getElementById('dice');
   dice.classList.add('rolling');
@@ -1415,6 +1437,7 @@ function rollDice(isAICall) {
     diceRolled = true;
     vibrate(HAPTIC.select);
     updateDiceDisplay(val);
+    syncDiceEnabled();
     // Comprobar si hay movimientos disponibles tras tirar
     const active = computeActiveCircles();
     if (active.size === 0) {
@@ -1463,7 +1486,7 @@ function hitTestCircle(mx, my) {
 }
 
 function handleCanvasPointerDown(e) {
-  if (isAITurn() || !diceRolled || linesLeft <= 0) return;
+  if (gameStatus !== 'playing' || isAITurn() || !diceRolled || linesLeft <= 0) return;
   const { mx, my } = boardPoint(e);
   const hit = hitTestCircle(mx, my);
 
@@ -1964,13 +1987,17 @@ function updateScores() {
   });
 }
 
+function syncDiceEnabled() {
+  const dice = document.getElementById('dice');
+  if (dice) dice.disabled = !canRollDice();
+}
+
 function updateActiveCards() {
   players.forEach((_, i) => {
     const el = document.getElementById(`card${i+1}`);
     if (el) el.classList.toggle('active', currentPlayer === i);
   });
-  const dice = document.getElementById('dice');
-  if (dice) dice.disabled = isAITurn();
+  syncDiceEnabled();
 }
 
 function updateTurnInfo() {
@@ -2195,25 +2222,25 @@ function createsScoringReply(i, j) {
 }
 
 function scheduleAITurnIfNeeded() {
-  if (!isAITurn()) return;
+  if (gameStatus !== 'playing' || !isAITurn()) return;
   const generation = gameGeneration;
   setTimeout(() => {
-    if (generation !== gameGeneration || !isAITurn()) return;
+    if (generation !== gameGeneration || gameStatus !== 'playing' || !isAITurn()) return;
     rollDice(true);
     setTimeout(() => {
-      if (generation !== gameGeneration || !isAITurn()) return;
+      if (generation !== gameGeneration || gameStatus !== 'playing' || !isAITurn()) return;
       runAIMoves(generation);
     }, 550); // algo más que los 420ms de la animación del dado
   }, 650); // pequeña pausa — que se note que "piensa", no que es instantáneo
 }
 
 function runAIMoves(generation) {
-  if (generation !== gameGeneration || !isAITurn() || linesLeft <= 0) return; // partida distinta, o el turno ya se resolvió solo (bloqueo/fin de partida)
+  if (generation !== gameGeneration || gameStatus !== 'playing' || !isAITurn() || linesLeft <= 0) return; // partida distinta, terminada, o el turno ya se resolvió solo
   const move = chooseAIMove();
   if (!move) return;
   attemptConnect(move[0], move[1]);
   setTimeout(() => {
-    if (generation === gameGeneration && isAITurn() && linesLeft > 0) runAIMoves(generation);
+    if (generation === gameGeneration && gameStatus === 'playing' && isAITurn() && linesLeft > 0) runAIMoves(generation);
   }, 550);
 }
 
@@ -2227,6 +2254,7 @@ function showBlockedMessage(remaining) {
 }
 
 function endGame() {
+  gameStatus = 'finished';
   vibrate(HAPTIC.celebrate);
   document.getElementById('modalTitle').textContent = '¡Fin del juego!';
   // Tabla de resultados
