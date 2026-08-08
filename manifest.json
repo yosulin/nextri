@@ -1,7 +1,7 @@
 {
   "name": "Juego de Círculos",
   "short_name": "Círculos",
-  "description": "Juego de círculos y triángulos para jugar en solitario contra la Máquina o de 2 a 6 jugadores",
+  "description": "Juego de círculos y triángulos para jugar en solitario contra Circuit o de 2 a 6 jugadores",
   "start_url": "/juego-circulos/",
   "display": "standalone",
   "background_color": "#1a1f2e",

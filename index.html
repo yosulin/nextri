@@ -652,7 +652,7 @@
 
     <!-- Modo Solo: se muestra solo con numPlayers === 1 -->
     <div class="setup-section" id="soloModeInfo" style="display:none;">
-      <div class="solo-banner">🤖 Jugarás contra la Máquina</div>
+      <div class="solo-banner">🤖 Jugarás contra Circuit</div>
       <div class="setup-label">Dificultad</div>
       <div class="player-count-row" id="difficultyRow" role="radiogroup" aria-label="Dificultad de la máquina">
         <button type="button" class="pc-btn diff-btn" data-diff="easy" role="radio" aria-checked="false" onclick="setAIDifficulty('easy')">Fácil</button>
@@ -777,7 +777,7 @@
 // entre sí. sw.js sigue siendo aparte por necesidad (un service worker no
 // puede leer esta constante, vive en otro archivo) — al subir de versión,
 // solo hace falta tocar ESTA línea y la de sw.js, no una tercera copia más.
-const APP_VERSION = 'v2.29';
+const APP_VERSION = 'v2.30';
 // ?debug en la URL: números de índice en los círculos + tabla de métricas
 // del grafo de adyacencia en consola al generar el tablero.
 const DEBUG = new URLSearchParams(location.search).has('debug');
@@ -1078,7 +1078,7 @@ function startGame() {
   }
   // Modo "1 jugador": la máquina ocupa el segundo puesto automáticamente
   if (numPlayers === 1) {
-    players.push({name: 'Máquina', initial: 'M', score: 0, colorIndex: 1, isAI: true});
+    players.push({name: 'Circuit', initial: '🤖', score: 0, colorIndex: 1, isAI: true});
   }
   // Leer número de círculos del slider
   N_CIRCLES = parseInt(document.getElementById('circleSlider').value) || 35;
@@ -2521,7 +2521,7 @@ const PLAYER_COLORS = ["#f4844a", "#5b9cf6", "#6bcb77", "#f7c59f", "#d98cf0", "#
 const PLAYER_COLORS_LIGHT = ["rgba(244,132,74,0.22)", "rgba(91,156,246,0.22)", "rgba(107,203,119,0.22)", "rgba(247,197,159,0.22)", "rgba(217,140,240,0.22)", "rgba(255,209,102,0.22)"];
 
 // Recomendaciones de círculos según número de jugadores
-const CIRCLE_REC = {1:25, 2:35, 3:50, 4:65, 5:80, 6:100};
+const CIRCLE_REC = {1:35, 2:35, 3:50, 4:65, 5:80, 6:100};
 
 let numPlayers = 2;
 // randomOrder ya no es una variable aparte — se lee directamente del
@@ -2584,7 +2584,7 @@ function onSliderChange(val) {
 function updateRecHint(n, val) {
   const rec = CIRCLE_REC[n];
   const hint = document.getElementById('recHint');
-  const label = n === 1 ? 'contra la Máquina' : `para ${n} jugadores`;
+  const label = n === 1 ? 'contra Circuit' : `para ${n} jugadores`;
   if (val === rec) {
     hint.textContent = `✓ Tamaño recomendado ${label}`;
   } else {
