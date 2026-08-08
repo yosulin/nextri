@@ -199,6 +199,12 @@
   }
   .dice:hover { border-color: var(--muted); transform: scale(1.05); }
   .dice.rolling { animation: shake .4s ease; }
+  .dice:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+    transform: none;
+  }
+  .dice:disabled:hover { border-color: var(--border); transform: none; }
 
   @keyframes shake {
     0%,100% { transform: rotate(0deg) scale(1); }
@@ -515,6 +521,23 @@
   .pc-btn.is-active { color: var(--p1-color); }
   .pc-btn.is-origin { background: var(--p2-light); color: var(--p2-color); border-radius: 10px; }
 
+  /* El selector de dificultad no tiene la píldora deslizante (no hace
+     falta para 3 opciones fijas) — necesita su propio estado seleccionado
+     visible por sí solo, no solo el color de texto que usa .pc-btn.is-active
+     ahí arriba (que depende de la píldora de fondo para leerse bien). */
+  .diff-btn.is-active {
+    background: var(--surface);
+    border-color: var(--p1-color);
+    color: var(--p1-color);
+  }
+  .solo-banner {
+    font-family: 'Fredoka One', cursive;
+    font-size: 0.95rem;
+    text-align: center;
+    margin-bottom: 10px;
+    color: var(--text);
+  }
+
   /* ── Botones flotantes de esquina (tema, info) ── */
   .corner-btn {
     position: fixed;
@@ -618,12 +641,23 @@
     <div class="setup-section">
       <div class="setup-label">Número de jugadores</div>
       <div class="player-count-row" id="pcRow" role="radiogroup" aria-label="Número de jugadores">
-        <button type="button" class="pc-btn" data-n="1" role="radio" aria-checked="false" onclick="pcButtonClick(1)">1</button>
+        <button type="button" class="pc-btn" data-n="1" role="radio" aria-checked="false" onclick="pcButtonClick(1)" style="font-size:.85rem;">Solo</button>
         <button type="button" class="pc-btn" data-n="2" role="radio" aria-checked="false" onclick="pcButtonClick(2)">2</button>
         <button type="button" class="pc-btn" data-n="3" role="radio" aria-checked="false" onclick="pcButtonClick(3)">3</button>
         <button type="button" class="pc-btn" data-n="4" role="radio" aria-checked="false" onclick="pcButtonClick(4)">4</button>
         <button type="button" class="pc-btn" data-n="5" role="radio" aria-checked="false" onclick="pcButtonClick(5)">5</button>
         <button type="button" class="pc-btn" data-n="6" role="radio" aria-checked="false" onclick="pcButtonClick(6)">6</button>
+      </div>
+    </div>
+
+    <!-- Modo Solo: se muestra solo con numPlayers === 1 -->
+    <div class="setup-section" id="soloModeInfo" style="display:none;">
+      <div class="solo-banner">🤖 Jugarás contra la Máquina</div>
+      <div class="setup-label">Dificultad</div>
+      <div class="player-count-row" id="difficultyRow" role="radiogroup" aria-label="Dificultad de la máquina">
+        <button type="button" class="pc-btn diff-btn" data-diff="easy" role="radio" aria-checked="false" onclick="setAIDifficulty('easy')">Fácil</button>
+        <button type="button" class="pc-btn diff-btn is-active" data-diff="medium" role="radio" aria-checked="true" onclick="setAIDifficulty('medium')">Medio</button>
+        <button type="button" class="pc-btn diff-btn" data-diff="hard" role="radio" aria-checked="false" onclick="setAIDifficulty('hard')">Difícil</button>
       </div>
     </div>
 
@@ -743,7 +777,7 @@
 // entre sí. sw.js sigue siendo aparte por necesidad (un service worker no
 // puede leer esta constante, vive en otro archivo) — al subir de versión,
 // solo hace falta tocar ESTA línea y la de sw.js, no una tercera copia más.
-const APP_VERSION = 'v2.27';
+const APP_VERSION = 'v2.28';
 // ?debug en la URL: números de índice en los círculos + tabla de métricas
 // del grafo de adyacencia en consola al generar el tablero.
 const DEBUG = new URLSearchParams(location.search).has('debug');
@@ -770,6 +804,13 @@ let circles = [];      // {x,y}
 let edges   = new Set(); // "i-j" (i<j)
 let triangles= [];     // {a,b,c,owner}
 let players = [{name:'J1',initial:'J',score:0,colorIndex:0},{name:'J2',initial:'J',score:0,colorIndex:1}];
+// Se incrementa en cada startGame() — cualquier callback asíncrono de la IA
+// (setTimeout de pensar/tirar/jugar) captura el valor vigente al crearse y
+// lo compara antes de actuar. Sin esto, reiniciar mientras la máquina
+// "piensa" podía dejar un timer de la partida VIEJA resolviendo dentro de
+// la partida nueva — el mismo tipo de fallo que ya se corrigió para el
+// dado (resetRollState), pero sin cubrir la secuencia completa de la IA.
+let gameGeneration = 0;
 
 // El color de un jugador es su identidad (colorIndex, fijado al escribir su
 // nombre) — NO su posición actual en el array, que cambia si el orden de
@@ -896,6 +937,12 @@ const PC_DRAG_THRESHOLD = 6;
 let pcRowEl, pcThumbEl;
 let pcThumb = { x: 0, width: 0, ready: false };
 let pcGesture = { startX: 0, thumbStartX: 0, moved: false, pointerId: null, hoverN: null };
+// Bandera de un solo uso — pcGesture.moved se queda en `true` hasta el
+// siguiente pointerdown, así que si tras arrastrar alguien activa un
+// botón por teclado (Tab + Enter, sin pasar por pointerdown/up en
+// absoluto) ese clic se suprimía por error, sin tener nada que ver con
+// ningún arrastre. Esta bandera se consume la primera vez que se usa.
+let suppressNextPcClick = false;
 
 function pcRenderThumb() {
   pcThumbEl.style.transform = `translateX(${pcThumb.x}px)`;
@@ -941,7 +988,7 @@ function pcUpdateButtonClasses(dragging) {
 }
 
 function pcButtonClick(n) {
-  if (pcGesture.moved) return; // ya resuelto como arrastre en pointerup
+  if (suppressNextPcClick) { suppressNextPcClick = false; return; } // clic sintético justo tras un arrastre
   setPlayerCount(n);
 }
 
@@ -976,6 +1023,7 @@ function pcPointerMove(e) {
 function pcPointerUp(e) {
   if (pcGesture.pointerId !== e.pointerId) return;
   if (pcGesture.moved) {
+    suppressNextPcClick = true; // el clic sintético que sigue a este pointerup no debe re-disparar setPlayerCount
     pcThumbEl.classList.remove('is-dragging');
     const closest = pcClosestForCenterX(pcThumb.x + pcThumb.width / 2);
     if (closest !== numPlayers) setPlayerCount(closest);
@@ -1011,6 +1059,7 @@ function initPlayerCountSelector() {
 
 // ── Inicio ──────────────────────────────────────────────────────────────────
 function startGame() {
+  gameGeneration++;
   vibrate(HAPTIC.celebrate);
   resetRollState();
   // Leer nombres dinámicos
@@ -1920,12 +1969,22 @@ function updateActiveCards() {
     const el = document.getElementById(`card${i+1}`);
     if (el) el.classList.toggle('active', currentPlayer === i);
   });
+  const dice = document.getElementById('dice');
+  if (dice) dice.disabled = isAITurn();
 }
 
 function updateTurnInfo() {
   const p = players[currentPlayer];
   const color = playerColor(currentPlayer) || 'var(--p1-color)';
   const el = document.getElementById('turnInfo');
+  if (p.isAI) {
+    if (!diceRolled) {
+      el.innerHTML = `<span style="color:${color}">🤖 ${escapeHtml(p.name)}</span> está pensando…`;
+    } else {
+      el.innerHTML = `<span style="color:${color}">🤖 ${escapeHtml(p.name)}</span> está jugando…`;
+    }
+    return;
+  }
   if (!diceRolled) {
     el.innerHTML = `Turno de <span style="color:${color}">${escapeHtml(p.name)}</span> — tira el dado`;
   } else {
@@ -1942,91 +2001,220 @@ function advanceTurn() {
 }
 
 // ── Modo 1 jugador: la máquina ────────────────────────────────────────────
-// Sin selector de dificultad, pero tampoco al azar puro: prioriza cerrar
-// un triángulo si puede, y si no, evita jugadas que le regalarían al rival
-// un triángulo servido en su siguiente turno. Solo si NINGUNA jugada es
-// segura, cede y elige cualquiera — como cualquier persona jugando, a
-// veces no hay más remedio. Reutiliza attemptConnect()/rollDice() tal
-// cual, sin lógica de turno duplicada.
+// UN ÚNICO algoritmo (chooseAIMove) — la dificultad es configuración
+// (AI_LEVELS), no tres motores distintos. checkMoveValidity() sigue siendo
+// la única fuente de verdad sobre legalidad; la IA nunca se salta esa
+// comprobación ni conoce nada que el humano no pudiera calcular él mismo
+// mirando el tablero. La dificultad se consigue con "racionalidad
+// limitada" (cuánto analiza, con qué frecuencia detecta/elige bien), NO
+// haciendo trampas ni mirando la puntuación del rival (nada de
+// rubber-banding) — el nivel se mantiene igual gane o pierda.
+const AI_LEVELS = {
+  easy: {
+    scoringAwareness: 0.65,   // prob. de "ver" que hay jugada(s) puntuable(s)
+    bestScoringChance: 0.35,  // entre las vistas, prob. de coger la de más triángulos
+    scoringPower: 1.2,        // ponderación por triángulos si no coge la mejor
+    buildingAwareness: 0.40,  // prob. de aprovechar una construcción propia
+    safetyAwareness: 0.45,    // prob. de evitar dejar un cierre servido
+    candidateLimit: 20        // cuántos movimientos legales analiza como mucho
+  },
+  medium: {
+    scoringAwareness: 0.88,
+    bestScoringChance: 0.60,
+    scoringPower: 1.6,
+    buildingAwareness: 0.70,
+    safetyAwareness: 0.75,
+    candidateLimit: 45
+  },
+  hard: {
+    scoringAwareness: 0.98,
+    bestScoringChance: 0.88,
+    scoringPower: 2.2,
+    buildingAwareness: 0.90,
+    safetyAwareness: 0.92,
+    candidateLimit: 9999 // prácticamente todos
+  }
+};
+let aiDifficulty = 'medium';
+
 function isAITurn() {
   return !!players[currentPlayer]?.isAI;
 }
 
+function shuffleInPlace(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+}
+
+function pickUniform(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+// Selección ponderada por número de triángulos (gain), no determinista —
+// más triángulos aumenta la PROBABILIDAD de elegirse, no la garantiza.
+// Sin esto, la máquina jugaría sistemáticamente mejor que una persona
+// (que no siempre ve/prioriza la jugada objetivamente óptima).
+function weightedPickByGain(scoringMoves, power) {
+  const weights = scoringMoves.map(m => Math.pow(m.gain, power));
+  const total = weights.reduce((s, w) => s + w, 0);
+  let r = Math.random() * total;
+  for (let k = 0; k < scoringMoves.length; k++) {
+    r -= weights[k];
+    if (r <= 0) return [scoringMoves[k].i, scoringMoves[k].j];
+  }
+  const last = scoringMoves[scoringMoves.length - 1];
+  return [last.i, last.j];
+}
+
+function chooseAIMove() {
+  const level = AI_LEVELS[aiDifficulty] || AI_LEVELS.medium;
+
+  // Movimientos legales — checkMoveValidity() sigue siendo la única fuente
+  // de verdad, aquí no se reimplementa ninguna regla por su cuenta.
+  const legalMoves = [];
+  for (const { i, j } of candidatePairs) {
+    if (checkMoveValidity(i, j).valid) legalMoves.push([i, j]);
+  }
+  if (legalMoves.length === 0) return null;
+
+  // "Visión" limitada según dificultad — no analiza el tablero entero,
+  // una muestra al azar de hasta candidateLimit movimientos. Así Fácil de
+  // verdad se deja cosas por mirar, no es que juegue mal a propósito con
+  // información completa.
+  shuffleInPlace(legalMoves);
+  const visible = legalMoves.slice(0, level.candidateLimit);
+
+  // Si le queda otra línea este mismo turno, sentar la base de un
+  // triángulo no es un regalo al rival — es preparar cerrarlo ella misma
+  // en la siguiente jugada (ver v2.27). Solo en la última línea del turno
+  // ese mismo patrón sería un regalo de verdad.
+  const canFollowUpThisTurn = linesLeft > 1;
+  const scoringMoves = []; // {i, j, gain}
+  const buildingMoves = [];
+  const safeMoves = [];
+
+  for (const [i, j] of visible) {
+    const gain = findNewTriangles(i, j).length;
+    if (gain > 0) {
+      scoringMoves.push({ i, j, gain });
+      continue;
+    }
+    const setsUpReply = createsScoringReply(i, j);
+    if (setsUpReply && canFollowUpThisTurn) {
+      buildingMoves.push([i, j]);
+    } else if (!setsUpReply) {
+      safeMoves.push([i, j]);
+    }
+  }
+
+  // 1. Intentar puntuar ahora
+  let selectedType, move;
+  if (scoringMoves.length > 0 && Math.random() < level.scoringAwareness) {
+    selectedType = 'scoring';
+    if (Math.random() < level.bestScoringChance) {
+      const maxGain = Math.max(...scoringMoves.map(m => m.gain));
+      const best = scoringMoves.filter(m => m.gain === maxGain);
+      const chosen = pickUniform(best);
+      move = [chosen.i, chosen.j];
+    } else {
+      move = weightedPickByGain(scoringMoves, level.scoringPower);
+    }
+  } else if (buildingMoves.length > 0 && Math.random() < level.buildingAwareness) {
+    // 2. Preparar un triángulo propio (si le queda otra línea este turno)
+    selectedType = 'building';
+    move = pickUniform(buildingMoves);
+  } else if (safeMoves.length > 0 && Math.random() < level.safetyAwareness) {
+    // 3. Evitar dejar un cierre servido
+    selectedType = 'safe';
+    move = pickUniform(safeMoves);
+  } else {
+    // 4. No hay alternativa (o el nivel decidió no aplicar ninguna de las
+    // anteriores): cualquier movimiento legal de los visibles.
+    selectedType = 'any';
+    move = pickUniform(visible);
+  }
+
+  if (DEBUG) {
+    const gain = selectedType === 'scoring' ? findNewTriangles(move[0], move[1]).length : 0;
+    window.aiDebug = {
+      difficulty: aiDifficulty, linesLeft, legalMoves: legalMoves.length,
+      consideredMoves: visible.length, scoringMoves: scoringMoves.length,
+      buildingMoves: buildingMoves.length, safeMoves: safeMoves.length,
+      selectedType, selectedMove: move, gain
+    };
+  }
+  return move;
+}
+
+// Con ?debug: window.circlesAI() en consola para ver la última decisión
+// de la máquina — útil para calibrar Fácil/Medio/Difícil tras jugar.
+if (DEBUG) {
+  window.circlesAI = () => {
+    console.table(window.aiDebug || { info: 'la máquina no ha jugado todavía' });
+    return window.aiDebug;
+  };
+}
+
+// ¿Añadir la arista i-j deja lista una jugada posterior que cerraría un
+// triángulo? La INTERPRETACIÓN depende de quién juega a continuación:
+// con linesLeft>1 puede ser una oportunidad para la propia máquina (ver
+// chooseAIMove); con linesLeft===1 sería un regalo al siguiente jugador.
+// Esta función solo contesta el hecho geométrico, no decide si es bueno o
+// malo — por eso ya no se llama "wouldGift...".
+//
+// Optimizada: cualquier triángulo nuevo causado por la arista i-j tiene
+// que tener la forma i-j-k, así que solo hace falta mirar los vecinos
+// candidatos de i o de j, no candidatePairs entero (evitaba acercarse a
+// candidatos×candidatos comparaciones). try/finally garantiza que la
+// arista de prueba se retira siempre, incluso si algo de en medio lanzara
+// un error.
+function edgeKey(i, j) {
+  return `${Math.min(i, j)}-${Math.max(i, j)}`;
+}
+
+function createsScoringReply(i, j) {
+  const key = edgeKey(i, j);
+  edges.add(key);
+  try {
+    const neighbors = new Set([...(candidateNeighbors[i] || []), ...(candidateNeighbors[j] || [])]);
+    for (const k of neighbors) {
+      if (k === i || k === j) continue;
+      const ik = edgeExists(i, k);
+      const jk = edgeExists(j, k);
+      if (ik === jk) continue; // hace falta que falte EXACTAMENTE el tercer lado
+      const from = ik ? j : i;
+      if (!checkMoveValidity(from, k).valid) continue;
+      if (findNewTriangles(from, k).length > 0) return true;
+    }
+    return false;
+  } finally {
+    edges.delete(key);
+  }
+}
+
 function scheduleAITurnIfNeeded() {
   if (!isAITurn()) return;
+  const generation = gameGeneration;
   setTimeout(() => {
-    if (!isAITurn()) return; // por si algo cambió mientras tanto
+    if (generation !== gameGeneration || !isAITurn()) return;
     rollDice(true);
-    setTimeout(runAIMoves, 550); // algo más que los 420ms de la animación del dado
+    setTimeout(() => {
+      if (generation !== gameGeneration || !isAITurn()) return;
+      runAIMoves(generation);
+    }, 550); // algo más que los 420ms de la animación del dado
   }, 650); // pequeña pausa — que se note que "piensa", no que es instantáneo
 }
 
-function runAIMoves() {
-  if (!isAITurn() || linesLeft <= 0) return; // el turno ya se resolvió solo (bloqueo/fin de partida)
+function runAIMoves(generation) {
+  if (generation !== gameGeneration || !isAITurn() || linesLeft <= 0) return; // partida distinta, o el turno ya se resolvió solo (bloqueo/fin de partida)
   const move = chooseAIMove();
   if (!move) return;
   attemptConnect(move[0], move[1]);
   setTimeout(() => {
-    if (isAITurn() && linesLeft > 0) runAIMoves();
+    if (generation === gameGeneration && isAITurn() && linesLeft > 0) runAIMoves(generation);
   }, 550);
-}
-
-function chooseAIMove() {
-  const scoringMoves = [];
-  const buildingMoves = []; // deja un triangulo a "2 de 3 lados", pero le toca a ELLA seguir jugando
-  const safeMoves = [];
-  const anyMoves = [];
-
-  // Si le queda otra línea este mismo turno, "dejar un triángulo a medias"
-  // no es un regalo al rival — es sentar la base para cerrarlo ella misma
-  // en la siguiente jugada. Sin esto, wouldGiftOpponentTriangle() trataba
-  // igual "dejo esto listo para mí mismo ahora" que "dejo esto listo para
-  // el rival en su turno" — por eso nunca construía hacia un triángulo,
-  // solo los cerraba cuando ya salían gratis en una sola línea.
-  const canFollowUpThisTurn = linesLeft > 1;
-
-  for (const { i, j } of candidatePairs) {
-    if (!checkMoveValidity(i, j).valid) continue;
-    anyMoves.push([i, j]);
-
-    if (findNewTriangles(i, j).length > 0) {
-      scoringMoves.push([i, j]);
-      continue;
-    }
-
-    const setsUpATriangle = wouldGiftOpponentTriangle(i, j);
-    if (setsUpATriangle && canFollowUpThisTurn) {
-      buildingMoves.push([i, j]);
-    } else if (!setsUpATriangle) {
-      safeMoves.push([i, j]);
-    }
-    // setsUpATriangle && !canFollowUpThisTurn: de verdad sería un regalo
-    // (última línea del turno) — se descarta, ni building ni safe
-  }
-
-  const pool = scoringMoves.length ? scoringMoves
-    : buildingMoves.length ? buildingMoves
-    : safeMoves.length ? safeMoves
-    : anyMoves;
-  if (pool.length === 0) return null;
-  return pool[Math.floor(Math.random() * pool.length)];
-}
-
-// Simula trazar i-j (sin tocar el estado real más que un instante) y
-// comprueba si eso dejaría alguna jugada del rival que cierre triángulo
-// de inmediato — si es así, esta jugada "regala" y se descarta salvo que
-// no quede ninguna otra opción.
-function wouldGiftOpponentTriangle(i, j) {
-  const key = `${Math.min(i,j)}-${Math.max(i,j)}`;
-  edges.add(key);
-  let gift = false;
-  for (const { i: a, j: b } of candidatePairs) {
-    if (edges.has(`${Math.min(a,b)}-${Math.max(a,b)}`)) continue;
-    if (!checkMoveValidity(a, b).valid) continue;
-    if (findNewTriangles(a, b).length > 0) { gift = true; break; }
-  }
-  edges.delete(key);
-  return gift;
 }
 
 function showBlockedMessage(remaining) {
@@ -2327,11 +2515,22 @@ function setPlayerCount(n) {
   pcUpdateButtonClasses(false);
   pcMeasure();
   buildNamesGrid();
+  document.getElementById('soloModeInfo').style.display = (n === 1) ? 'flex' : 'none';
   // Sugerir círculos
   const rec = CIRCLE_REC[n];
   document.getElementById('circleSlider').value = rec;
   document.getElementById('sliderVal').textContent = rec;
   updateRecHint(n, rec);
+}
+
+function setAIDifficulty(level) {
+  vibrate(HAPTIC.tap);
+  aiDifficulty = level;
+  document.querySelectorAll('.diff-btn').forEach((btn) => {
+    const active = btn.dataset.diff === level;
+    btn.classList.toggle('is-active', active);
+    btn.setAttribute('aria-checked', active ? 'true' : 'false');
+  });
 }
 
 function buildNamesGrid() {
@@ -2357,12 +2556,11 @@ function onSliderChange(val) {
 function updateRecHint(n, val) {
   const rec = CIRCLE_REC[n];
   const hint = document.getElementById('recHint');
+  const label = n === 1 ? 'contra la Máquina' : `para ${n} jugadores`;
   if (val === rec) {
-    hint.textContent = `✓ Tamaño recomendado para ${n} jugador${n>1?'es':''}`;
-  } else if (val < rec) {
-    hint.textContent = `Recomendado para ${n} jugador${n>1?'es':''}: ${rec} círculos`;
+    hint.textContent = `✓ Tamaño recomendado ${label}`;
   } else {
-    hint.textContent = `Recomendado para ${n} jugador${n>1?'es':''}: ${rec} círculos`;
+    hint.textContent = `Recomendado ${label}: ${rec} círculos`;
   }
 }
 
