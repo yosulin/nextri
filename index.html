@@ -98,7 +98,7 @@
   #gameUI.is-active { display: grid; }
   #gameUI .turn-info { grid-area: turn; }
   #gameUI .canvas-wrap { grid-area: board; }
-  #gameUI > .btn-new { grid-area: newgame; align-self: start; }
+  #gameUI > .game-actions-row { grid-area: newgame; align-self: start; }
 
   /* ── Bloqueo de orientación: el juego se juega en vertical. La PWA
      instalada respeta esto vía manifest.json (orientation: portrait-primary);
@@ -282,6 +282,18 @@
     transition: border-color .2s, background .2s;
   }
   .btn-new:hover { border-color: var(--muted); background: var(--border); }
+  .btn-new:disabled {
+    opacity: .4;
+    cursor: not-allowed;
+  }
+  .btn-new:disabled:hover { border-color: var(--border); background: var(--surface); }
+  .game-actions-row {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    width: 100%;
+  }
+  .game-actions-row .btn-new { flex: 1; max-width: 220px; }
 
   /* ── Modal fin de juego ── */
   .modal-overlay {
@@ -732,7 +744,10 @@
     <canvas id="gameCanvas"></canvas>
   </div>
 
-  <button class="btn-new" onclick="confirmNewGame()">↺ Nuevo juego</button>
+  <div class="game-actions-row">
+    <button class="btn-new" id="undoBtn" onclick="undoLastMove()" disabled>↩ Deshacer</button>
+    <button class="btn-new" onclick="confirmNewGame()">↺ Nuevo juego</button>
+  </div>
 </div>
 
 <!-- Modal -->
@@ -777,7 +792,7 @@
 // entre sí. sw.js sigue siendo aparte por necesidad (un service worker no
 // puede leer esta constante, vive en otro archivo) — al subir de versión,
 // solo hace falta tocar ESTA línea y la de sw.js, no una tercera copia más.
-const APP_VERSION = 'v2.30';
+const APP_VERSION = 'v2.31';
 // ?debug en la URL: números de índice en los círculos + tabla de métricas
 // del grafo de adyacencia en consola al generar el tablero.
 const DEBUG = new URLSearchParams(location.search).has('debug');
@@ -817,6 +832,17 @@ let gameGeneration = 0;
 // otras variables (diceRolled, isAITurn, etc. por separado, que es como
 // estaba antes y podía desincronizarse).
 let gameStatus = 'setup';
+// Deshacer: solo la ÚLTIMA jugada, y solo mientras no haya pasado nada más
+// desde entonces (ni otra jugada, ni una tirada nueva) — se sobreescribe o
+// se limpia en cuanto ocurre cualquiera de esas dos cosas.
+let lastMoveSnapshot = null;
+// Resalta un momento la última línea trazada por la máquina, para que se
+// note bien dónde ha jugado — sin esto, con varias líneas seguidas era
+// fácil perderse cuál era la nueva.
+let lastAIEdgeKey = null;
+let lastAIEdgeColor = null;
+let aiHighlightGen = 0;
+const AI_HIGHLIGHT_MS = 1000;
 
 // El color de un jugador es su identidad (colorIndex, fijado al escribir su
 // nombre) — NO su posición actual en el array, que cambia si el orden de
@@ -1066,6 +1092,9 @@ function initPlayerCountSelector() {
 // ── Inicio ──────────────────────────────────────────────────────────────────
 function startGame() {
   gameGeneration++;
+  lastMoveSnapshot = null;
+  lastAIEdgeKey = null;
+  aiHighlightGen++;
   vibrate(HAPTIC.celebrate);
   resetRollState();
   // Leer nombres dinámicos
@@ -1430,6 +1459,8 @@ function rollDice(isAICall) {
   rollTimer = setTimeout(() => {
     rollTimer = null;
     isRolling = false;
+    lastMoveSnapshot = null; // el deshacer solo vale hasta la siguiente tirada
+    syncUndoEnabled();
     dice.classList.remove('rolling');
     dice.removeAttribute('aria-disabled');
     const val = Math.floor(Math.random() * 6) + 1;
@@ -1667,10 +1698,38 @@ function attemptConnect(fromIdx, toIdx) {
   const b = Math.max(fromIdx, toIdx);
   const key = `${a}-${b}`;
 
+  // Foto de "cómo estaba todo justo antes de esta jugada" — deshacer()
+  // solo necesita volver a esto, sin tener que reconstruir nada a mano.
+  // Se sobreescribe en cada jugada nueva: solo se puede deshacer LA
+  // ÚLTIMA, no un historial completo.
+  lastMoveSnapshot = {
+    edgeKey: key,
+    currentPlayer,
+    linesLeft,
+    diceRolled,
+    gameStatus,
+    scorerIdx: currentPlayer,
+    trianglesCountBefore: triangles.length
+  };
+
   // Trazar
   edges.add(key);
   invalidateActiveCirclesCache();
   linesLeft--;
+  syncUndoEnabled();
+
+  // Resaltar un momento la línea recién trazada si fue la máquina — con
+  // varias líneas seguidas era fácil perder de vista dónde había jugado
+  // cada una. Se apaga sola, forzando un redraw cuando expira, no solo
+  // cuando algo más redibuja por su cuenta.
+  if (players[currentPlayer]?.isAI) {
+    lastAIEdgeKey = key;
+    lastAIEdgeColor = playerColor(currentPlayer);
+    const highlightGen = ++aiHighlightGen;
+    setTimeout(() => {
+      if (highlightGen === aiHighlightGen) { lastAIEdgeKey = null; draw(); }
+    }, AI_HIGHLIGHT_MS);
+  }
 
   // Buscar triángulos nuevos
   const newTris = findNewTriangles(a, b);
@@ -1992,6 +2051,61 @@ function syncDiceEnabled() {
   if (dice) dice.disabled = !canRollDice();
 }
 
+function syncUndoEnabled() {
+  const btn = document.getElementById('undoBtn');
+  if (btn) btn.disabled = !lastMoveSnapshot;
+}
+
+function undoLastMove() {
+  if (!lastMoveSnapshot || gameStatus === 'setup') return;
+  const snap = lastMoveSnapshot;
+  lastMoveSnapshot = null;
+  gameGeneration++; // por si la IA tenía algo en curso a mitad de deshacer
+  if (lastAIEdgeKey === snap.edgeKey) { lastAIEdgeKey = null; aiHighlightGen++; }
+
+  const wasFinished = (gameStatus === 'finished');
+
+  edges.delete(snap.edgeKey);
+  // Quitar exactamente los triángulos que esta jugada añadió (los que
+  // quedaron por encima del recuento de antes) y devolver los puntos.
+  while (triangles.length > snap.trianglesCountBefore) {
+    const removed = triangles.pop();
+    players[removed.owner].score--;
+  }
+  updateScores();
+
+  currentPlayer = snap.currentPlayer;
+  linesLeft = snap.linesLeft;
+  diceRolled = snap.diceRolled;
+  gameStatus = snap.gameStatus;
+
+  if (wasFinished) closeDialog('modalOverlay'); // la jugada deshecha había terminado la partida
+
+  invalidateActiveCirclesCache();
+  setSelectedCircle(null);
+  updateDiceDisplay(diceRolled ? null : 0);
+  if (diceRolled) {
+    document.getElementById('linesLeftLabel').textContent = `${linesLeft} línea${linesLeft !== 1 ? 's' : ''}`;
+  }
+  updateActiveCards();
+  updateTurnInfo();
+  syncUndoEnabled();
+  vibrate(HAPTIC.dismiss);
+  draw();
+
+  // Si lo deshecho era una jugada de la máquina a mitad de su propio turno,
+  // el timer que la habría continuado se invalidó (gameGeneration++ arriba)
+  // pero nada la retomaba — sin esto, su turno se quedaba parado a medias.
+  if (gameStatus === 'playing' && isAITurn() && diceRolled && linesLeft > 0) {
+    const generation = gameGeneration;
+    setTimeout(() => {
+      if (generation === gameGeneration && gameStatus === 'playing' && isAITurn() && linesLeft > 0) {
+        runAIMoves(generation);
+      }
+    }, 1100);
+  }
+}
+
 function updateActiveCards() {
   players.forEach((_, i) => {
     const el = document.getElementById(`card${i+1}`);
@@ -2230,7 +2344,7 @@ function scheduleAITurnIfNeeded() {
     setTimeout(() => {
       if (generation !== gameGeneration || gameStatus !== 'playing' || !isAITurn()) return;
       runAIMoves(generation);
-    }, 550); // algo más que los 420ms de la animación del dado
+    }, 700); // algo más que los 420ms de la animación del dado, para que se vea el resultado antes de empezar
   }, 650); // pequeña pausa — que se note que "piensa", no que es instantáneo
 }
 
@@ -2241,7 +2355,7 @@ function runAIMoves(generation) {
   attemptConnect(move[0], move[1]);
   setTimeout(() => {
     if (generation === gameGeneration && gameStatus === 'playing' && isAITurn() && linesLeft > 0) runAIMoves(generation);
-  }, 550);
+  }, 1100); // más pausado entre líneas — con varias seguidas antes no daba tiempo a ver dónde había trazado cada una
 }
 
 function showBlockedMessage(remaining) {
@@ -2418,7 +2532,17 @@ function draw() {
   // Líneas existentes
   edges.forEach(key => {
     const [i, j] = key.split('-').map(Number);
-    drawLine(circles[i], circles[j], canvasColor('rgba(255,255,255,0.18)', 'rgba(26,31,46,0.22)'), 2);
+    if (key === lastAIEdgeKey) {
+      // Resaltada: la que acaba de trazar la máquina — más gruesa, con su
+      // color, y un halo suave para que salte a la vista de verdad.
+      ctx.save();
+      ctx.shadowColor = lastAIEdgeColor || '#ffffff';
+      ctx.shadowBlur = 10;
+      drawLine(circles[i], circles[j], lastAIEdgeColor || canvasColor('#ffffff', '#1a1f2e'), 4);
+      ctx.restore();
+    } else {
+      drawLine(circles[i], circles[j], canvasColor('rgba(255,255,255,0.18)', 'rgba(26,31,46,0.22)'), 2);
+    }
   });
 
   // Línea provisional: desde seleccionado hasta cursor (no implementada — se dibuja abajo)
