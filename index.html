@@ -90,12 +90,11 @@
     gap: 16px;
     width: 100%;
     max-width: 720px;
-    grid-template-areas: "players" "actions" "turn" "board";
+    grid-template-areas: "players" "actions" "board";
     grid-template-columns: 1fr;
     justify-items: center;
   }
   #gameUI.is-active { display: grid; }
-  #gameUI .turn-info { grid-area: turn; }
   #gameUI .canvas-wrap { grid-area: board; }
   #gameUI > .game-actions-row { grid-area: actions; }
 
@@ -249,10 +248,22 @@
 
   /* ── Turno info ── */
   .turn-info {
-    font-size: .9rem;
+    position: fixed;
+    bottom: 68px;
+    left: 16px;
+    right: 16px;
+    z-index: 25;
+    width: fit-content;
+    max-width: calc(100% - 32px);
+    margin: 0 auto;
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 999px;
+    padding: 8px 18px;
+    font-size: .85rem;
     color: var(--muted);
     text-align: center;
-    min-height: 1.4em;
+    box-shadow: 0 8px 20px -10px rgba(0,0,0,.35);
   }
   .turn-info span { font-weight: 700; }
 
@@ -598,40 +609,6 @@
   .corner-btn.bottom-right { right: 16px; }
   .corner-btn:hover { color: var(--text); border-color: var(--p1-color); }
 
-  /* Aviso de jugada inválida — flota junto a los botones de esquina, no
-     dentro del flujo normal del layout. Antes vivía en la línea de turno,
-     y un mensaje más largo podía hacer crecer esa línea a dos renglones
-     justo cuando boardDimensions() está midiendo dónde empieza el
-     tablero — el tablero podía "saltar" de tamaño en el peor momento.
-     Aquí, al ser fixed, nunca afecta a esa medición. */
-  .move-warning-toast {
-    position: fixed;
-    bottom: 20px;
-    left: 74px;
-    right: 74px;
-    z-index: 30;
-    display: flex;
-    justify-content: center;
-    pointer-events: none;
-  }
-  .move-warning-toast .toast-pill {
-    background: var(--surface);
-    border: 2px solid var(--p1-color);
-    color: var(--p1-color);
-    border-radius: 999px;
-    padding: 8px 16px;
-    font-size: .8rem;
-    font-weight: 700;
-    text-align: center;
-    box-shadow: 0 8px 20px -10px rgba(0,0,0,.4);
-    animation: toast-rise .2s ease-out;
-    max-width: 100%;
-  }
-  @keyframes toast-rise {
-    from { opacity: 0; transform: translateY(6px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
   /* ── Panel de info ── */
   .info-overlay {
     position: fixed;
@@ -836,8 +813,6 @@
   </svg>
 </button>
 
-<div class="move-warning-toast" id="moveWarningToast" role="status" aria-live="polite"></div>
-
 <div class="info-overlay" id="infoOverlay" role="dialog" aria-modal="true" aria-labelledby="infoTitle" onclick="if (event.target === this) closeDialog('infoOverlay')">
   <div class="info-sheet">
     <h3 id="infoTitle">⬤ Juego de Círculos</h3>
@@ -855,7 +830,7 @@
 // entre sí. sw.js sigue siendo aparte por necesidad (un service worker no
 // puede leer esta constante, vive en otro archivo) — al subir de versión,
 // solo hace falta tocar ESTA línea y la de sw.js, no una tercera copia más.
-const APP_VERSION = 'v2.37';
+const APP_VERSION = 'v2.38';
 // ?debug en la URL: números de índice en los círculos + tabla de métricas
 // del grafo de adyacencia en consola al generar el tablero.
 const DEBUG = new URLSearchParams(location.search).has('debug');
@@ -1748,11 +1723,14 @@ function triangleTraps(a, b, c) {
 let lastInvalidReasonTimer = null;
 
 function showInvalidMoveReason(message) {
-  const toast = document.getElementById('moveWarningToast');
-  toast.innerHTML = `<span class="toast-pill">⚠ ${escapeHtml(message)}</span>`;
+  const el = document.getElementById('turnInfo');
+  const original = el.dataset.originalHtml ?? el.innerHTML;
+  el.dataset.originalHtml = original;
+  el.innerHTML = `<span style="color:var(--p1-color)">⚠ ${escapeHtml(message)}</span>`;
   clearTimeout(lastInvalidReasonTimer);
   lastInvalidReasonTimer = setTimeout(() => {
-    toast.innerHTML = '';
+    el.innerHTML = el.dataset.originalHtml;
+    delete el.dataset.originalHtml;
   }, 1400);
 }
 
