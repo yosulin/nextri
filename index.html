@@ -792,7 +792,7 @@
 // entre sí. sw.js sigue siendo aparte por necesidad (un service worker no
 // puede leer esta constante, vive en otro archivo) — al subir de versión,
 // solo hace falta tocar ESTA línea y la de sw.js, no una tercera copia más.
-const APP_VERSION = 'v2.32';
+const APP_VERSION = 'v2.33';
 // ?debug en la URL: números de índice en los círculos + tabla de métricas
 // del grafo de adyacencia en consola al generar el tablero.
 const DEBUG = new URLSearchParams(location.search).has('debug');
@@ -843,6 +843,9 @@ let lastAIEdgeKey = null;
 let lastAIEdgeColor = null;
 let aiHighlightGen = 0;
 const AI_HIGHLIGHT_MS = 1000;
+// Margen tras tu última línea de turno, antes de que le toque a Circuit —
+// tiempo de sobra para reconocer y deshacer una línea mal puesta.
+const TURN_HANDOFF_GRACE_MS = 3000;
 
 // El color de un jugador es su identidad (colorIndex, fijado al escribir su
 // nombre) — NO su posición actual en el array, que cambia si el orden de
@@ -1760,7 +1763,23 @@ function attemptConnect(fromIdx, toIdx) {
     diceRolled = false;
     updateDiceDisplay(0);
     if (computeActiveCircles().size === 0) { endGame(); return; }
-    advanceTurn();
+    if (!players[currentPlayer]?.isAI) {
+      // Margen antes de pasarle el turno a Circuit — mientras no se llame
+      // a advanceTurn(), currentPlayer sigue siendo el tuyo, así que
+      // deshacer sigue disponible exactamente igual que con cualquier
+      // otra de tus líneas. Sin esto, la línea que TERMINA tu turno era
+      // justo la que menos margen tenía (cero: el cambio de turno era
+      // síncrono e inmediato).
+      const el = document.getElementById('turnInfo');
+      const color = playerColor(currentPlayer) || 'var(--p1-color)';
+      el.innerHTML = `<span style="color:${color}">${escapeHtml(players[currentPlayer].name)}</span> — ¿todo bien? Puedes deshacer`;
+      const handoffGeneration = gameGeneration;
+      setTimeout(() => {
+        if (handoffGeneration === gameGeneration && gameStatus === 'playing') advanceTurn();
+      }, TURN_HANDOFF_GRACE_MS);
+    } else {
+      advanceTurn();
+    }
   } else {
     // Quedan líneas — ¿hay movimientos válidos?
     if (computeActiveCircles().size === 0) { endGame(); return; }
