@@ -586,6 +586,40 @@
   .corner-btn.bottom-right { right: 16px; }
   .corner-btn:hover { color: var(--text); border-color: var(--p1-color); }
 
+  /* Aviso de jugada inválida — flota junto a los botones de esquina, no
+     dentro del flujo normal del layout. Antes vivía en la línea de turno,
+     y un mensaje más largo podía hacer crecer esa línea a dos renglones
+     justo cuando boardDimensions() está midiendo dónde empieza el
+     tablero — el tablero podía "saltar" de tamaño en el peor momento.
+     Aquí, al ser fixed, nunca afecta a esa medición. */
+  .move-warning-toast {
+    position: fixed;
+    bottom: 20px;
+    left: 74px;
+    right: 74px;
+    z-index: 30;
+    display: flex;
+    justify-content: center;
+    pointer-events: none;
+  }
+  .move-warning-toast .toast-pill {
+    background: var(--surface);
+    border: 2px solid var(--p1-color);
+    color: var(--p1-color);
+    border-radius: 999px;
+    padding: 8px 16px;
+    font-size: .8rem;
+    font-weight: 700;
+    text-align: center;
+    box-shadow: 0 8px 20px -10px rgba(0,0,0,.4);
+    animation: toast-rise .2s ease-out;
+    max-width: 100%;
+  }
+  @keyframes toast-rise {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
   /* ── Panel de info ── */
   .info-overlay {
     position: fixed;
@@ -790,6 +824,8 @@
   </svg>
 </button>
 
+<div class="move-warning-toast" id="moveWarningToast" role="status" aria-live="polite"></div>
+
 <div class="info-overlay" id="infoOverlay" role="dialog" aria-modal="true" aria-labelledby="infoTitle" onclick="if (event.target === this) closeDialog('infoOverlay')">
   <div class="info-sheet">
     <h3 id="infoTitle">⬤ Juego de Círculos</h3>
@@ -807,7 +843,7 @@
 // entre sí. sw.js sigue siendo aparte por necesidad (un service worker no
 // puede leer esta constante, vive en otro archivo) — al subir de versión,
 // solo hace falta tocar ESTA línea y la de sw.js, no una tercera copia más.
-const APP_VERSION = 'v2.35';
+const APP_VERSION = 'v2.36';
 // ?debug en la URL: números de índice en los círculos + tabla de métricas
 // del grafo de adyacencia en consola al generar el tablero.
 const DEBUG = new URLSearchParams(location.search).has('debug');
@@ -1690,14 +1726,11 @@ function triangleTraps(a, b, c) {
 let lastInvalidReasonTimer = null;
 
 function showInvalidMoveReason(message) {
-  const el = document.getElementById('turnInfo');
-  const original = el.dataset.originalHtml ?? el.innerHTML;
-  el.dataset.originalHtml = original;
-  el.innerHTML = `<span style="color:var(--p1-color)">⚠ ${escapeHtml(message)}</span>`;
+  const toast = document.getElementById('moveWarningToast');
+  toast.innerHTML = `<span class="toast-pill">⚠ ${escapeHtml(message)}</span>`;
   clearTimeout(lastInvalidReasonTimer);
   lastInvalidReasonTimer = setTimeout(() => {
-    el.innerHTML = el.dataset.originalHtml;
-    delete el.dataset.originalHtml;
+    toast.innerHTML = '';
   }, 1400);
 }
 
