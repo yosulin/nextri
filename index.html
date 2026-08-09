@@ -792,7 +792,7 @@
 // entre sí. sw.js sigue siendo aparte por necesidad (un service worker no
 // puede leer esta constante, vive en otro archivo) — al subir de versión,
 // solo hace falta tocar ESTA línea y la de sw.js, no una tercera copia más.
-const APP_VERSION = 'v2.31';
+const APP_VERSION = 'v2.32';
 // ?debug en la URL: números de índice en los círculos + tabla de métricas
 // del grafo de adyacencia en consola al generar el tablero.
 const DEBUG = new URLSearchParams(location.search).has('debug');
@@ -1459,8 +1459,10 @@ function rollDice(isAICall) {
   rollTimer = setTimeout(() => {
     rollTimer = null;
     isRolling = false;
-    lastMoveSnapshot = null; // el deshacer solo vale hasta la siguiente tirada
-    syncUndoEnabled();
+    if (!isAITurn()) {
+      lastMoveSnapshot = null; // el deshacer solo vale hasta tu siguiente tirada — el turno de Circuit de por medio no cuenta
+      syncUndoEnabled();
+    }
     dice.classList.remove('rolling');
     dice.removeAttribute('aria-disabled');
     const val = Math.floor(Math.random() * 6) + 1;
@@ -1700,17 +1702,21 @@ function attemptConnect(fromIdx, toIdx) {
 
   // Foto de "cómo estaba todo justo antes de esta jugada" — deshacer()
   // solo necesita volver a esto, sin tener que reconstruir nada a mano.
-  // Se sobreescribe en cada jugada nueva: solo se puede deshacer LA
-  // ÚLTIMA, no un historial completo.
-  lastMoveSnapshot = {
-    edgeKey: key,
-    currentPlayer,
-    linesLeft,
-    diceRolled,
-    gameStatus,
-    scorerIdx: currentPlayer,
-    trianglesCountBefore: triangles.length
-  };
+  // Se sobreescribe en cada jugada nueva del HUMANO — las jugadas de
+  // Circuit no la tocan ni la borran, para que el turno de la máquina de
+  // por medio no "consuma" tu última línea sin que te dé tiempo a
+  // deshacerla.
+  if (!players[currentPlayer]?.isAI) {
+    lastMoveSnapshot = {
+      edgeKey: key,
+      currentPlayer,
+      linesLeft,
+      diceRolled,
+      gameStatus,
+      scorerIdx: currentPlayer,
+      trianglesCountBefore: triangles.length
+    };
+  }
 
   // Trazar
   edges.add(key);
@@ -2053,11 +2059,11 @@ function syncDiceEnabled() {
 
 function syncUndoEnabled() {
   const btn = document.getElementById('undoBtn');
-  if (btn) btn.disabled = !lastMoveSnapshot;
+  if (btn) btn.disabled = !lastMoveSnapshot || isAITurn();
 }
 
 function undoLastMove() {
-  if (!lastMoveSnapshot || gameStatus === 'setup') return;
+  if (!lastMoveSnapshot || gameStatus === 'setup' || isAITurn()) return;
   const snap = lastMoveSnapshot;
   lastMoveSnapshot = null;
   gameGeneration++; // por si la IA tenía algo en curso a mitad de deshacer
@@ -2092,18 +2098,6 @@ function undoLastMove() {
   syncUndoEnabled();
   vibrate(HAPTIC.dismiss);
   draw();
-
-  // Si lo deshecho era una jugada de la máquina a mitad de su propio turno,
-  // el timer que la habría continuado se invalidó (gameGeneration++ arriba)
-  // pero nada la retomaba — sin esto, su turno se quedaba parado a medias.
-  if (gameStatus === 'playing' && isAITurn() && diceRolled && linesLeft > 0) {
-    const generation = gameGeneration;
-    setTimeout(() => {
-      if (generation === gameGeneration && gameStatus === 'playing' && isAITurn() && linesLeft > 0) {
-        runAIMoves(generation);
-      }
-    }, 1100);
-  }
 }
 
 function updateActiveCards() {
