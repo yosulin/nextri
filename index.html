@@ -205,6 +205,18 @@
   }
   .dice:disabled:hover { border-color: var(--border); transform: none; }
 
+  /* Invita a pulsar cuando está vacío esperando turno — solo si además
+     está habilitado (no en el turno de Circuit, aunque ahí también esté
+     vacío por otro motivo). prefers-reduced-motion ya lo apaga con la
+     regla global del proyecto. */
+  .dice.waiting:not(:disabled) {
+    animation: dice-pulse 1.8s ease-in-out infinite;
+  }
+  @keyframes dice-pulse {
+    0%, 100% { transform: scale(1); border-color: var(--border); }
+    50% { transform: scale(1.06); border-color: var(--p1-color); }
+  }
+
   @keyframes shake {
     0%,100% { transform: rotate(0deg) scale(1); }
     20% { transform: rotate(-12deg) scale(1.08); }
@@ -843,7 +855,7 @@
 // entre sí. sw.js sigue siendo aparte por necesidad (un service worker no
 // puede leer esta constante, vive en otro archivo) — al subir de versión,
 // solo hace falta tocar ESTA línea y la de sw.js, no una tercera copia más.
-const APP_VERSION = 'v2.36';
+const APP_VERSION = 'v2.37';
 // ?debug en la URL: números de índice en los círculos + tabla de métricas
 // del grafo de adyacencia en consola al generar el tablero.
 const DEBUG = new URLSearchParams(location.search).has('debug');
@@ -1473,6 +1485,10 @@ function finalizeAdjacency(pairs, maxDistanceSq, metrics) {
 
 // ── Dado ─────────────────────────────────────────────────────────────────────
 let isRolling = false;
+// El valor tirado, aparte de linesLeft — linesLeft baja según trazas
+// líneas, pero los puntos del dado deben seguir mostrando el número que
+// salió hasta que termine el turno, no vaciarse con cada línea.
+let lastRolledValue = 0;
 let rollTimer = null;
 
 // Cancela cualquier tirada pendiente — sin esto, tirar el dado y darle a
@@ -1509,6 +1525,7 @@ function rollDice(isAICall) {
   if (!allowed) return;
   isRolling = true;
   const dice = document.getElementById('dice');
+  dice.classList.remove('waiting');
   dice.classList.add('rolling');
   dice.setAttribute('aria-disabled', 'true');
   rollTimer = setTimeout(() => {
@@ -1522,6 +1539,7 @@ function rollDice(isAICall) {
     dice.removeAttribute('aria-disabled');
     const val = Math.floor(Math.random() * 6) + 1;
     linesLeft  = val;
+    lastRolledValue = val;
     diceRolled = true;
     vibrate(HAPTIC.select);
     updateDiceDisplay(val);
@@ -1543,6 +1561,10 @@ function updateDiceDisplay(val) {
   if (val > 0) {
     DICE_DOTS[val].forEach(i => dots[i].classList.add('on'));
   }
+  // val===0 significa siempre "esperando a que lo pulses" (ver la etiqueta
+  // de abajo) — el CSS decide si de verdad anima según si en ese momento
+  // está también habilitado (no anima durante el turno de Circuit).
+  document.getElementById('dice')?.classList.toggle('waiting', val === 0);
   const ll = document.getElementById('linesLeftLabel');
   if (val === 0) {
     ll.textContent = 'Tira el dado';
@@ -1836,7 +1858,7 @@ function attemptConnect(fromIdx, toIdx) {
   } else {
     // Quedan líneas — ¿hay movimientos válidos?
     if (computeActiveCircles().size === 0) { endGame(); return; }
-    updateDiceDisplay(null);
+    updateDiceDisplay(lastRolledValue);
     document.getElementById('linesLeftLabel').textContent = `${linesLeft} línea${linesLeft !== 1 ? 's' : ''}`;
     updateTurnInfo();
   }
@@ -2179,7 +2201,7 @@ function undoLastMove() {
 
   invalidateActiveCirclesCache();
   setSelectedCircle(null);
-  updateDiceDisplay(diceRolled ? null : 0);
+  updateDiceDisplay(diceRolled ? lastRolledValue : 0);
   if (diceRolled) {
     document.getElementById('linesLeftLabel').textContent = `${linesLeft} línea${linesLeft !== 1 ? 's' : ''}`;
   }
