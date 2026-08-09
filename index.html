@@ -282,11 +282,27 @@
     transition: border-color .2s, background .2s;
   }
   .btn-new:hover { border-color: var(--muted); background: var(--border); }
-  .btn-new:disabled {
-    opacity: .4;
-    cursor: not-allowed;
-  }
+  .btn-new:disabled { opacity: .4; cursor: not-allowed; }
   .btn-new:disabled:hover { border-color: var(--border); background: var(--surface); }
+
+  /* Barra de cuenta atrás dentro de "Deshacer" — se encoge en el mismo
+     tiempo real que el margen antes de pasarle el turno a Circuit, no una
+     animación aparte que pueda desincronizarse del JS. */
+  #undoBtn { position: relative; overflow: hidden; }
+  #undoBtn .countdown-fill {
+    position: absolute;
+    inset: 0;
+    background: var(--p1-light, rgba(244,132,74,0.25));
+    transform-origin: left;
+    animation-name: countdown-shrink;
+    animation-timing-function: linear;
+    animation-fill-mode: forwards;
+    pointer-events: none;
+  }
+  @keyframes countdown-shrink {
+    from { transform: scaleX(1); }
+    to { transform: scaleX(0); }
+  }
   .game-actions-row {
     display: flex;
     gap: 10px;
@@ -792,7 +808,7 @@
 // entre sí. sw.js sigue siendo aparte por necesidad (un service worker no
 // puede leer esta constante, vive en otro archivo) — al subir de versión,
 // solo hace falta tocar ESTA línea y la de sw.js, no una tercera copia más.
-const APP_VERSION = 'v2.33';
+const APP_VERSION = 'v2.34';
 // ?debug en la URL: números de índice en los círculos + tabla de métricas
 // del grafo de adyacencia en consola al generar el tablero.
 const DEBUG = new URLSearchParams(location.search).has('debug');
@@ -1098,6 +1114,7 @@ function startGame() {
   lastMoveSnapshot = null;
   lastAIEdgeKey = null;
   aiHighlightGen++;
+  stopUndoCountdown();
   vibrate(HAPTIC.celebrate);
   resetRollState();
   // Leer nombres dinámicos
@@ -1773,9 +1790,13 @@ function attemptConnect(fromIdx, toIdx) {
       const el = document.getElementById('turnInfo');
       const color = playerColor(currentPlayer) || 'var(--p1-color)';
       el.innerHTML = `<span style="color:${color}">${escapeHtml(players[currentPlayer].name)}</span> — ¿todo bien? Puedes deshacer`;
+      startUndoCountdown(TURN_HANDOFF_GRACE_MS);
       const handoffGeneration = gameGeneration;
       setTimeout(() => {
-        if (handoffGeneration === gameGeneration && gameStatus === 'playing') advanceTurn();
+        if (handoffGeneration === gameGeneration && gameStatus === 'playing') {
+          stopUndoCountdown();
+          advanceTurn();
+        }
       }, TURN_HANDOFF_GRACE_MS);
     } else {
       advanceTurn();
@@ -2081,11 +2102,29 @@ function syncUndoEnabled() {
   if (btn) btn.disabled = !lastMoveSnapshot || isAITurn();
 }
 
+function startUndoCountdown(durationMs) {
+  const btn = document.getElementById('undoBtn');
+  if (!btn) return;
+  stopUndoCountdown(); // por si ya había una en marcha
+  const fill = document.createElement('span');
+  fill.className = 'countdown-fill';
+  fill.style.animationDuration = `${durationMs}ms`;
+  fill.setAttribute('aria-hidden', 'true');
+  btn.appendChild(fill);
+}
+
+function stopUndoCountdown() {
+  const btn = document.getElementById('undoBtn');
+  const fill = btn?.querySelector('.countdown-fill');
+  if (fill) fill.remove();
+}
+
 function undoLastMove() {
   if (!lastMoveSnapshot || gameStatus === 'setup' || isAITurn()) return;
   const snap = lastMoveSnapshot;
   lastMoveSnapshot = null;
-  gameGeneration++; // por si la IA tenía algo en curso a mitad de deshacer
+  gameGeneration++; // por si la IA tenía algo en curso a mitad de deshacer, o el margen antes de su turno
+  stopUndoCountdown();
   if (lastAIEdgeKey === snap.edgeKey) { lastAIEdgeKey = null; aiHighlightGen++; }
 
   const wasFinished = (gameStatus === 'finished');
