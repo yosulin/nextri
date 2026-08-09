@@ -82,23 +82,22 @@
     grid-area: players;
   }
 
-  /* ── Layout de la partida: apilado en vertical por defecto, dos columnas
-     en horizontal (tablero grande a un lado, controles al otro) ── */
+  /* ── Layout de la partida, apilado en vertical (el juego está bloqueado
+     a esa orientación desde la v2.23) ── */
   #gameUI {
     display: none; /* .is-active lo activa — nunca lo pongas inline en JS,
-                       un estilo inline gana siempre a esta regla y anulaba
-                       por completo el grid horizontal más abajo */
+                       un estilo inline gana siempre a esta regla */
     gap: 16px;
     width: 100%;
     max-width: 720px;
-    grid-template-areas: "players" "turn" "board" "newgame";
+    grid-template-areas: "players" "actions" "turn" "board";
     grid-template-columns: 1fr;
     justify-items: center;
   }
   #gameUI.is-active { display: grid; }
   #gameUI .turn-info { grid-area: turn; }
   #gameUI .canvas-wrap { grid-area: board; }
-  #gameUI > .game-actions-row { grid-area: newgame; align-self: start; }
+  #gameUI > .game-actions-row { grid-area: actions; }
 
   /* ── Bloqueo de orientación: el juego se juega en vertical. La PWA
      instalada respeta esto vía manifest.json (orientation: portrait-primary);
@@ -754,15 +753,15 @@
     </div>
   </div>
 
+  <div class="game-actions-row">
+    <button class="btn-new" id="undoBtn" onclick="undoLastMove()" disabled>↩ Deshacer</button>
+    <button class="btn-new" onclick="confirmNewGame()">↺ Nuevo juego</button>
+  </div>
+
   <div class="turn-info" id="turnInfo">–</div>
 
   <div class="canvas-wrap">
     <canvas id="gameCanvas"></canvas>
-  </div>
-
-  <div class="game-actions-row">
-    <button class="btn-new" id="undoBtn" onclick="undoLastMove()" disabled>↩ Deshacer</button>
-    <button class="btn-new" onclick="confirmNewGame()">↺ Nuevo juego</button>
   </div>
 </div>
 
@@ -808,7 +807,7 @@
 // entre sí. sw.js sigue siendo aparte por necesidad (un service worker no
 // puede leer esta constante, vive en otro archivo) — al subir de versión,
 // solo hace falta tocar ESTA línea y la de sw.js, no una tercera copia más.
-const APP_VERSION = 'v2.34';
+const APP_VERSION = 'v2.35';
 // ?debug en la URL: números de índice en los círculos + tabla de métricas
 // del grafo de adyacencia en consola al generar el tablero.
 const DEBUG = new URLSearchParams(location.search).has('debug');
@@ -2537,10 +2536,21 @@ function boardDimensions(wrap) {
   wrap.style.width = '';
   wrap.style.height = ''; // vuelve al 100% natural del CSS antes de medir
   const naturalWidth = wrap.clientWidth;
-  const availableHeight = window.innerHeight * 0.72;
+
+  // Antes esto era un porcentaje fijo del alto de pantalla, que no tenía
+  // en cuenta cuánto ocupaban de verdad las tarjetas/turno/botones de
+  // encima — en pantallas más pequeñas o con letra más grande, algo
+  // acababa fuera de la parte visible. Midiendo dónde empieza el tablero
+  // de verdad (que ya incluye todo lo que hay antes: cabecera compacta,
+  // tarjetas, fila de acciones, aviso de turno, y los huecos entre todo
+  // eso) el tablero nunca deja nada más fuera de pantalla.
+  const wrapTop = wrap.getBoundingClientRect().top;
+  const bottomReserve = 76; // botones flotantes de tema/info + su margen
+  const availableHeight = window.innerHeight - wrapTop - bottomReserve;
+
   return {
     width: Math.round(Math.min(naturalWidth, 960)),
-    height: Math.round(Math.min(availableHeight, 960))
+    height: Math.round(Math.min(Math.max(availableHeight, 160), 960))
   };
 }
 
@@ -2814,8 +2824,9 @@ function fitBoardDisplay() {
   if (!canvas || !W || !H) return;
   const wrap = canvas.parentElement;
   const availableWidth = document.documentElement.clientWidth - 16;
-  const availableHeight = window.innerHeight * 0.72;
-  const scale = Math.min(availableWidth / W, availableHeight / H, 1);
+  const wrapTop = wrap.getBoundingClientRect().top;
+  const availableHeight = window.innerHeight - wrapTop - 76; // mismo margen que boardDimensions()
+  const scale = Math.min(availableWidth / W, Math.max(availableHeight, 160) / H, 1);
   wrap.style.width = `${Math.round(W * scale)}px`;
   wrap.style.height = `${Math.round(H * scale)}px`;
 }
