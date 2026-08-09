@@ -823,6 +823,7 @@
   </div>
 </div>
 
+<script src="src/game/geometry.js"></script>
 <script>
 // ── Constantes ──────────────────────────────────────────────────────────────
 // Única fuente de la versión visible — antes se escribía a mano en tres
@@ -830,7 +831,7 @@
 // entre sí. sw.js sigue siendo aparte por necesidad (un service worker no
 // puede leer esta constante, vive en otro archivo) — al subir de versión,
 // solo hace falta tocar ESTA línea y la de sw.js, no una tercera copia más.
-const APP_VERSION = 'v2.38';
+const APP_VERSION = 'v2.39';
 // ?debug en la URL: números de índice en los círculos + tabla de métricas
 // del grafo de adyacencia en consola al generar el tablero.
 const DEBUG = new URLSearchParams(location.search).has('debug');
@@ -1337,23 +1338,7 @@ const ADJACENCY_TARGET = {
 // que no debe contar para el grado de adyacencia al calibrar — antes
 // "vecino dentro del radio" incluía conexiones que en la práctica jamás
 // se podían dibujar.
-function segmentPassesOverCircle(circleList, idxA, idxB, radius) {
-  const a = circleList[idxA], b = circleList[idxB];
-  const dx = b.x - a.x, dy = b.y - a.y;
-  const lenSq = dx * dx + dy * dy;
-  if (lenSq === 0) return true;
-
-  for (let k = 0; k < circleList.length; k++) {
-    if (k === idxA || k === idxB) continue;
-    const c = circleList[k];
-    const t = Math.max(0, Math.min(1, ((c.x - a.x) * dx + (c.y - a.y) * dy) / lenSq));
-    if (t <= 0.05 || t >= 0.95) continue;
-    const px = a.x + t * dx, py = a.y + t * dy;
-    const ddx = c.x - px, ddy = c.y - py;
-    if (ddx * ddx + ddy * ddy < radius * radius) return true;
-  }
-  return false;
-}
+// segmentPassesOverCircle() ahora viene de src/game/geometry.js
 
 // Elige MAX_DIST según el grado del grafo de adyacencia resultante, no un
 // multiplicador sobre un único dato — es la tercera vez que recalibramos
@@ -1862,46 +1847,8 @@ function areAdjacent(i, j) {
 }
 
 // ── Geometría: intersección de segmentos ─────────────────────────────────────
-// Producto vectorial 2D
-function cross2d(ax, ay, bx, by) {
-  return ax * by - ay * bx;
-}
-
-// ¿El punto (px,py) está en el segmento (ax,ay)-(bx,by)? (asumiendo colineal)
-function onSegment(ax, ay, bx, by, px, py) {
-  return Math.min(ax,bx) - 1e-9 <= px && px <= Math.max(ax,bx) + 1e-9 &&
-         Math.min(ay,by) - 1e-9 <= py && py <= Math.max(ay,by) + 1e-9;
-}
-
-// ¿Se cruzan los segmentos p1-p2 y p3-p4? (ignorando extremos compartidos)
-function segmentsIntersect(x1,y1,x2,y2, x3,y3,x4,y4) {
-  const dx1 = x2-x1, dy1 = y2-y1;
-  const dx2 = x4-x3, dy2 = y4-y3;
-  const denom = cross2d(dx1, dy1, dx2, dy2);
-  const eps = 1e-9;
-
-  if (Math.abs(denom) < eps) {
-    // Paralelas / colineales: no las consideramos cruce válido
-    return false;
-  }
-
-  const t = cross2d(x3-x1, y3-y1, dx2, dy2) / denom;
-  const u = cross2d(x3-x1, y3-y1, dx1, dy1) / denom;
-
-  // Cruce real solo si t y u están estrictamente en (0,1) — excluimos extremos compartidos
-  const margin = 1e-6;
-  return t > margin && t < 1-margin && u > margin && u < 1-margin;
-}
-
-// Distancia de punto (px,py) al segmento (ax,ay)-(bx,by)
-function pointToSegmentDist(px, py, ax, ay, bx, by) {
-  const dx = bx - ax, dy = by - ay;
-  const lenSq = dx*dx + dy*dy;
-  if (lenSq === 0) return Math.hypot(px-ax, py-ay);
-  let t = ((px-ax)*dx + (py-ay)*dy) / lenSq;
-  t = Math.max(0, Math.min(1, t));
-  return Math.hypot(px - (ax + t*dx), py - (ay + t*dy));
-}
+// cross2d()/onSegment()/segmentsIntersect()/pointToSegmentDist() ahora
+// vienen de src/game/geometry.js
 
 // ¿El segmento a-b cruza alguna arista existente o atraviesa algún triángulo cerrado?
 function lineIntersectsAny(idxA, idxB, withReason) {
@@ -1971,15 +1918,7 @@ function lineIntersectsAny(idxA, idxB, withReason) {
   return withReason ? null : false;
 }
 
-// ¿El punto (px,py) está dentro del triángulo (ax,ay)-(bx,by)-(cx,cy)?
-function pointInTriangle(px, py, ax, ay, bx, by, cx, cy) {
-  const d1 = cross2d(px-ax, py-ay, bx-ax, by-ay);
-  const d2 = cross2d(px-bx, py-by, cx-bx, cy-by);
-  const d3 = cross2d(px-cx, py-cy, ax-cx, ay-cy);
-  const hasNeg = (d1 < -1e-9) || (d2 < -1e-9) || (d3 < -1e-9);
-  const hasPos = (d1 >  1e-9) || (d2 >  1e-9) || (d3 >  1e-9);
-  return !(hasNeg && hasPos);
-}
+// pointInTriangle() ahora viene de src/game/geometry.js
 
 function findNewTriangles(a, b) {
   const found = [];
@@ -2722,13 +2661,8 @@ function drawLine(a, b, color, width) {
 }
 
 // ── Utilidades ────────────────────────────────────────────────────────────────
-function dist(x1,y1,x2,y2) {
-  return Math.sqrt((x2-x1)**2 + (y2-y1)**2);
-}
-
-function distSq(x1,y1,x2,y2) {
-  return (x2-x1)**2 + (y2-y1)**2;
-}
+// dist()/distSq() ahora vienen de src/game/geometry.js (cargado antes que
+// este script en el <head>)
 
 // Margen de tolerancia para comparaciones de coma flotante contra
 // MAX_DIST_SQ — evita que redondeos excluyan por error la pareja exacta

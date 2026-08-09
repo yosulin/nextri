@@ -7,12 +7,17 @@
 //   node scripts/simulate-adjacency.cjs
 const { readFileSync } = require('node:fs');
 
-// Extrae las funciones puras directamente de index.html, para no
-// mantener una copia separada que se desincronice del código real.
-const html = readFileSync(require('path').join(__dirname, '..', 'index.html'), 'utf-8');
+// Extrae las funciones puras directamente de index.html y de
+// src/game/geometry.js (donde viven las funciones de geometría desde que
+// se extrajeron a fichero aparte), para no mantener una copia separada
+// que se desincronice del código real.
+const path = require('path');
+const html = readFileSync(path.join(__dirname, '..', 'index.html'), 'utf-8');
+const geometryJs = readFileSync(path.join(__dirname, '..', 'src', 'game', 'geometry.js'), 'utf-8');
 function extract(name) {
-  const m = html.match(new RegExp(`function ${name}\\(.*?\\n\\}\\n`, 's'));
-  if (!m) throw new Error(`No se encontró function ${name}() en index.html`);
+  const re = new RegExp(`function ${name}\\(.*?\\n\\}\\n`, 's');
+  const m = html.match(re) || geometryJs.match(re);
+  if (!m) throw new Error(`No se encontró function ${name}() en index.html ni en src/game/geometry.js`);
   return m[0];
 }
 const ADJACENCY_TARGET = { minDegree: 3, p10Degree: 5, meanMin: 8, meanMax: 11 };

@@ -1,10 +1,11 @@
-const CACHE = 'juego-circulos-v2.38';
+const CACHE = 'juego-circulos-v2.39';
 const ASSETS = [
   '/juego-circulos/',
   '/juego-circulos/index.html',
   '/juego-circulos/manifest.json',
   '/juego-circulos/icon-192.png',
-  '/juego-circulos/icon-512.png'
+  '/juego-circulos/icon-512.png',
+  '/juego-circulos/src/game/geometry.js'
 ];
 
 self.addEventListener('install', e => {
