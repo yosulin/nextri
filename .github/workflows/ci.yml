@@ -32,6 +32,9 @@ jobs:
       - name: Determinismo con semilla
         run: node scripts/test-random.cjs
 
+      - name: Motor puro (applyAction)
+        run: node scripts/test-engine.cjs
+
   # Simulaciones estadísticas. En push/PR van reducidas para no eternizar
   # cada commit; enteras por la noche y cuando se lanzan a mano.
   simulaciones:

@@ -857,6 +857,7 @@
 <script src="src/game/geometry.js"></script>
 <script src="src/game/rules.js"></script>
 <script src="src/game/board.js"></script>
+<script src="src/game/engine.js"></script>
 <script src="src/game/state.js"></script>
 <script src="src/ai/levels.js"></script>
 <script src="src/ai/ai.js"></script>
@@ -868,7 +869,7 @@
 // entre sí. sw.js sigue siendo aparte por necesidad (un service worker no
 // puede leer esta constante, vive en otro archivo) — al subir de versión,
 // solo hace falta tocar ESTA línea y la de sw.js, no una tercera copia más.
-const APP_VERSION = 'v2.49';
+const APP_VERSION = 'v2.50';
 // Tres conceptos distintos, deliberadamente separados:
 //   APP_VERSION         — versión desplegada; sube aunque solo cambie un icono.
 //   RULES_VERSION       — reglas del juego; solo sube si cambia CÓMO se juega.
@@ -919,6 +920,29 @@ let gameStatus = 'setup';
 // terminado, en el margen para deshacer" son indistinguibles al reanudar
 // (ambos con diceRolled=false y linesLeft=0).
 let turnPhase = 'awaiting-roll'; // 'awaiting-roll' | 'drawing' | 'handoff'
+
+// Vista del estado para el motor puro. Los módulos de src/ ya no leen
+// variables globales: reciben el estado por parámetro. Este objeto se
+// crea UNA vez y usa getters, así que siempre refleja las variables vivas
+// sin copiar nada — importante porque checkMoveValidity() se llama
+// cientos de veces por fotograma durante el arrastre.
+//
+// Es la frontera entre la interfaz (que aún tiene sus globales) y el
+// motor (que ya es puro). Cuando la interfaz pase a trabajar sobre un
+// objeto de estado propio, esta vista desaparece sin tocar el motor.
+const ST = {
+  get circles() { return circles; },
+  get edges() { return edges; },
+  get triangles() { return triangles; },
+  get players() { return players; },
+  get maxDistSq() { return MAX_DIST_SQ; },
+  get circleRadius() { return CIRCLE_R; },
+  get candidatePairs() { return candidatePairs; },
+  get candidateNeighbors() { return candidateNeighbors; },
+  get linesLeft() { return linesLeft; },
+  get currentPlayer() { return currentPlayer; },
+  get aiDifficulty() { return aiDifficulty; }
+};
 // Deshacer: solo la ÚLTIMA jugada, y solo mientras no haya pasado nada más
 // desde entonces (ni otra jugada, ni una tirada nueva) — se sobreescribe o
 // se limpia en cuanto ocurre cualquiera de esas dos cosas.
@@ -958,7 +982,7 @@ let selectedCircle = null;
 function getLegalTargets(origin) {
   const targets = new Set();
   for (const target of candidateNeighbors[origin] || []) {
-    if (checkMoveValidity(origin, target).valid) targets.add(target);
+    if (checkMoveValidity(ST, origin, target).valid) targets.add(target);
   }
   return targets;
 }
@@ -1575,7 +1599,7 @@ function handleCanvasPointerMove(e) {
       traceGesture.hoverTarget = hoverTarget;
       traceGesture.hoverValid = (hoverTarget === -1 || hoverTarget === traceGesture.origin)
         ? null // sin objetivo claro todavía — no colorear de rojo/verde
-        : checkMoveValidity(traceGesture.origin, hoverTarget).valid;
+        : checkMoveValidity(ST, traceGesture.origin, hoverTarget).valid;
     }
     // Un solo draw() por frame, no uno por cada pointermove — en algunos
     // dispositivos ese evento llega con más frecuencia de la que la
@@ -1655,7 +1679,7 @@ function showInvalidMoveReason(message) {
 }
 
 function attemptConnect(fromIdx, toIdx) {
-  const check = checkMoveValidity(fromIdx, toIdx);
+  const check = checkMoveValidity(ST, fromIdx, toIdx);
 
   if (!check.valid) {
     // no se puede conectar con ese destino: lo dejamos seleccionado, igual
@@ -1710,7 +1734,7 @@ function attemptConnect(fromIdx, toIdx) {
   }
 
   // Buscar triángulos nuevos
-  const newTris = findNewTriangles(a, b);
+  const newTris = findNewTriangles(ST, a, b);
   newTris.forEach(tri => {
     triangles.push({...tri, owner: currentPlayer});
     players[currentPlayer].score++;
@@ -1857,7 +1881,7 @@ function computeActiveCircles() {
   // verdad para las reglas dinámicas (arista existe, cruces, atrapa
   // círculo...), esto solo evita repetir el filtro de distancia de nuevo.
   for (const { i, j } of candidatePairs) {
-    if (checkMoveValidity(i, j).valid) {
+    if (checkMoveValidity(ST, i, j).valid) {
       active.add(i);
       active.add(j);
     }
@@ -2002,7 +2026,7 @@ function advanceTurn() {
 
 // ── Modo 1 jugador: la máquina ────────────────────────────────────────────
 // AI_LEVELS/aiDifficulty ahora vienen de src/ai/levels.js, y
-// isAITurn()/chooseAIMove()/createsScoringReply() y sus ayudantes de
+// isAITurn()/chooseAIMove(ST)/createsScoringReply() y sus ayudantes de
 // src/ai/ai.js. scheduleAITurnIfNeeded()/runAIMoves() se quedan aquí abajo
 // a propósito: son orquestación de turno (temporizadores, dado, aplicar la
 // jugada), no la decisión en sí.
@@ -2035,7 +2059,7 @@ function scheduleAITurnIfNeeded() {
 
 function runAIMoves(generation) {
   if (generation !== gameGeneration || gameStatus !== 'playing' || !isAITurn() || linesLeft <= 0) return; // partida distinta, terminada, o el turno ya se resolvió solo
-  const move = chooseAIMove();
+  const move = chooseAIMove(ST);
   if (!move) return;
   attemptConnect(move[0], move[1]);
   setTimeout(() => {

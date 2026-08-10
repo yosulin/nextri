@@ -95,7 +95,7 @@ function buildScenario(seed, movesPlayed) {
       if (positions.every(c => dist(x, y, c.x, c.y) >= MIN_DIST)) positions.push({ x, y });
     }
     if (positions.length !== N_CIRCLES) continue;
-    adjacency = chooseAdjacency(positions);
+    adjacency = chooseAdjacency(positions, CIRCLE_R);
     if (adjacency) break;
   }
   if (!adjacency) return false;
@@ -112,12 +112,12 @@ function buildScenario(seed, movesPlayed) {
   currentPlayer = 0; linesLeft = 2; diceRolled = true; lastRolledValue = 2;
   gameStatus = 'playing'; aiDifficulty = 'hard';
   for (let m = 0; m < movesPlayed; m++) {
-    const legal = candidatePairs.filter(({ i, j }) => checkMoveValidity(i, j).valid);
+    const legal = candidatePairs.filter(({ i, j }) => checkMoveValidity(ST, i, j).valid);
     if (legal.length === 0) break;
     const { i, j } = legal[Math.floor(rng() * legal.length)];
     edges.add(edgeKey(i, j));
     const owner = m % 2;
-    findNewTriangles(i, j).forEach(t => { triangles.push({ ...t, owner }); players[owner].score++; });
+    findNewTriangles(ST, i, j).forEach(t => { triangles.push({ ...t, owner }); players[owner].score++; });
   }
   return true;
 }
@@ -130,6 +130,13 @@ function fingerprint() {
     `${currentPlayer}/${linesLeft}/${diceRolled}/${lastRolledValue}/${gameStatus}/${aiDifficulty}`
   ].join('||');
 }
+
+const ST = {
+  get circles(){return circles;}, get edges(){return edges;}, get triangles(){return triangles;},
+  get players(){return players;}, get maxDistSq(){return MAX_DIST_SQ;}, get circleRadius(){return CIRCLE_R;},
+  get candidatePairs(){return candidatePairs;}, get candidateNeighbors(){return candidateNeighbors;},
+  get linesLeft(){return linesLeft;}, get currentPlayer(){return currentPlayer;}, get aiDifficulty(){return aiDifficulty;}
+};
 
 let failures = 0;
 function check(label, ok, detail) {

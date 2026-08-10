@@ -55,7 +55,7 @@ function attemptBoardGeneration(minDist, maxAttempts) {
     const positions = generateCirclePositions(minDist);
     if (positions.length !== N_CIRCLES) continue; // no cupieron todos: descartar, no aceptar de menos
 
-    const adjacency = chooseAdjacency(positions);
+    const adjacency = chooseAdjacency(positions, CIRCLE_R);
     if (!adjacency) continue;
 
     best = { positions, adjacency };
@@ -90,7 +90,7 @@ const ADJACENCY_TARGET = {
 // ADJACENCY_TARGET. Devuelve null si ni siquiera el peor de los
 // respaldos resulta razonable — generateCircles() decide entonces si
 // regenerar el tablero entero con otras posiciones.
-function chooseAdjacency(circleList) {
+function chooseAdjacency(circleList, circleRadius) {
   const n = circleList.length;
   if (n < 2) return null;
 
@@ -105,7 +105,7 @@ function chooseAdjacency(circleList) {
   allPairs.sort((a, b) => a.distSq - b.distSq);
 
   // Filtrar las que nunca serían trazables de verdad — no cuentan para el grado
-  const pairs = allPairs.filter(p => !segmentPassesOverCircle(circleList, p.i, p.j, CIRCLE_R));
+  const pairs = allPairs.filter(p => !segmentPassesOverCircle(circleList, p.i, p.j, circleRadius));
   if (pairs.length === 0) return null;
 
   const parent = Array.from({ length: n }, (_, i) => i);

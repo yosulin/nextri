@@ -73,6 +73,13 @@ eval(extract('weightedPickByGain')); eval(extract('createsScoringReply'));
 eval(extract('isAITurn')); eval(extract('chooseAIMove'));
 const AI_LEVELS = eval('(' + extractConst('AI_LEVELS') + ')');
 
+const ST = {
+  get circles(){return circles;}, get edges(){return edges;}, get triangles(){return triangles;},
+  get players(){return players;}, get maxDistSq(){return MAX_DIST_SQ;}, get circleRadius(){return CIRCLE_R;},
+  get candidatePairs(){return candidatePairs;}, get candidateNeighbors(){return candidateNeighbors;},
+  get linesLeft(){return linesLeft;}, get currentPlayer(){return currentPlayer;}, get aiDifficulty(){return aiDifficulty;}
+};
+
 let fallos = 0;
 function check(etiqueta, ok, detalle) {
   if (ok) console.log(`OK: ${etiqueta}`);
@@ -139,7 +146,7 @@ function decisionesIA(semilla, n) {
   aiDifficulty = 'medium';
   const out = [];
   for (let i = 0; i < n; i++) {
-    const m = chooseAIMove();
+    const m = chooseAIMove(ST);
     if (!m) break;
     out.push(`${m[0]}-${m[1]}`);
     edges.add(edgeKey(m[0], m[1]));
@@ -189,7 +196,7 @@ function dadosTrasJugarIA(dificultad) {
   generarConSemilla(4242);
   aiDifficulty = dificultad;
   for (let i = 0; i < 8; i++) {
-    const m = chooseAIMove();
+    const m = chooseAIMove(ST);
     if (!m) break;
     edges.add(edgeKey(m[0], m[1]));
     activeCirclesCache = null;

@@ -3,7 +3,7 @@
 // Compara estadísticamente Fácil/Medio/Difícil sobre muchos escenarios de
 // partida reproducibles (semilla fija). No se valida una única jugada al
 // azar — se repite cada escenario cientos de veces por nivel y se comparan
-// medias. No forma parte de la app — se corre a mano al tocar chooseAIMove()
+// medias. No forma parte de la app — se corre a mano al tocar chooseAIMove(ST)
 // o AI_LEVELS.
 //
 //   node scripts/simulate-ai.cjs
@@ -103,7 +103,7 @@ function buildMidGameScenario(seed, movesPlayed) {
   for (let attempt = 0; attempt < 20; attempt++) {
     positions = placeCircles(W, H, N, MIN_DIST, rng);
     if (positions.length !== N) continue;
-    adjacency = chooseAdjacency(positions);
+    adjacency = chooseAdjacency(positions, CIRCLE_R);
     if (adjacency) break;
   }
   if (!adjacency) return null;
@@ -120,15 +120,22 @@ function buildMidGameScenario(seed, movesPlayed) {
   triangles = [];
 
   for (let m = 0; m < movesPlayed; m++) {
-    const legal = candidatePairs.filter(({ i, j }) => checkMoveValidity(i, j).valid);
+    const legal = candidatePairs.filter(({ i, j }) => checkMoveValidity(ST, i, j).valid);
     if (legal.length === 0) break;
     const { i, j } = legal[Math.floor(rng() * legal.length)];
     edges.add(edgeKey(i, j));
-    const tris = findNewTriangles(i, j);
+    const tris = findNewTriangles(ST, i, j);
     tris.forEach(t => triangles.push({ ...t, owner: 0 }));
   }
   return true;
 }
+
+const ST = {
+  get circles(){return circles;}, get edges(){return edges;}, get triangles(){return triangles;},
+  get players(){return players;}, get maxDistSq(){return MAX_DIST_SQ;}, get circleRadius(){return CIRCLE_R;},
+  get candidatePairs(){return candidatePairs;}, get candidateNeighbors(){return candidateNeighbors;},
+  get linesLeft(){return linesLeft;}, get currentPlayer(){return currentPlayer;}, get aiDifficulty(){return aiDifficulty;}
+};
 
 const LEVELS = ['easy', 'medium', 'hard'];
 // OJO al bajar SCENARIOS para que corra más rápido: las 40 repeticiones son
@@ -158,24 +165,24 @@ for (let s = 0; s < SCENARIOS; s++) {
 
     linesLeft = 3;
     for (let t = 0; t < TRIALS_PER_SCENARIO; t++) {
-      const move = chooseAIMove();
+      const move = chooseAIMove(ST);
       if (!move) continue;
-      const check = checkMoveValidity(move[0], move[1]);
+      const check = checkMoveValidity(ST, move[0], move[1]);
       if (!check.valid) { stats[level].illegalMoves++; continue; }
-      const gain = findNewTriangles(move[0], move[1]).length;
+      const gain = findNewTriangles(ST, move[0], move[1]).length;
       if (gain > 0) stats[level].gains.push(gain);
     }
 
     linesLeft = 1;
     for (let t = 0; t < TRIALS_PER_SCENARIO; t++) {
-      const move = chooseAIMove();
+      const move = chooseAIMove(ST);
       if (!move) continue;
-      const check = checkMoveValidity(move[0], move[1]);
+      const check = checkMoveValidity(ST, move[0], move[1]);
       if (!check.valid) { stats[level].illegalMoves++; continue; }
-      const scoresNow = findNewTriangles(move[0], move[1]).length > 0;
+      const scoresNow = findNewTriangles(ST, move[0], move[1]).length > 0;
       if (!scoresNow) {
         stats[level].giftTrials++;
-        if (createsScoringReply(move[0], move[1])) stats[level].giftCount++;
+        if (createsScoringReply(ST, move[0], move[1])) stats[level].giftCount++;
       }
     }
   }

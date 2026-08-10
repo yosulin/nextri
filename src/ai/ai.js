@@ -66,34 +66,34 @@ function weightedPickByGain(scoringMoves, power) {
 // candidatos×candidatos comparaciones). try/finally garantiza que la
 // arista de prueba se retira siempre, incluso si algo de en medio lanzara
 // un error.
-function createsScoringReply(i, j) {
+function createsScoringReply(st, i, j) {
   const key = edgeKey(i, j);
-  edges.add(key);
+  st.edges.add(key);
   try {
-    const neighbors = new Set([...(candidateNeighbors[i] || []), ...(candidateNeighbors[j] || [])]);
+    const neighbors = new Set([...(st.candidateNeighbors[i] || []), ...(st.candidateNeighbors[j] || [])]);
     for (const k of neighbors) {
       if (k === i || k === j) continue;
-      const ik = edgeExists(i, k);
-      const jk = edgeExists(j, k);
+      const ik = edgeExists(st, i, k);
+      const jk = edgeExists(st, j, k);
       if (ik === jk) continue; // hace falta que falte EXACTAMENTE el tercer lado
       const from = ik ? j : i;
-      if (!checkMoveValidity(from, k).valid) continue;
-      if (findNewTriangles(from, k).length > 0) return true;
+      if (!checkMoveValidity(st, from, k).valid) continue;
+      if (findNewTriangles(st, from, k).length > 0) return true;
     }
     return false;
   } finally {
-    edges.delete(key);
+    st.edges.delete(key);
   }
 }
 
-function chooseAIMove() {
-  const level = AI_LEVELS[aiDifficulty] || AI_LEVELS.medium;
+function chooseAIMove(st) {
+  const level = AI_LEVELS[st.aiDifficulty] || AI_LEVELS.medium;
 
   // Movimientos legales — checkMoveValidity() sigue siendo la única fuente
   // de verdad, aquí no se reimplementa ninguna regla por su cuenta.
   const legalMoves = [];
-  for (const { i, j } of candidatePairs) {
-    if (checkMoveValidity(i, j).valid) legalMoves.push([i, j]);
+  for (const { i, j } of st.candidatePairs) {
+    if (checkMoveValidity(st, i, j).valid) legalMoves.push([i, j]);
   }
   if (legalMoves.length === 0) return null;
 
@@ -108,18 +108,18 @@ function chooseAIMove() {
   // triángulo no es un regalo al rival — es preparar cerrarlo ella misma
   // en la siguiente jugada (ver v2.27). Solo en la última línea del turno
   // ese mismo patrón sería un regalo de verdad.
-  const canFollowUpThisTurn = linesLeft > 1;
+  const canFollowUpThisTurn = st.linesLeft > 1;
   const scoringMoves = []; // {i, j, gain}
   const buildingMoves = [];
   const safeMoves = [];
 
   for (const [i, j] of visible) {
-    const gain = findNewTriangles(i, j).length;
+    const gain = findNewTriangles(st, i, j).length;
     if (gain > 0) {
       scoringMoves.push({ i, j, gain });
       continue;
     }
-    const setsUpReply = createsScoringReply(i, j);
+    const setsUpReply = createsScoringReply(st, i, j);
     if (setsUpReply && canFollowUpThisTurn) {
       buildingMoves.push([i, j]);
     } else if (!setsUpReply) {
@@ -155,9 +155,9 @@ function chooseAIMove() {
   }
 
   if (DEBUG) {
-    const gain = selectedType === 'scoring' ? findNewTriangles(move[0], move[1]).length : 0;
+    const gain = selectedType === 'scoring' ? findNewTriangles(st, move[0], move[1]).length : 0;
     window.aiDebug = {
-      difficulty: aiDifficulty, linesLeft, legalMoves: legalMoves.length,
+      difficulty: st.aiDifficulty, linesLeft: st.linesLeft, legalMoves: legalMoves.length,
       consideredMoves: visible.length, scoringMoves: scoringMoves.length,
       buildingMoves: buildingMoves.length, safeMoves: safeMoves.length,
       selectedType, selectedMove: move, gain
