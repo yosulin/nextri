@@ -709,7 +709,7 @@
 </head>
 <body>
 
-<h1>⬤ Juego de Círculos</h1>
+<h1>● Juego de Círculos</h1>
 <div id="versionTag" style="font-size:.72rem;color:var(--muted);letter-spacing:1px;margin-top:-8px;"></div>
 
 <!-- Config de nombres -->
@@ -772,7 +772,7 @@
     </div>
 
   </div>
-  <button class="btn-new" id="resumeBtn" onclick="onResumeClick()" style="display:none;width:100%;max-width:480px;padding:14px;font-size:1rem;border-color:var(--p1-color);color:var(--p1-color);">⏵ Continuar partida</button>
+  <button class="btn-new" id="resumeBtn" onclick="onResumeClick()" style="display:none;width:100%;max-width:480px;padding:14px;font-size:1rem;border-color:var(--p1-color);color:var(--p1-color);">▸ Continuar partida</button>
   <button class="btn-new" onclick="startGame()" style="width:100%;max-width:480px;padding:14px;font-size:1rem;">▶ Empezar</button>
 </div>
 
@@ -821,7 +821,7 @@
 <!-- Modal -->
 <div class="modal-overlay" id="modalOverlay" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
   <div class="modal">
-    <button class="dialog-close-x" onclick="closeDialog('modalOverlay')" aria-label="Cerrar">✕</button>
+    <button class="dialog-close-x" onclick="closeDialog('modalOverlay')" aria-label="Cerrar">×</button>
     <h2 id="modalTitle">¡Fin del juego!</h2>
     <p id="modalBody"></p>
     <button class="btn-new" onclick="startGame()">▶ Jugar de nuevo</button>
@@ -845,7 +845,7 @@
 
 <div class="info-overlay" id="infoOverlay" role="dialog" aria-modal="true" aria-labelledby="infoTitle" onclick="if (event.target === this) closeDialog('infoOverlay')">
   <div class="info-sheet">
-    <h3 id="infoTitle">⬤ Juego de Círculos</h3>
+    <h3 id="infoTitle">● Juego de Círculos</h3>
     <dl class="info-rows">
       <div><dt>Versión</dt><dd id="infoVersion"></dd></div>
     </dl>
@@ -867,7 +867,7 @@
 // entre sí. sw.js sigue siendo aparte por necesidad (un service worker no
 // puede leer esta constante, vive en otro archivo) — al subir de versión,
 // solo hace falta tocar ESTA línea y la de sw.js, no una tercera copia más.
-const APP_VERSION = 'v2.45';
+const APP_VERSION = 'v2.46';
 // ?debug en la URL: números de índice en los círculos + tabla de métricas
 // del grafo de adyacencia en consola al generar el tablero.
 const DEBUG = new URLSearchParams(location.search).has('debug');
@@ -2052,7 +2052,7 @@ let lastResultText = '';
 function buildShareText(sorted, resultLine) {
   const scores = sorted.map(p => `${p.name}: ${p.score}`).join(' · ');
   const url = window.location.href.split('?')[0].split('#')[0];
-  return [`⬤ Juego de Círculos`, scores, resultLine, '', '¿Te animas a jugar?', url].join('\n');
+  return [`● Juego de Círculos`, scores, resultLine, '', '¿Te animas a jugar?', url].join('\n');
 }
 
 async function shareResult() {
@@ -2440,10 +2440,10 @@ window.addEventListener('orientationchange', () => setTimeout(fitBoardDisplay, 1
 </script>
 
 <div id="installBanner">
-  <div class="ib-icon">⬤</div>
+  <div class="ib-icon">●</div>
   <div class="ib-text"><strong>Instalar app</strong><span>Juega sin conexión</span></div>
   <button class="ib-btn" id="installBtn">Instalar</button>
-  <button class="ib-close" id="installClose">✕</button>
+  <button class="ib-close" id="installClose">×</button>
 </div>
 
 <script>
