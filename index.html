@@ -826,6 +826,7 @@
 <script src="src/game/geometry.js"></script>
 <script src="src/game/rules.js"></script>
 <script src="src/game/board.js"></script>
+<script src="src/game/state.js"></script>
 <script src="src/ai/levels.js"></script>
 <script src="src/ai/ai.js"></script>
 <script>
@@ -835,7 +836,7 @@
 // entre sí. sw.js sigue siendo aparte por necesidad (un service worker no
 // puede leer esta constante, vive en otro archivo) — al subir de versión,
 // solo hace falta tocar ESTA línea y la de sw.js, no una tercera copia más.
-const APP_VERSION = 'v2.42';
+const APP_VERSION = 'v2.43';
 // ?debug en la URL: números de índice en los círculos + tabla de métricas
 // del grafo de adyacencia en consola al generar el tablero.
 const DEBUG = new URLSearchParams(location.search).has('debug');

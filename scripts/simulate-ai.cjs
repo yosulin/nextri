@@ -121,6 +121,14 @@ function buildMidGameScenario(seed, movesPlayed) {
 }
 
 const LEVELS = ['easy', 'medium', 'hard'];
+// OJO al bajar SCENARIOS para que corra más rápido: las 40 repeticiones son
+// sobre el MISMO tablero, así que la muestra efectiva son los escenarios, no
+// las repeticiones. La métrica averageGain depende de que existan jugadas que
+// cierren 2 triángulos de una vez, que son raras y van por tablero — con ~35
+// escenarios puede salir 1.000 exacto en los tres niveles y parecer una
+// regresión que no lo es (comprobado: otros 35 escenarios distintos sí
+// diferencian). giftRate y "movimientos ilegales" sí dan señal fiable con
+// pocos escenarios. Para juzgar averageGain, dejar 120.
 const SCENARIOS = 120;
 const TRIALS_PER_SCENARIO = 40;
 
