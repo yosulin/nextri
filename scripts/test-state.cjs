@@ -24,20 +24,24 @@ function extract(name) {
 }
 
 const DIST_EPS = 1e-6;
-const STATE_SCHEMA_VERSION = 1;
+const RNG_STREAMS = ['board','dice','ai'];
+const STREAM_OFFSET = { board: 0x9E3779B9, dice: 0x85EBCA6B, ai: 0xC2B2AE35 };
+const STATE_SCHEMA_VERSION = 2;
+const RULES_VERSION = 1;
 const ADJACENCY_TARGET = { minDegree: 3, p10Degree: 5, meanMin: 8, meanMax: 11 };
 const APP_VERSION = 'test';
 const MOVE_REASON_TEXT = {};
 let CIRCLE_R, HIT_R, MIN_DIST, MAX_DIST, MAX_DIST_SQ, N_CIRCLES, W, H;
 let circles, edges, triangles, players, currentPlayer, linesLeft, diceRolled;
-let lastRolledValue, gameStatus, aiDifficulty, selectedCircle;
+let lastRolledValue, gameStatus, aiDifficulty, selectedCircle, turnPhase = 'drawing';
 let candidatePairs, candidateNeighbors, lastMoveSnapshot;
 let activeCirclesCache, selectedTargetsCache;
-let rngSeed, rngCalls, rngFn;
+let rngSeed, rngCalls, streams;
 
 eval(extract('mulberry32')); eval(extract('seedRng')); eval(extract('rngNext'));
 eval(extract('rngInt')); eval(extract('getRngSeed')); eval(extract('getRngCalls'));
-eval(extract('restoreRng'));
+eval(extract('rngNextFrom')); eval(extract('rngIntFrom'));
+eval(extract('getRngState')); eval(extract('restoreRngState'));
 seedRng(1); // secuencia conocida para estas pruebas
 eval(extract('dist'));
 eval(extract('distSq'));
@@ -57,7 +61,8 @@ eval(extract('finalizeAdjacency'));
 eval(extract('serializeGameState'));
 eval(extract('rebuildCandidateGraph'));
 eval(extract('restoreGameState'));
-eval(extract('isValidGameSnapshot'));
+eval(extract('esNumFinito')); eval(extract('esEnteroEnRango'));
+eval(extract('migrateGameSnapshot')); eval(extract('isValidGameSnapshot'));
 
 function mulberry32(seed) {
   return function () {

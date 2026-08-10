@@ -24,8 +24,8 @@ function generateCirclePositions(minDist) {
   let attempts = 0;
   while (placed.length < N_CIRCLES && attempts < 5000) {
     attempts++;
-    const x = padding + rngNext() * (W - padding * 2);
-    const y = padding + rngNext() * (H - padding * 2);
+    const x = padding + rngNextFrom('board') * (W - padding * 2);
+    const y = padding + rngNextFrom('board') * (H - padding * 2);
     let valid = true;
     for (const c of placed) {
       if (dist(x, y, c.x, c.y) < minDist) { valid = false; break; }

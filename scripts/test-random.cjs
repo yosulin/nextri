@@ -38,20 +38,24 @@ function extractConst(nombre) {
 }
 
 const DIST_EPS = 1e-6;
-const STATE_SCHEMA_VERSION = 1;
+const RNG_STREAMS = ['board','dice','ai'];
+const STREAM_OFFSET = { board: 0x9E3779B9, dice: 0x85EBCA6B, ai: 0xC2B2AE35 };
+const STATE_SCHEMA_VERSION = 2;
+const RULES_VERSION = 1;
 const ADJACENCY_TARGET = { minDegree: 3, p10Degree: 5, meanMin: 8, meanMax: 11 };
 const APP_VERSION = 'test';
 const MOVE_REASON_TEXT = {};
 let CIRCLE_R, HIT_R, MIN_DIST, MAX_DIST, MAX_DIST_SQ, N_CIRCLES, W, H;
 let circles, edges, triangles, players, currentPlayer, linesLeft, diceRolled;
-let lastRolledValue, gameStatus, aiDifficulty, selectedCircle, DEBUG = false;
+let lastRolledValue, gameStatus, aiDifficulty, selectedCircle, DEBUG = false, turnPhase = 'drawing';
 let candidatePairs, candidateNeighbors, lastMoveSnapshot;
 let activeCirclesCache, selectedTargetsCache;
-let rngSeed, rngCalls, rngFn;
+let rngSeed, rngCalls, streams;
 
 eval(extract('mulberry32')); eval(extract('seedRng')); eval(extract('rngNext'));
 eval(extract('rngInt')); eval(extract('getRngSeed')); eval(extract('getRngCalls'));
-eval(extract('restoreRng'));
+eval(extract('rngNextFrom')); eval(extract('rngIntFrom'));
+eval(extract('getRngState')); eval(extract('restoreRngState'));
 eval(extract('dist')); eval(extract('distSq')); eval(extract('cross2d'));
 eval(extract('segmentsIntersect')); eval(extract('pointInTriangle'));
 eval(extract('segmentPassesOverCircle')); eval(extract('edgeKey'));
@@ -62,7 +66,8 @@ eval(extract('chooseAdjacency')); eval(extract('finalizeAdjacency'));
 eval(extract('generateCirclePositions')); eval(extract('buildCandidateGraph'));
 eval(extract('attemptBoardGeneration'));
 eval(extract('serializeGameState')); eval(extract('rebuildCandidateGraph'));
-eval(extract('restoreGameState')); eval(extract('isValidGameSnapshot'));
+eval(extract('restoreGameState')); eval(extract('esNumFinito')); eval(extract('esEnteroEnRango'));
+eval(extract('migrateGameSnapshot')); eval(extract('isValidGameSnapshot'));
 eval(extract('shuffleInPlace')); eval(extract('pickUniform'));
 eval(extract('weightedPickByGain')); eval(extract('createsScoringReply'));
 eval(extract('isAITurn')); eval(extract('chooseAIMove'));
@@ -170,9 +175,43 @@ check('Tras guardar y reanudar, las tiradas siguientes son las mismas', divergen
 // 6. La semilla viaja en el guardado
 generarConSemilla(31337);
 const snap = JSON.parse(JSON.stringify(serializeGameState()));
-check('La semilla queda registrada en el guardado',
-  snap.rng && snap.rng.seed === 31337 && typeof snap.rng.calls === 'number',
+check('La semilla y los tres flujos quedan registrados en el guardado',
+  snap.rng && snap.rng.seed === 31337 &&
+  ['board','dice','ai'].every(n => snap.rng.streams[n] &&
+    Number.isInteger(snap.rng.streams[n].state) &&
+    Number.isInteger(snap.rng.streams[n].calls)),
   JSON.stringify(snap.rng));
+
+// LO QUE PEDÍA LA AUDITORÍA: que Circuit consuma números no debe mover
+// las tiradas futuras. Antes compartían secuencia, así que cambiar de
+// dificultad alteraba indirectamente los dados.
+function dadosTrasJugarIA(dificultad) {
+  generarConSemilla(4242);
+  aiDifficulty = dificultad;
+  for (let i = 0; i < 8; i++) {
+    const m = chooseAIMove();
+    if (!m) break;
+    edges.add(edgeKey(m[0], m[1]));
+    activeCirclesCache = null;
+  }
+  const dados = [];
+  for (let i = 0; i < 10; i++) dados.push(rngIntFrom('dice', 6) + 1);
+  return dados.join(',');
+}
+const dFacil = dadosTrasJugarIA('easy');
+const dDificil = dadosTrasJugarIA('hard');
+check('La dificultad de Circuit NO altera las tiradas de dado', dFacil === dDificil,
+  `facil=${dFacil} vs dificil=${dDificil}`);
+
+// Restauración O(1): un contador corrupto enorme no debe congelar nada.
+const t0 = Date.now();
+restoreRngState({ seed: 5, streams: {
+  board: { state: 123, calls: 2000000000 },
+  dice: { state: 456, calls: 2000000000 },
+  ai: { state: 789, calls: 2000000000 }
+}});
+const ms = Date.now() - t0;
+check('Restaurar el generador es O(1), no recorre la secuencia', ms < 200, `tardó ${ms}ms`);
 
 console.log('');
 if (fallos > 0) { console.error(`${fallos} comprobación(es) fallaron`); process.exit(1); }

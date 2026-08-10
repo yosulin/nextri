@@ -31,13 +31,17 @@ function extractConst(name) {
 }
 
 const DIST_EPS = 1e-6;
+const RNG_STREAMS = ['board','dice','ai'];
+const STREAM_OFFSET = { board: 0x9E3779B9, dice: 0x85EBCA6B, ai: 0xC2B2AE35 };
 const ADJACENCY_TARGET = { minDegree: 3, p10Degree: 5, meanMin: 8, meanMax: 11 };
 let CIRCLE_R, MAX_DIST_SQ, circles, edges, triangles, candidatePairs, candidateNeighbors, linesLeft, DEBUG = false;
 
-let rngSeed, rngCalls, rngFn;
+let rngSeed, rngCalls, streams;
 
 eval(extract('seedRng')); eval(extract('rngNext')); eval(extract('rngInt'));
-eval(extract('getRngSeed')); eval(extract('getRngCalls')); eval(extract('restoreRng'));
+eval(extract('getRngSeed')); eval(extract('getRngCalls'));
+eval(extract('rngNextFrom')); eval(extract('rngIntFrom'));
+eval(extract('getRngState')); eval(extract('restoreRngState'));
 seedRng(20260810); // semilla fija: la simulacion queda reproducible
 eval(extract('dist'));
 eval(extract('distSq'));

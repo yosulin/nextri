@@ -27,11 +27,11 @@ function loadSavedGame() {
   try {
     const raw = localStorage.getItem(SAVE_KEY);
     if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    // isValidGameSnapshot() rechaza también formatos de versiones
-    // anteriores (schemaVersion distinto), así que un guardado viejo se
-    // descarta limpiamente en vez de restaurarse a medias.
-    return isValidGameSnapshot(parsed) ? parsed : null;
+    // Migrar primero (un guardado de un formato anterior puede ser
+    // recuperable), y validar DESPUÉS: si la migración no lo deja en un
+    // estado válido, se descarta en vez de restaurarse a medias.
+    const migrado = migrateGameSnapshot(JSON.parse(raw));
+    return migrado && isValidGameSnapshot(migrado) ? migrado : null;
   } catch (e) {
     return null;
   }

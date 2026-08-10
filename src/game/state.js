@@ -19,7 +19,9 @@
 // Sube SCHEMA_VERSION solo si cambia la FORMA del objeto guardado, de modo
 // que una partida guardada con un formato viejo se pueda detectar y
 // descartar en vez de restaurarse mal y a medias.
-const STATE_SCHEMA_VERSION = 1;
+// v1 (v2.45-v2.47): sin datos del generador aleatorio.
+// v2 (v2.49+): incluye rng con los tres flujos, y turnPhase.
+const STATE_SCHEMA_VERSION = 2;
 
 // Qué NO se guarda, a propósito:
 //   - canvas/ctx, audioCtx, referencias al DOM: se recrean al montar la UI.
@@ -39,7 +41,9 @@ const STATE_SCHEMA_VERSION = 1;
 function serializeGameState() {
   return {
     schemaVersion: STATE_SCHEMA_VERSION,
-    rulesVersion: APP_VERSION,
+    // RULES_VERSION, no APP_VERSION: la versión de la app sube por cosas
+    // como cambiar un icono, y eso no es una regla de juego distinta.
+    rulesVersion: RULES_VERSION,
 
     config: {
       circleCount: N_CIRCLES,
@@ -49,10 +53,7 @@ function serializeGameState() {
     // Semilla y cuántos números se han consumido: sin el contador, una
     // partida reanudada seguiría con números distintos de los que le
     // tocaban, y dejaría de coincidir con la partida original.
-    rng: {
-      seed: getRngSeed(),
-      calls: getRngCalls()
-    },
+    rng: getRngState(),
 
     // Geometría del tablero. Se congela al generar la partida y no cambia
     // hasta la siguiente, así que basta con guardarla tal cual.
@@ -84,7 +85,11 @@ function serializeGameState() {
       currentPlayer,
       linesLeft,
       diceRolled,
-      lastRolledValue
+      lastRolledValue,
+      // Sin esto no se puede distinguir al reanudar entre "esperando una
+      // tirada nueva" y "acaba de terminar el turno, en el margen para
+      // deshacer" — los dos tienen diceRolled=false y linesLeft=0.
+      phase: turnPhase
     },
 
     status: gameStatus
@@ -144,13 +149,14 @@ function restoreGameState(snapshot) {
     ...(p.isAI ? { isAI: true } : {})
   }));
 
-  // Rebobinar la secuencia al punto exacto en que se guardó.
-  if (snapshot.rng) restoreRng(snapshot.rng.seed, snapshot.rng.calls);
+  // Rebobinar los flujos aleatorios al punto exacto en que se guardó.
+  restoreRngState(snapshot.rng);
 
   currentPlayer = snapshot.turn.currentPlayer;
   linesLeft = snapshot.turn.linesLeft;
   diceRolled = snapshot.turn.diceRolled;
   lastRolledValue = snapshot.turn.lastRolledValue;
+  turnPhase = snapshot.turn.phase || 'awaiting-roll';
   gameStatus = snapshot.status;
 
   rebuildCandidateGraph();
@@ -168,16 +174,92 @@ function restoreGameState(snapshot) {
 // coherente jugablemente (eso lo garantiza haberla generado el propio
 // juego), solo que el objeto tiene lo que restoreGameState() va a leer, y
 // que viene de un formato que esta versión entiende.
+function esNumFinito(v) { return typeof v === 'number' && Number.isFinite(v); }
+function esEnteroEnRango(v, min, max) { return Number.isInteger(v) && v >= min && v <= max; }
+
+// Migra un guardado de un formato anterior, o devuelve null si no se
+// puede. v1 (v2.45-v2.47) no guardaba nada del generador aleatorio: al
+// reanudar se le asigna una secuencia NUEVA. Es una decisión explícita y
+// consciente — esas partidas nunca fueron reproducibles, así que no se
+// pierde nada; lo que no vale es aceptarlas como si trajeran secuencia y
+// continuar con números que no les corresponden, que es justo lo que
+// pasaba al hacer el campo opcional.
+function migrateGameSnapshot(s) {
+  if (!s || typeof s !== 'object') return null;
+  if (s.schemaVersion === STATE_SCHEMA_VERSION) return s;
+  if (s.schemaVersion === 1) {
+    const semilla = Math.floor(Math.random() * 0xFFFFFFFF);
+    seedRng(semilla);
+    return {
+      ...s,
+      schemaVersion: STATE_SCHEMA_VERSION,
+      rng: getRngState(),
+      turn: { ...s.turn, phase: 'awaiting-roll' }
+    };
+  }
+  return null; // formato desconocido o más nuevo que esta versión
+}
+
+// Validación estricta: además de la forma, comprueba que los valores sean
+// utilizables. Para localStorage esto es prudencia; cuando el estado
+// llegue por red será imprescindible, porque un guardado manipulado no
+// debe poder dejar la partida en un estado imposible.
 function isValidGameSnapshot(s) {
   if (!s || typeof s !== 'object') return false;
   if (s.schemaVersion !== STATE_SCHEMA_VERSION) return false;
-  if (!s.config || typeof s.config.circleCount !== 'number') return false;
-  if (!s.board || !Array.isArray(s.board.circles) || s.board.circles.length === 0) return false;
-  if (typeof s.board.maxDistSq !== 'number' || typeof s.board.circleRadius !== 'number') return false;
-  if (!Array.isArray(s.edges) || !Array.isArray(s.triangles)) return false;
-  if (!Array.isArray(s.players) || s.players.length === 0) return false;
-  if (!s.turn || typeof s.turn.currentPlayer !== 'number') return false;
-  if (s.turn.currentPlayer < 0 || s.turn.currentPlayer >= s.players.length) return false;
-  if (typeof s.status !== 'string') return false;
+  if (s.rulesVersion !== RULES_VERSION) return false;
+
+  if (!s.config || !esEnteroEnRango(s.config.circleCount, 5, 500)) return false;
+  if (s.config.aiDifficulty !== undefined &&
+      !['easy', 'medium', 'hard'].includes(s.config.aiDifficulty)) return false;
+
+  const b = s.board;
+  if (!b || !Array.isArray(b.circles) || b.circles.length === 0) return false;
+  if (b.circles.length !== s.config.circleCount) return false;
+  for (const c of b.circles) {
+    if (!c || !esNumFinito(c.x) || !esNumFinito(c.y)) return false;
+  }
+  for (const k of ['width', 'height', 'circleRadius', 'hitRadius', 'minDist', 'maxDist', 'maxDistSq']) {
+    if (!esNumFinito(b[k]) || b[k] <= 0) return false;
+  }
+
+  if (!Array.isArray(s.edges)) return false;
+  const n = b.circles.length;
+  for (const clave of s.edges) {
+    if (typeof clave !== 'string') return false;
+    const partes = clave.split('-');
+    if (partes.length !== 2) return false;
+    const a = Number(partes[0]), z = Number(partes[1]);
+    if (!esEnteroEnRango(a, 0, n - 1) || !esEnteroEnRango(z, 0, n - 1) || a >= z) return false;
+  }
+
+  if (!Array.isArray(s.players) || s.players.length === 0 || s.players.length > 6) return false;
+  for (const p of s.players) {
+    if (!p || typeof p.name !== 'string') return false;
+    if (!esEnteroEnRango(p.colorIndex, 0, 5)) return false;
+    if (!Number.isInteger(p.score) || p.score < 0) return false;
+  }
+
+  if (!Array.isArray(s.triangles)) return false;
+  for (const t of s.triangles) {
+    if (!t) return false;
+    for (const v of [t.a, t.b, t.c]) if (!esEnteroEnRango(v, 0, n - 1)) return false;
+    if (!esEnteroEnRango(t.owner, 0, s.players.length - 1)) return false;
+  }
+
+  if (!s.turn || !esEnteroEnRango(s.turn.currentPlayer, 0, s.players.length - 1)) return false;
+  if (!esEnteroEnRango(s.turn.linesLeft, 0, 6)) return false;
+  if (typeof s.turn.diceRolled !== 'boolean') return false;
+  if (!esEnteroEnRango(s.turn.lastRolledValue, 0, 6)) return false;
+  if (!['awaiting-roll', 'drawing', 'handoff'].includes(s.turn.phase)) return false;
+
+  // El generador: obligatorio desde el esquema 2, y con los tres flujos.
+  if (!s.rng || !esNumFinito(s.rng.seed) || !s.rng.streams) return false;
+  for (const nombre of ['board', 'dice', 'ai']) {
+    const f = s.rng.streams[nombre];
+    if (!f || !Number.isInteger(f.state) || !Number.isInteger(f.calls) || f.calls < 0) return false;
+  }
+
+  if (!['playing', 'finished'].includes(s.status)) return false;
   return true;
 }

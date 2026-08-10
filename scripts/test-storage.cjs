@@ -25,17 +25,20 @@ function extract(name) {
 }
 
 const DIST_EPS = 1e-6;
-const STATE_SCHEMA_VERSION = 1;
+const RNG_STREAMS = ['board','dice','ai'];
+const STREAM_OFFSET = { board: 0x9E3779B9, dice: 0x85EBCA6B, ai: 0xC2B2AE35 };
+const STATE_SCHEMA_VERSION = 2;
+const RULES_VERSION = 1;
 const SAVE_KEY = 'juego-circulos:partida';
 const ADJACENCY_TARGET = { minDegree: 3, p10Degree: 5, meanMin: 8, meanMax: 11 };
 const APP_VERSION = 'test';
 const MOVE_REASON_TEXT = {};
 let CIRCLE_R, HIT_R, MIN_DIST, MAX_DIST, MAX_DIST_SQ, N_CIRCLES, W, H;
 let circles, edges, triangles, players, currentPlayer, linesLeft, diceRolled;
-let lastRolledValue, gameStatus, aiDifficulty, selectedCircle;
+let lastRolledValue, gameStatus, aiDifficulty, selectedCircle, turnPhase = 'drawing';
 let candidatePairs, candidateNeighbors, lastMoveSnapshot;
 let activeCirclesCache, selectedTargetsCache;
-let rngSeed, rngCalls, rngFn;
+let rngSeed, rngCalls, streams;
 
 // localStorage simulado, con interruptor para provocar fallos.
 let failMode = null; // null | 'set' | 'get' | 'all'
@@ -48,7 +51,8 @@ const localStorage = {
 
 eval(extract('mulberry32')); eval(extract('seedRng')); eval(extract('rngNext'));
 eval(extract('rngInt')); eval(extract('getRngSeed')); eval(extract('getRngCalls'));
-eval(extract('restoreRng'));
+eval(extract('rngNextFrom')); eval(extract('rngIntFrom'));
+eval(extract('getRngState')); eval(extract('restoreRngState'));
 seedRng(1); // secuencia conocida para estas pruebas
 eval(extract('dist')); eval(extract('distSq')); eval(extract('cross2d'));
 eval(extract('segmentsIntersect')); eval(extract('pointInTriangle'));
@@ -58,7 +62,8 @@ eval(extract('triangleTraps')); eval(extract('lineIntersectsAny'));
 eval(extract('checkMoveValidity')); eval(extract('findNewTriangles'));
 eval(extract('chooseAdjacency')); eval(extract('finalizeAdjacency'));
 eval(extract('serializeGameState')); eval(extract('rebuildCandidateGraph'));
-eval(extract('restoreGameState')); eval(extract('isValidGameSnapshot'));
+eval(extract('restoreGameState')); eval(extract('esNumFinito')); eval(extract('esEnteroEnRango'));
+eval(extract('migrateGameSnapshot')); eval(extract('isValidGameSnapshot'));
 eval(extract('saveGame')); eval(extract('loadSavedGame'));
 eval(extract('clearSavedGame')); eval(extract('hasSavedGame'));
 
@@ -182,6 +187,49 @@ store.set(SAVE_KEY, '{esto no es json valido');
 check('Un guardado con JSON roto se ignora', loadSavedGame() === null);
 store.set(SAVE_KEY, JSON.stringify({ schemaVersion: 0, config: {}, board: {}, edges: [], triangles: [], players: [], turn: {}, status: 'playing' }));
 check('Un guardado de un formato anterior se ignora', loadSavedGame() === null);
+
+// LO QUE SEÑALÓ LA AUDITORÍA (P1): un guardado de v2.45-v2.47 (esquema 1,
+// sin datos del generador) NO debe aceptarse tal cual y continuar con una
+// secuencia que no le corresponde. O se migra explícitamente, o se
+// descarta — pero nunca en silencio a medias.
+store.clear(); failMode = null;
+buildScenario(800000, 8); gameStatus = 'playing';
+const v2 = JSON.parse(JSON.stringify(serializeGameState()));
+const v1 = { ...v2, schemaVersion: 1 };
+delete v1.rng;
+delete v1.turn.phase;
+store.set(SAVE_KEY, JSON.stringify(v1));
+const recuperado = loadSavedGame();
+check('Un guardado del formato anterior se migra, no se acepta a medias',
+  recuperado !== null &&
+  recuperado.schemaVersion === 2 &&
+  recuperado.rng && recuperado.rng.streams && recuperado.rng.streams.dice &&
+  recuperado.turn.phase === 'awaiting-roll',
+  recuperado ? `esquema=${recuperado.schemaVersion} rng=${!!recuperado.rng}` : 'descartado');
+
+// Y que tras migrarlo la partida se restaure de verdad y sea jugable.
+check('La partida migrada se restaura correctamente',
+  recuperado !== null && restoreGameState(recuperado) === true);
+
+// Un formato MÁS NUEVO que esta versión debe descartarse, no adivinarse.
+store.set(SAVE_KEY, JSON.stringify({ ...v2, schemaVersion: 99 }));
+check('Un guardado de un formato más nuevo se descarta', loadSavedGame() === null);
+
+// Guardados con valores imposibles: la validación endurecida debe pillarlos.
+const casosInvalidos = {
+  'turno fuera de rango': { ...v2, turn: { ...v2.turn, currentPlayer: 99 } },
+  'coordenadas no finitas': { ...v2, board: { ...v2.board, circles: [{ x: NaN, y: 0 }] } },
+  'arista fuera de rango': { ...v2, edges: ['0-9999'] },
+  'fase de turno desconocida': { ...v2, turn: { ...v2.turn, phase: 'inventada' } },
+  'dificultad inventada': { ...v2, config: { ...v2.config, aiDifficulty: 'imposible' } },
+  'sin datos del generador': (() => { const c = { ...v2 }; delete c.rng; return c; })()
+};
+let colados = [];
+for (const [nombre, caso] of Object.entries(casosInvalidos)) {
+  store.set(SAVE_KEY, JSON.stringify(caso));
+  if (loadSavedGame() !== null) colados.push(nombre);
+}
+check('Guardados con valores imposibles se rechazan', colados.length === 0, colados.join('; '));
 
 console.log('');
 if (failures > 0) { console.error(`${failures} comprobación(es) fallaron`); process.exit(1); }
