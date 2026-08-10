@@ -1,4 +1,4 @@
-const CACHE = 'juego-circulos-v2.44';
+const CACHE = 'juego-circulos-v2.45';
 const ASSETS = [
   '/juego-circulos/',
   '/juego-circulos/index.html',
@@ -10,7 +10,8 @@ const ASSETS = [
   '/juego-circulos/src/game/board.js',
   '/juego-circulos/src/game/state.js',
   '/juego-circulos/src/ai/levels.js',
-  '/juego-circulos/src/ai/ai.js'
+  '/juego-circulos/src/ai/ai.js',
+  '/juego-circulos/src/platform/storage.js'
 ];
 
 self.addEventListener('install', e => {

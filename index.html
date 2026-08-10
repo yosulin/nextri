@@ -772,6 +772,7 @@
     </div>
 
   </div>
+  <button class="btn-new" id="resumeBtn" onclick="onResumeClick()" style="display:none;width:100%;max-width:480px;padding:14px;font-size:1rem;border-color:var(--p1-color);color:var(--p1-color);">⏵ Continuar partida</button>
   <button class="btn-new" onclick="startGame()" style="width:100%;max-width:480px;padding:14px;font-size:1rem;">▶ Empezar</button>
 </div>
 
@@ -858,6 +859,7 @@
 <script src="src/game/state.js"></script>
 <script src="src/ai/levels.js"></script>
 <script src="src/ai/ai.js"></script>
+<script src="src/platform/storage.js"></script>
 <script>
 // ── Constantes ──────────────────────────────────────────────────────────────
 // Única fuente de la versión visible — antes se escribía a mano en tres
@@ -865,7 +867,7 @@
 // entre sí. sw.js sigue siendo aparte por necesidad (un service worker no
 // puede leer esta constante, vive en otro archivo) — al subir de versión,
 // solo hace falta tocar ESTA línea y la de sw.js, no una tercera copia más.
-const APP_VERSION = 'v2.44';
+const APP_VERSION = 'v2.45';
 // ?debug en la URL: números de índice en los círculos + tabla de métricas
 // del grafo de adyacencia en consola al generar el tablero.
 const DEBUG = new URLSearchParams(location.search).has('debug');
@@ -1168,6 +1170,7 @@ function initPlayerCountSelector() {
 // ── Inicio ──────────────────────────────────────────────────────────────────
 function startGame() {
   gameGeneration++;
+  clearSavedGame(); // la partida nueva sustituye a cualquier guardado previo
   lastMoveSnapshot = null;
   lastAIEdgeKey = null;
   aiHighlightGen++;
@@ -1245,9 +1248,86 @@ function startGame() {
   scheduleAITurnIfNeeded();
 }
 
+// Reanuda la partida guardada. Monta la misma interfaz que startGame()
+// pero SIN generar tablero: la geometría viene del guardado, así que el
+// tablero es exactamente el que se dejó a medias.
+function resumeGame() {
+  const snapshot = loadSavedGame();
+  if (!snapshot) return false;
+
+  gameGeneration++;
+  lastMoveSnapshot = null;
+  lastAIEdgeKey = null;
+  aiHighlightGen++;
+  stopUndoCountdown();
+  resetRollState();
+
+  document.getElementById('setupPanel').style.display = 'none';
+  document.getElementById('gameUI').classList.add('is-active');
+  document.body.classList.add('in-game');
+  closeDialog('modalOverlay');
+
+  if (!restoreGameState(snapshot)) return false;
+
+  // numPlayers se usa al volver al menú; mantenerlo coherente con lo
+  // restaurado (en modo Solo son 2 jugadores pero numPlayers vale 1).
+  numPlayers = players.some(p => p.isAI) ? 1 : players.length;
+  buildGameUI();
+
+  canvas = document.getElementById('gameCanvas');
+  ctx = canvas.getContext('2d');
+  // W/H son los del guardado, no los de esta pantalla. applyCanvasSize()
+  // fija la resolución lógica y fitBoardDisplay() escala solo la caja CSS
+  // para que quepa aquí — boardPoint() ya traduce pantalla→lógica, así que
+  // la partida se puede reanudar en una pantalla de otro tamaño sin que
+  // las coordenadas dejen de cuadrar.
+  applyCanvasSize(W, H);
+  fitBoardDisplay();
+
+  updateScores();
+  updateDiceDisplay(diceRolled ? lastRolledValue : 0);
+  updateActiveCards();
+  updateTurnInfo();
+  syncUndoEnabled();
+  draw();
+
+  canvas.onpointerdown = handleCanvasPointerDown;
+  canvas.onpointermove = handleCanvasPointerMove;
+  canvas.onpointerup = handleCanvasPointerUp;
+  canvas.onpointercancel = handleCanvasPointerCancel;
+
+  // Si le tocaba a Circuit al guardar, que siga jugando.
+  scheduleAITurnIfNeeded();
+  return true;
+}
+
+function onResumeClick() {
+  vibrate(HAPTIC.tap);
+  if (!resumeGame()) {
+    // El guardado estaba corrupto o era de un formato antiguo: quitarlo y
+    // volver al menú en vez de dejar un botón que no hace nada.
+    clearSavedGame();
+    syncResumeButton();
+    alert('No se ha podido recuperar la partida guardada. Puedes empezar una nueva.');
+  }
+}
+
+function syncResumeButton() {
+  const btn = document.getElementById('resumeBtn');
+  if (btn) btn.style.display = hasSavedGame() ? '' : 'none';
+}
+
 function confirmNewGame() {
   vibrate(HAPTIC.tap);
-  if (confirm('¿Empezar nuevo juego?')) startGame();
+  // Si hay una partida en curso guardada, avisar de que se pierde — es el
+  // único camino por el que se descarta sin haber terminado.
+  const aviso = hasSavedGame()
+    ? '¿Empezar nuevo juego? Se perderá la partida en curso.'
+    : '¿Empezar nuevo juego?';
+  if (confirm(aviso)) {
+    clearSavedGame();
+    startGame();
+  }
 }
 
 // ── Generación de círculos ───────────────────────────────────────────────────
@@ -1381,6 +1461,7 @@ function rollDice(isAICall) {
     }
     updateTurnInfo();
     draw();
+    saveGame();
   }, 420);
 }
 
@@ -1647,6 +1728,7 @@ function attemptConnect(fromIdx, toIdx) {
     updateDiceDisplay(lastRolledValue);
     document.getElementById('linesLeftLabel').textContent = `${linesLeft} línea${linesLeft !== 1 ? 's' : ''}`;
     updateTurnInfo();
+    saveGame(); // no perder las líneas ya trazadas de este turno
   }
   draw();
 }
@@ -1845,6 +1927,7 @@ function undoLastMove() {
   syncUndoEnabled();
   vibrate(HAPTIC.dismiss);
   draw();
+  saveGame(); // el guardado debe reflejar la jugada deshecha
 }
 
 function updateActiveCards() {
@@ -1876,6 +1959,7 @@ function updateTurnInfo() {
 
 function advanceTurn() {
   currentPlayer = (currentPlayer + 1) % players.length;
+  saveGame();
   updateActiveCards();
   updateTurnInfo();
   draw();
@@ -1936,6 +2020,7 @@ function showBlockedMessage(remaining) {
 
 function endGame() {
   gameStatus = 'finished';
+  clearSavedGame(); // una partida terminada no debe ofrecer "continuar"
   vibrate(HAPTIC.celebrate);
   document.getElementById('modalTitle').textContent = '¡Fin del juego!';
   // Tabla de resultados
@@ -2325,6 +2410,7 @@ window.addEventListener('DOMContentLoaded', () => {
   applyTheme(getInitialTheme());
   initPlayerCountSelector();
   setPlayerCount(2); // mínimo y default: 2 jugadores
+  syncResumeButton(); // ofrecer "continuar" solo si hay partida a medias
 });
 
 // Responsive: redibujar si cambia el tamaño
