@@ -12,11 +12,12 @@ const path = require('path');
 const html = readFileSync(path.join(__dirname, '..', 'index.html'), 'utf-8');
 const geometryJs = readFileSync(path.join(__dirname, '..', 'src', 'game', 'geometry.js'), 'utf-8');
 const rulesJs = readFileSync(path.join(__dirname, '..', 'src', 'game', 'rules.js'), 'utf-8');
+const boardJs = readFileSync(path.join(__dirname, '..', 'src', 'game', 'board.js'), 'utf-8');
 
 function extract(name) {
   const re = new RegExp(`function ${name}\\(.*?\\n\\}\\n`, 's');
-  const m = html.match(re) || geometryJs.match(re) || rulesJs.match(re);
-  if (!m) throw new Error(`No se encontró function ${name}() en index.html, geometry.js ni rules.js`);
+  const m = html.match(re) || geometryJs.match(re) || rulesJs.match(re) || boardJs.match(re);
+  if (!m) throw new Error(`No se encontró function ${name}() en index.html, geometry.js, rules.js ni board.js`);
   return m[0];
 }
 function extractConst(name) {

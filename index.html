@@ -825,6 +825,7 @@
 
 <script src="src/game/geometry.js"></script>
 <script src="src/game/rules.js"></script>
+<script src="src/game/board.js"></script>
 <script>
 // ── Constantes ──────────────────────────────────────────────────────────────
 // Única fuente de la versión visible — antes se escribía a mano en tres
@@ -832,7 +833,7 @@
 // entre sí. sw.js sigue siendo aparte por necesidad (un service worker no
 // puede leer esta constante, vive en otro archivo) — al subir de versión,
 // solo hace falta tocar ESTA línea y la de sw.js, no una tercera copia más.
-const APP_VERSION = 'v2.40';
+const APP_VERSION = 'v2.41';
 // ?debug en la URL: números de índice en los círculos + tabla de métricas
 // del grafo de adyacencia en consola al generar el tablero.
 const DEBUG = new URLSearchParams(location.search).has('debug');
@@ -1221,56 +1222,8 @@ function confirmNewGame() {
 let candidatePairs = [];       // [{i,j,distSq}, ...] — solo parejas dentro de MAX_DIST
 let candidateNeighbors = [];   // candidateNeighbors[i] = [j, k, ...]
 
-function generateCirclePositions(minDist) {
-  const padding = CIRCLE_R + 20;
-  const placed = [];
-  let attempts = 0;
-  while (placed.length < N_CIRCLES && attempts < 5000) {
-    attempts++;
-    const x = padding + Math.random() * (W - padding * 2);
-    const y = padding + Math.random() * (H - padding * 2);
-    let valid = true;
-    for (const c of placed) {
-      if (dist(x, y, c.x, c.y) < minDist) { valid = false; break; }
-    }
-    if (valid) placed.push({ x, y });
-  }
-  return placed;
-}
-
-function buildCandidateGraph(pairs) {
-  candidatePairs = pairs;
-  candidateNeighbors = Array.from({ length: circles.length }, () => []);
-  for (const { i, j } of pairs) {
-    candidateNeighbors[i].push(j);
-    candidateNeighbors[j].push(i);
-  }
-}
-
-// Intenta generar un tablero completo (los N_CIRCLES pedidos, colocados)
-// con una separación mínima dada. Se queda con el primero que alcance el
-// objetivo "bonito" (grado medio 8-11); si ninguno lo alcanza pero sí hay
-// alguno conectado con el mínimo aceptable, ese sirve de red de
-// seguridad. Nunca devuelve un tablero con menos círculos de los pedidos.
-function attemptBoardGeneration(minDist, maxAttempts) {
-  let best = null;
-  for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    const positions = generateCirclePositions(minDist);
-    if (positions.length !== N_CIRCLES) continue; // no cupieron todos: descartar, no aceptar de menos
-
-    const adjacency = chooseAdjacency(positions);
-    if (!adjacency) continue;
-
-    best = { positions, adjacency };
-    const m = adjacency.metrics;
-    if (m.p10Degree >= ADJACENCY_TARGET.p10Degree &&
-        m.meanDegree >= ADJACENCY_TARGET.meanMin &&
-        m.meanDegree <= ADJACENCY_TARGET.meanMax) {
-      return best; // el objetivo "bonito", no hace falta seguir intentando
-    }
-  }
-  return best; // null si ni uno solo salió completo+conectado+grado mínimo
-}
+// generateCirclePositions()/buildCandidateGraph()/attemptBoardGeneration()
+// ahora vienen de src/game/board.js
 
 function generateCircles() {
   // Ajustar tamaño y distancias según N_CIRCLES
@@ -1324,125 +1277,8 @@ function generateCircles() {
   return true;
 }
 
-// Objetivos de calibración del grado del grafo de adyacencia — nombrados,
-// no embebidos en la función, para poder ajustarlos (o probar NORMAL/
-// DENSE/SPARSE) sin tocar el algoritmo.
-const ADJACENCY_TARGET = {
-  minDegree: 3,
-  p10Degree: 5,
-  meanMin: 8,
-  meanMax: 11
-};
-
-// ¿El segmento i-j pasa por ENCIMA de otro círculo? Si es así, esa conexión
-// nunca sería realmente trazable (lineIntersectsAny la rechazaría), así
-// que no debe contar para el grado de adyacencia al calibrar — antes
-// "vecino dentro del radio" incluía conexiones que en la práctica jamás
-// se podían dibujar.
-// segmentPassesOverCircle() ahora viene de src/game/geometry.js
-
-// Elige MAX_DIST según el grado del grafo de adyacencia resultante, no un
-// multiplicador sobre un único dato — es la tercera vez que recalibramos
-// este número (media teórica → peor vecino × margen → esto) porque las
-// anteriores optimizaban una propiedad demasiado débil: "que nadie quede
-// aislado" no es lo mismo que "que la mayoría tenga varias opciones entre
-// las que elegir". Se procesan las parejas en orden creciente de
-// distancia con Union-Find (la conectividad sale gratis del mismo barrido,
-// sin comprobarla aparte) y se para en el primer radio que cumpla
-// ADJACENCY_TARGET. Devuelve null si ni siquiera el peor de los
-// respaldos resulta razonable — generatePlayableBoard() decide entonces
-// si regenerar el tablero entero con otras posiciones.
-function chooseAdjacency(circleList) {
-  const n = circleList.length;
-  if (n < 2) return null;
-
-  const allPairs = [];
-  for (let i = 0; i < n; i++) {
-    for (let j = i + 1; j < n; j++) {
-      const dx = circleList[j].x - circleList[i].x;
-      const dy = circleList[j].y - circleList[i].y;
-      allPairs.push({ i, j, distSq: dx * dx + dy * dy });
-    }
-  }
-  allPairs.sort((a, b) => a.distSq - b.distSq);
-
-  // Filtrar las que nunca serían trazables de verdad — no cuentan para el grado
-  const pairs = allPairs.filter(p => !segmentPassesOverCircle(circleList, p.i, p.j, CIRCLE_R));
-  if (pairs.length === 0) return null;
-
-  const parent = Array.from({ length: n }, (_, i) => i);
-  function find(x) {
-    while (parent[x] !== x) { parent[x] = parent[parent[x]]; x = parent[x]; }
-    return x;
-  }
-  let components = n;
-  function union(a, b) {
-    const ra = find(a), rb = find(b);
-    if (ra === rb) return;
-    parent[ra] = rb;
-    components--;
-  }
-
-  const degree = new Array(n).fill(0);
-  let denseFallback = null;
-  let connectedFallback = null;
-
-  function metricsAt(cutIndex) {
-    const sorted = [...degree].sort((x, y) => x - y);
-    return {
-      minDegree: sorted[0],
-      p10Degree: sorted[Math.floor(n * 0.10)],
-      medianDegree: sorted[Math.floor(n * 0.5)],
-      meanDegree: degree.reduce((s, d) => s + d, 0) / n,
-      p90Degree: sorted[Math.min(n - 1, Math.ceil(n * 0.90))],
-      candidateEdges: cutIndex + 1,
-      connectedComponents: components
-    };
-  }
-
-  for (let idx = 0; idx < pairs.length; idx++) {
-    const p = pairs[idx];
-    degree[p.i]++;
-    degree[p.j]++;
-    union(p.i, p.j);
-
-    if (components !== 1) continue;
-
-    const m = metricsAt(idx);
-    if (m.minDegree < ADJACENCY_TARGET.minDegree) continue;
-
-    // Sin margen ×1.001: antes checkMoveValidity() (que compara contra
-    // MAX_DIST directamente) podía aceptar una pareja que quedaba FUERA
-    // de candidatePairs (cortado por índice, no por esa misma distancia
-    // inflada) — una pequeña ventana donde "es adyacente" y "está en la
-    // lista de candidatos" no coincidían del todo. Ahora maxDistanceSq ES
-    // la distancia real de la pareja límite, y finalizeAdjacency() filtra
-    // por esa distancia exacta (con tolerancia de coma flotante), no por
-    // posición en el array — así incluye también cualquier empate exacto.
-    if (connectedFallback === null) connectedFallback = { maxDistanceSq: p.distSq, metrics: m };
-
-    if (m.p10Degree >= ADJACENCY_TARGET.p10Degree && m.meanDegree >= ADJACENCY_TARGET.meanMin) {
-      if (m.meanDegree <= ADJACENCY_TARGET.meanMax) {
-        return finalizeAdjacency(pairs, p.distSq, m);
-      }
-      if (denseFallback === null) denseFallback = { maxDistanceSq: p.distSq, metrics: m };
-    }
-  }
-
-  const chosen = denseFallback ?? connectedFallback;
-  if (!chosen) return null; // ni conectado con el minimo se consiguio: tablero para regenerar
-  return finalizeAdjacency(pairs, chosen.maxDistanceSq, chosen.metrics);
-}
-
-function finalizeAdjacency(pairs, maxDistanceSq, metrics) {
-  const candidatePairs = pairs.filter(p => p.distSq <= maxDistanceSq + DIST_EPS);
-  return {
-    maxDistance: Math.sqrt(maxDistanceSq),
-    maxDistanceSq,
-    pairs: candidatePairs,
-    metrics: { ...metrics, candidateEdges: candidatePairs.length }
-  };
-}
+// ADJACENCY_TARGET, chooseAdjacency() y finalizeAdjacency() ahora vienen
+// de src/game/board.js
 
 // ── Dado ─────────────────────────────────────────────────────────────────────
 let isRolling = false;
