@@ -869,7 +869,7 @@
 // entre sí. sw.js sigue siendo aparte por necesidad (un service worker no
 // puede leer esta constante, vive en otro archivo) — al subir de versión,
 // solo hace falta tocar ESTA línea y la de sw.js, no una tercera copia más.
-const APP_VERSION = 'v2.50';
+const APP_VERSION = 'v2.51';
 // Tres conceptos distintos, deliberadamente separados:
 //   APP_VERSION         — versión desplegada; sube aunque solo cambie un icono.
 //   RULES_VERSION       — reglas del juego; solo sube si cambia CÓMO se juega.
@@ -941,8 +941,49 @@ const ST = {
   get candidateNeighbors() { return candidateNeighbors; },
   get linesLeft() { return linesLeft; },
   get currentPlayer() { return currentPlayer; },
-  get aiDifficulty() { return aiDifficulty; }
+  get aiDifficulty() { return aiDifficulty; },
+  get currentPlayerId() { return players[currentPlayer]?.id; },
+  get turnPhase() { return turnPhase; },
+  get status() { return gameStatus; },
+  get diceRolled() { return diceRolled; },
+  get lastRolledValue() { return lastRolledValue; }
 };
+
+// Registro de eventos de la partida (Fase 5). Cada acción aceptada por el
+// motor genera uno o varios; aquí solo se acumulan. Sirve para depurar,
+// para repetir una partida, y mañana para sincronizar una sala remota.
+let eventLog = [];
+const EVENT_LOG_MAX = 2000; // tope de seguridad: una partida normal no llega ni de lejos
+
+// Único punto por el que la interfaz cambia el estado de la partida.
+// Antes la interfaz aplicaba las jugadas por su cuenta (mutando edges,
+// triangles, scores...) mientras el motor hacía lo mismo por otro lado:
+// dos caminos que podían divergir. Ahora manda una acción y se limita a
+// copiar el resultado.
+function dispatch(action) {
+  const resultado = applyAction({ ...ST }, action);
+  if (!resultado.ok) return resultado;
+
+  const n = resultado.state;
+  edges = n.edges;
+  triangles = n.triangles;
+  players = n.players;
+  linesLeft = n.linesLeft;
+  lastRolledValue = n.lastRolledValue;
+  diceRolled = n.diceRolled;
+  turnPhase = n.turnPhase;
+  // currentPlayer (índice) se deriva del id, que es la fuente de verdad
+  const idx = players.findIndex(p => p.id === n.currentPlayerId);
+  if (idx >= 0) currentPlayer = idx;
+
+  for (const ev of resultado.events) {
+    eventLog.push({ seq: eventLog.length + 1, ...ev });
+  }
+  if (eventLog.length > EVENT_LOG_MAX) eventLog = eventLog.slice(-EVENT_LOG_MAX);
+
+  invalidateActiveCirclesCache();
+  return resultado;
+}
 // Deshacer: solo la ÚLTIMA jugada, y solo mientras no haya pasado nada más
 // desde entonces (ni otra jugada, ni una tirada nueva) — se sobreescribe o
 // se limpia en cuanto ocurre cualquiera de esas dos cosas.
@@ -963,6 +1004,15 @@ const TURN_HANDOFF_GRACE_MS = 3000;
 // turno se sortea. Usar el índice de turno directamente aquí es el bug que
 // hacía que el color visto al escribir el nombre no coincidiera con el
 // color mostrado ya jugando, si "orden aleatorio" estaba activado.
+function playerColorById(id) {
+  const i = players.findIndex(p => p.id === id);
+  return i >= 0 ? playerColor(i) : null;
+}
+function playerLightColorById(id) {
+  const i = players.findIndex(p => p.id === id);
+  return i >= 0 ? playerLightColor(i) : null;
+}
+
 function playerColor(turnIdx) {
   const p = players[turnIdx];
   return p ? PLAYER_COLORS[p.colorIndex] : undefined;
@@ -1214,6 +1264,7 @@ function startGame() {
   seedRng(semillaForzada !== null ? Number(semillaForzada) : undefined);
   if (DEBUG) console.log('semilla de la partida:', getRngSeed());
   lastMoveSnapshot = null;
+  eventLog = [];
   lastAIEdgeKey = null;
   aiHighlightGen++;
   stopUndoCountdown();
@@ -1225,11 +1276,11 @@ function startGame() {
     const el = document.getElementById(`nameInput${i}`);
     const raw = el ? el.value.trim() : '';
     const name = raw || `Jugador ${i+1}`;
-    players.push({name, initial: name[0].toUpperCase(), score: 0, colorIndex: i});
+    players.push(createPlayer(i, { name }));
   }
   // Modo "1 jugador": la máquina ocupa el segundo puesto automáticamente
   if (numPlayers === 1) {
-    players.push({name: 'Circuit', initial: '🤖', score: 0, colorIndex: 1, isAI: true});
+    players.push(createPlayer(1, { name: 'Circuit', isAI: true }));
   }
   // Leer número de círculos del slider
   N_CIRCLES = parseInt(document.getElementById('circleSlider').value) || 35;
@@ -1499,11 +1550,9 @@ function rollDice(isAICall) {
     }
     dice.classList.remove('rolling');
     dice.removeAttribute('aria-disabled');
-    const val = rngIntFrom('dice', 6) + 1;
-    linesLeft  = val;
-    lastRolledValue = val;
-    diceRolled = true;
-    turnPhase = 'drawing';
+    const r = dispatch({ type: 'ROLL_DICE', playerId: players[currentPlayer].id });
+    if (!r.ok) { updateTurnInfo(); return; }
+    const val = lastRolledValue;
     vibrate(HAPTIC.select);
     updateDiceDisplay(val);
     syncDiceEnabled();
@@ -1679,52 +1728,40 @@ function showInvalidMoveReason(message) {
 }
 
 function attemptConnect(fromIdx, toIdx) {
-  const check = checkMoveValidity(ST, fromIdx, toIdx);
+  const jugador = players[currentPlayer];
+  const eraIA = !!jugador?.isAI;
+  const key = edgeKey(fromIdx, toIdx);
+  const trianguloAntes = triangles.length;
 
-  if (!check.valid) {
-    // no se puede conectar con ese destino: lo dejamos seleccionado, igual
-    // que al tocar un destino inválido en el flujo de siempre — pero ahora
-    // además se explica por qué, en vez de simplemente no pasar nada
+  // Foto para deshacer, ANTES de aplicar. Solo de jugadas humanas: las de
+  // Circuit no deben consumir tu opción de deshacer.
+  const snapshotPrevio = eraIA ? null : {
+    edgeKey: key,
+    currentPlayer,
+    linesLeft,
+    diceRolled,
+    turnPhase,
+    gameStatus,
+    trianglesCountBefore: trianguloAntes
+  };
+
+  const r = dispatch({ type: 'CONNECT', playerId: jugador.id, from: fromIdx, to: toIdx });
+
+  if (!r.ok) {
+    // Destino inválido: se deja seleccionado y se explica por qué, igual
+    // que siempre — pero ahora el motivo lo da el motor, no un camino aparte.
     vibrate(HAPTIC.dismiss);
-    showInvalidMoveReason(check.message);
+    showInvalidMoveReason(MOVE_REASON_TEXT[r.reason] || 'Movimiento no válido');
     setSelectedCircle(toIdx);
     draw();
     return;
   }
 
-  const a = Math.min(fromIdx, toIdx);
-  const b = Math.max(fromIdx, toIdx);
-  const key = `${a}-${b}`;
-
-  // Foto de "cómo estaba todo justo antes de esta jugada" — deshacer()
-  // solo necesita volver a esto, sin tener que reconstruir nada a mano.
-  // Se sobreescribe en cada jugada nueva del HUMANO — las jugadas de
-  // Circuit no la tocan ni la borran, para que el turno de la máquina de
-  // por medio no "consuma" tu última línea sin que te dé tiempo a
-  // deshacerla.
-  if (!players[currentPlayer]?.isAI) {
-    lastMoveSnapshot = {
-      edgeKey: key,
-      currentPlayer,
-      linesLeft,
-      diceRolled,
-      gameStatus,
-      scorerIdx: currentPlayer,
-      trianglesCountBefore: triangles.length
-    };
-  }
-
-  // Trazar
-  edges.add(key);
-  invalidateActiveCirclesCache();
-  linesLeft--;
+  if (snapshotPrevio) lastMoveSnapshot = snapshotPrevio;
   syncUndoEnabled();
 
-  // Resaltar un momento la línea recién trazada si fue la máquina — con
-  // varias líneas seguidas era fácil perder de vista dónde había jugado
-  // cada una. Se apaga sola, forzando un redraw cuando expira, no solo
-  // cuando algo más redibuja por su cuenta.
-  if (players[currentPlayer]?.isAI) {
+  // Resaltar un momento la línea que acaba de trazar la máquina.
+  if (eraIA) {
     lastAIEdgeKey = key;
     lastAIEdgeColor = playerColor(currentPlayer);
     const highlightGen = ++aiHighlightGen;
@@ -1733,41 +1770,23 @@ function attemptConnect(fromIdx, toIdx) {
     }, AI_HIGHLIGHT_MS);
   }
 
-  // Buscar triángulos nuevos
-  const newTris = findNewTriangles(ST, a, b);
-  newTris.forEach(tri => {
-    triangles.push({...tri, owner: currentPlayer});
-    players[currentPlayer].score++;
-  });
+  const cerroTriangulo = triangles.length > trianguloAntes;
   updateScores();
-
-  if (newTris.length > 0) {
-    // Cerrar un triángulo es el "acierto" real del juego — feedback fuerte
-    vibrate(HAPTIC.celebrate);
-    playSuccessSound();
-  } else {
-    vibrate(HAPTIC.select);
-  }
+  if (cerroTriangulo) { vibrate(HAPTIC.celebrate); playSuccessSound(); }
+  else vibrate(HAPTIC.select);
 
   setSelectedCircle(null);
   draw();
 
   if (linesLeft === 0) {
-    diceRolled = false;
     updateDiceDisplay(0);
     if (computeActiveCircles().size === 0) { endGame(); return; }
-    if (!players[currentPlayer]?.isAI) {
-      // Margen antes de pasarle el turno a Circuit — mientras no se llame
-      // a advanceTurn(), currentPlayer sigue siendo el tuyo, así que
-      // deshacer sigue disponible exactamente igual que con cualquier
-      // otra de tus líneas. Sin esto, la línea que TERMINA tu turno era
-      // justo la que menos margen tenía (cero: el cambio de turno era
-      // síncrono e inmediato).
+    if (!eraIA) {
+      // Margen para deshacer antes de ceder el turno.
       const el = document.getElementById('turnInfo');
       const color = playerColor(currentPlayer) || 'var(--p1-color)';
       el.innerHTML = `<span style="color:${color}">${escapeHtml(players[currentPlayer].name)}</span> — ¿todo bien? Puedes deshacer`;
-      turnPhase = 'handoff';
-      saveGame(); // ANTES del margen: cerrar la app durante esos 3s perdía la última línea
+      saveGame(); // antes del margen: cerrar la app durante esos 3s perdía la última línea
       startUndoCountdown(TURN_HANDOFF_GRACE_MS);
       const handoffGeneration = gameGeneration;
       setTimeout(() => {
@@ -1780,12 +1799,11 @@ function attemptConnect(fromIdx, toIdx) {
       advanceTurn();
     }
   } else {
-    // Quedan líneas — ¿hay movimientos válidos?
     if (computeActiveCircles().size === 0) { endGame(); return; }
     updateDiceDisplay(lastRolledValue);
     document.getElementById('linesLeftLabel').textContent = `${linesLeft} línea${linesLeft !== 1 ? 's' : ''}`;
     updateTurnInfo();
-    saveGame(); // no perder las líneas ya trazadas de este turno
+    saveGame();
   }
   draw();
 }
@@ -1962,13 +1980,15 @@ function undoLastMove() {
   // quedaron por encima del recuento de antes) y devolver los puntos.
   while (triangles.length > snap.trianglesCountBefore) {
     const removed = triangles.pop();
-    players[removed.owner].score--;
+    const dueño = players.find(p => p.id === removed.ownerId);
+    if (dueño) dueño.score--;
   }
   updateScores();
 
   currentPlayer = snap.currentPlayer;
   linesLeft = snap.linesLeft;
   diceRolled = snap.diceRolled;
+  turnPhase = snap.turnPhase;
   gameStatus = snap.gameStatus;
 
   if (wasFinished) closeDialog('modalOverlay'); // la jugada deshecha había terminado la partida
@@ -2015,8 +2035,7 @@ function updateTurnInfo() {
 }
 
 function advanceTurn() {
-  currentPlayer = (currentPlayer + 1) % players.length;
-  turnPhase = 'awaiting-roll';
+  dispatch({ type: 'ADVANCE_TURN' });
   saveGame();
   updateActiveCards();
   updateTurnInfo();
@@ -2237,17 +2256,17 @@ function draw() {
     ctx.lineTo(cb.x, cb.y);
     ctx.lineTo(cc.x, cc.y);
     ctx.closePath();
-    ctx.fillStyle = playerLightColor(t.owner) || 'rgba(255,255,255,0.1)';
+    ctx.fillStyle = playerLightColorById(t.ownerId) || 'rgba(255,255,255,0.1)';
     ctx.fill();
 
     // Inicial del jugador centrada
     const cx = (ca.x + cb.x + cc.x) / 3;
     const cy = (ca.y + cb.y + cc.y) / 3;
     ctx.font = 'bold 14px Nunito, sans-serif';
-    ctx.fillStyle = playerColor(t.owner) || '#ffffff';
+    ctx.fillStyle = playerColorById(t.ownerId) || '#ffffff';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(players[t.owner].initial, cx, cy);
+    ctx.fillText(players.find(p => p.id === t.ownerId)?.initial || '?', cx, cy);
   });
 
   // Líneas existentes

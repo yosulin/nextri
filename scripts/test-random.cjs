@@ -40,7 +40,7 @@ function extractConst(nombre) {
 const DIST_EPS = 1e-6;
 const RNG_STREAMS = ['board','dice','ai'];
 const STREAM_OFFSET = { board: 0x9E3779B9, dice: 0x85EBCA6B, ai: 0xC2B2AE35 };
-const STATE_SCHEMA_VERSION = 2;
+const STATE_SCHEMA_VERSION = 3;
 const RULES_VERSION = 1;
 const ADJACENCY_TARGET = { minDegree: 3, p10Degree: 5, meanMin: 8, meanMax: 11 };
 const APP_VERSION = 'test';
@@ -48,7 +48,7 @@ const MOVE_REASON_TEXT = {};
 let CIRCLE_R, HIT_R, MIN_DIST, MAX_DIST, MAX_DIST_SQ, N_CIRCLES, W, H;
 let circles, edges, triangles, players, currentPlayer, linesLeft, diceRolled;
 let lastRolledValue, gameStatus, aiDifficulty, selectedCircle, DEBUG = false, turnPhase = 'drawing';
-let candidatePairs, candidateNeighbors, lastMoveSnapshot;
+let candidatePairs, candidateNeighbors, lastMoveSnapshot, eventLog = [];
 let activeCirclesCache, selectedTargetsCache;
 let rngSeed, rngCalls, streams;
 
@@ -106,8 +106,8 @@ function generarConSemilla(semilla) {
   buildCandidateGraph(best.adjacency.pairs);
   edges = new Set(); triangles = [];
   players = [
-    { name: 'Josu', initial: 'J', score: 0, colorIndex: 0 },
-    { name: 'Circuit', initial: '🤖', score: 0, colorIndex: 1, isAI: true }
+    { id: 'p1', userId: null, name: 'Josu', initial: 'J', score: 0, colorIndex: 0 },
+    { id: 'p2', userId: null, name: 'Circuit', initial: '🤖', score: 0, colorIndex: 1, isAI: true }
   ];
   currentPlayer = 0; linesLeft = 3; diceRolled = true; lastRolledValue = 3;
   gameStatus = 'playing'; aiDifficulty = 'medium';

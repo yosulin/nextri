@@ -27,7 +27,7 @@ function extract(name) {
 const DIST_EPS = 1e-6;
 const RNG_STREAMS = ['board','dice','ai'];
 const STREAM_OFFSET = { board: 0x9E3779B9, dice: 0x85EBCA6B, ai: 0xC2B2AE35 };
-const STATE_SCHEMA_VERSION = 2;
+const STATE_SCHEMA_VERSION = 3;
 const RULES_VERSION = 1;
 const SAVE_KEY = 'juego-circulos:partida';
 const ADJACENCY_TARGET = { minDegree: 3, p10Degree: 5, meanMin: 8, meanMax: 11 };
@@ -36,7 +36,7 @@ const MOVE_REASON_TEXT = {};
 let CIRCLE_R, HIT_R, MIN_DIST, MAX_DIST, MAX_DIST_SQ, N_CIRCLES, W, H;
 let circles, edges, triangles, players, currentPlayer, linesLeft, diceRolled;
 let lastRolledValue, gameStatus, aiDifficulty, selectedCircle, turnPhase = 'drawing';
-let candidatePairs, candidateNeighbors, lastMoveSnapshot;
+let candidatePairs, candidateNeighbors, lastMoveSnapshot, eventLog = [];
 let activeCirclesCache, selectedTargetsCache;
 let rngSeed, rngCalls, streams;
 
@@ -106,8 +106,8 @@ function buildScenario(seed, movesPlayed) {
   for (const { i, j } of candidatePairs) { candidateNeighbors[i].push(j); candidateNeighbors[j].push(i); }
   edges = new Set(); triangles = [];
   players = [
-    { name: 'Josu', initial: 'J', score: 0, colorIndex: 0 },
-    { name: 'Circuit', initial: '🤖', score: 0, colorIndex: 1, isAI: true }
+    { id: 'p1', userId: null, name: 'Josu', initial: 'J', score: 0, colorIndex: 0 },
+    { id: 'p2', userId: null, name: 'Circuit', initial: '🤖', score: 0, colorIndex: 1, isAI: true }
   ];
   currentPlayer = 0; linesLeft = 2; diceRolled = true; lastRolledValue = 2;
   gameStatus = 'playing'; aiDifficulty = 'hard';
@@ -116,8 +116,8 @@ function buildScenario(seed, movesPlayed) {
     if (legal.length === 0) break;
     const { i, j } = legal[Math.floor(rng() * legal.length)];
     edges.add(edgeKey(i, j));
-    const owner = m % 2;
-    findNewTriangles(ST, i, j).forEach(t => { triangles.push({ ...t, owner }); players[owner].score++; });
+    const ownerId = m % 2 === 0 ? 'p1' : 'p2';
+    findNewTriangles(ST, i, j).forEach(t => { triangles.push({ ...t, ownerId }); players.find(p=>p.id===ownerId).score++; });
   }
   return true;
 }
@@ -125,8 +125,8 @@ function buildScenario(seed, movesPlayed) {
 function fingerprint() {
   return [
     [...edges].sort().join(','),
-    triangles.map(t => `${t.a}-${t.b}-${t.c}:${t.owner}`).sort().join(','),
-    players.map(p => `${p.name}:${p.score}:${p.colorIndex}:${!!p.isAI}`).join(','),
+    triangles.map(t => `${t.a}-${t.b}-${t.c}:${t.ownerId}`).sort().join(','),
+    players.map(p => `${p.id}:${p.name}:${p.score}:${p.colorIndex}:${!!p.isAI}`).join(','),
     `${currentPlayer}/${linesLeft}/${diceRolled}/${lastRolledValue}/${gameStatus}/${aiDifficulty}`
   ].join('||');
 }
@@ -195,41 +195,33 @@ check('Un guardado con JSON roto se ignora', loadSavedGame() === null);
 store.set(SAVE_KEY, JSON.stringify({ schemaVersion: 0, config: {}, board: {}, edges: [], triangles: [], players: [], turn: {}, status: 'playing' }));
 check('Un guardado de un formato anterior se ignora', loadSavedGame() === null);
 
-// LO QUE SEÑALÓ LA AUDITORÍA (P1): un guardado de v2.45-v2.47 (esquema 1,
-// sin datos del generador) NO debe aceptarse tal cual y continuar con una
-// secuencia que no le corresponde. O se migra explícitamente, o se
-// descarta — pero nunca en silencio a medias.
+// Los formatos anteriores (1 y 2, con índices de jugador en vez de ids
+// estables) se DESCARTAN limpiamente. Es una decisión explícita: el juego
+// todavía no lo usa nadie más, así que no hay partidas ajenas que
+// preservar y no merece la pena arrastrar conversiones para versiones que
+// nunca salieron de un móvil. Lo que no vale es aceptarlas a medias.
 store.clear(); failMode = null;
 buildScenario(800000, 8); gameStatus = 'playing';
-const v2 = JSON.parse(JSON.stringify(serializeGameState()));
-const v1 = { ...v2, schemaVersion: 1 };
-delete v1.rng;
-delete v1.turn.phase;
-store.set(SAVE_KEY, JSON.stringify(v1));
-const recuperado = loadSavedGame();
-check('Un guardado del formato anterior se migra, no se acepta a medias',
-  recuperado !== null &&
-  recuperado.schemaVersion === 2 &&
-  recuperado.rng && recuperado.rng.streams && recuperado.rng.streams.dice &&
-  recuperado.turn.phase === 'awaiting-roll',
-  recuperado ? `esquema=${recuperado.schemaVersion} rng=${!!recuperado.rng}` : 'descartado');
+const v3 = JSON.parse(JSON.stringify(serializeGameState()));
 
-// Y que tras migrarlo la partida se restaure de verdad y sea jugable.
-check('La partida migrada se restaura correctamente',
-  recuperado !== null && restoreGameState(recuperado) === true);
+for (const esquemaViejo of [1, 2]) {
+  const viejo = { ...v3, schemaVersion: esquemaViejo };
+  store.set(SAVE_KEY, JSON.stringify(viejo));
+  check(`Un guardado del formato ${esquemaViejo} se descarta limpiamente`, loadSavedGame() === null);
+}
 
 // Un formato MÁS NUEVO que esta versión debe descartarse, no adivinarse.
-store.set(SAVE_KEY, JSON.stringify({ ...v2, schemaVersion: 99 }));
+store.set(SAVE_KEY, JSON.stringify({ ...v3, schemaVersion: 99 }));
 check('Un guardado de un formato más nuevo se descarta', loadSavedGame() === null);
 
 // Guardados con valores imposibles: la validación endurecida debe pillarlos.
 const casosInvalidos = {
-  'turno fuera de rango': { ...v2, turn: { ...v2.turn, currentPlayer: 99 } },
-  'coordenadas no finitas': { ...v2, board: { ...v2.board, circles: [{ x: NaN, y: 0 }] } },
-  'arista fuera de rango': { ...v2, edges: ['0-9999'] },
-  'fase de turno desconocida': { ...v2, turn: { ...v2.turn, phase: 'inventada' } },
-  'dificultad inventada': { ...v2, config: { ...v2.config, aiDifficulty: 'imposible' } },
-  'sin datos del generador': (() => { const c = { ...v2 }; delete c.rng; return c; })()
+  'turno fuera de rango': { ...v3, turn: { ...v3.turn, currentPlayer: 99 } },
+  'coordenadas no finitas': { ...v3, board: { ...v3.board, circles: [{ x: NaN, y: 0 }] } },
+  'arista fuera de rango': { ...v3, edges: ['0-9999'] },
+  'fase de turno desconocida': { ...v3, turn: { ...v3.turn, phase: 'inventada' } },
+  'dificultad inventada': { ...v3, config: { ...v3.config, aiDifficulty: 'imposible' } },
+  'sin datos del generador': (() => { const c = { ...v3 }; delete c.rng; return c; })()
 };
 let colados = [];
 for (const [nombre, caso] of Object.entries(casosInvalidos)) {

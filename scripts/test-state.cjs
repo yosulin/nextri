@@ -26,7 +26,7 @@ function extract(name) {
 const DIST_EPS = 1e-6;
 const RNG_STREAMS = ['board','dice','ai'];
 const STREAM_OFFSET = { board: 0x9E3779B9, dice: 0x85EBCA6B, ai: 0xC2B2AE35 };
-const STATE_SCHEMA_VERSION = 2;
+const STATE_SCHEMA_VERSION = 3;
 const RULES_VERSION = 1;
 const ADJACENCY_TARGET = { minDegree: 3, p10Degree: 5, meanMin: 8, meanMax: 11 };
 const APP_VERSION = 'test';
@@ -34,7 +34,7 @@ const MOVE_REASON_TEXT = {};
 let CIRCLE_R, HIT_R, MIN_DIST, MAX_DIST, MAX_DIST_SQ, N_CIRCLES, W, H;
 let circles, edges, triangles, players, currentPlayer, linesLeft, diceRolled;
 let lastRolledValue, gameStatus, aiDifficulty, selectedCircle, turnPhase = 'drawing';
-let candidatePairs, candidateNeighbors, lastMoveSnapshot;
+let candidatePairs, candidateNeighbors, lastMoveSnapshot, eventLog = [];
 let activeCirclesCache, selectedTargetsCache;
 let rngSeed, rngCalls, streams;
 
@@ -117,8 +117,8 @@ function buildScenario(seed, movesPlayed) {
   edges = new Set();
   triangles = [];
   players = [
-    { name: 'Josu', initial: 'J', score: 0, colorIndex: 0 },
-    { name: 'Circuit', initial: '🤖', score: 0, colorIndex: 1, isAI: true }
+    { id: 'p1', userId: null, name: 'Josu', initial: 'J', score: 0, colorIndex: 0 },
+    { id: 'p2', userId: null, name: 'Circuit', initial: '🤖', score: 0, colorIndex: 1, isAI: true }
   ];
   currentPlayer = 0; linesLeft = 3; diceRolled = true; lastRolledValue = 3;
   gameStatus = 'playing'; aiDifficulty = 'medium';
@@ -128,8 +128,8 @@ function buildScenario(seed, movesPlayed) {
     if (legal.length === 0) break;
     const { i, j } = legal[Math.floor(rng() * legal.length)];
     edges.add(edgeKey(i, j));
-    const owner = m % 2;
-    findNewTriangles(ST, i, j).forEach(t => { triangles.push({ ...t, owner }); players[owner].score++; });
+    const ownerId = m % 2 === 0 ? 'p1' : 'p2';
+    findNewTriangles(ST, i, j).forEach(t => { triangles.push({ ...t, ownerId }); players.find(p=>p.id===ownerId).score++; });
   }
   return true;
 }
@@ -181,7 +181,7 @@ for (let s = 0; s < SCENARIOS; s++) {
   const behaviourBefore = behaviourFingerprint();
   const scoresBefore = players.map(p => p.score).join(',');
   const edgesBefore = [...edges].sort().join(',');
-  const trianglesBefore = triangles.map(t => `${t.a}-${t.b}-${t.c}:${t.owner}`).sort().join(',');
+  const trianglesBefore = triangles.map(t => `${t.a}-${t.b}-${t.c}:${t.ownerId}`).sort().join(',');
   const turnBefore = `${currentPlayer}/${linesLeft}/${diceRolled}/${lastRolledValue}/${gameStatus}`;
 
   // Ida y vuelta REAL por JSON — no basta con pasar el objeto en memoria,
@@ -202,7 +202,7 @@ for (let s = 0; s < SCENARIOS; s++) {
   if (behaviourFingerprint() !== behaviourBefore) behaviourMismatches++;
   if (players.map(p => p.score).join(',') !== scoresBefore ||
       [...edges].sort().join(',') !== edgesBefore ||
-      triangles.map(t => `${t.a}-${t.b}-${t.c}:${t.owner}`).sort().join(',') !== trianglesBefore ||
+      triangles.map(t => `${t.a}-${t.b}-${t.c}:${t.ownerId}`).sort().join(',') !== trianglesBefore ||
       `${currentPlayer}/${linesLeft}/${diceRolled}/${lastRolledValue}/${gameStatus}` !== turnBefore) {
     scoreMismatches++;
   }

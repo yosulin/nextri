@@ -21,7 +21,7 @@
 // descartar en vez de restaurarse mal y a medias.
 // v1 (v2.45-v2.47): sin datos del generador aleatorio.
 // v2 (v2.49+): incluye rng con los tres flujos, y turnPhase.
-const STATE_SCHEMA_VERSION = 2;
+const STATE_SCHEMA_VERSION = 3; // v3: ownerId/playerId estables y registro de eventos
 
 // Qué NO se guarda, a propósito:
 //   - canvas/ctx, audioCtx, referencias al DOM: se recrean al montar la UI.
@@ -71,15 +71,21 @@ function serializeGameState() {
     // edges es un Set en memoria; en el guardado va como array (un Set no
     // sobrevive a JSON.stringify: se convertiría en {}).
     edges: [...edges],
-    triangles: triangles.map(t => ({ a: t.a, b: t.b, c: t.c, owner: t.owner })),
+    triangles: triangles.map(t => ({ a: t.a, b: t.b, c: t.c, ownerId: t.ownerId })),
 
     players: players.map(p => ({
+      id: p.id,
+      userId: p.userId ?? null,
       name: p.name,
       initial: p.initial,
       score: p.score,
       colorIndex: p.colorIndex,
       isAI: !!p.isAI
     })),
+
+    // Registro de eventos: permite repetir la partida y, más adelante,
+    // sincronizar una sala. Se guarda recortado por si acaso.
+    events: eventLog.slice(-500),
 
     turn: {
       currentPlayer,
@@ -140,8 +146,11 @@ function restoreGameState(snapshot) {
   circles = b.circles.map(c => ({ x: c.x, y: c.y }));
 
   edges = new Set(snapshot.edges);
-  triangles = snapshot.triangles.map(t => ({ a: t.a, b: t.b, c: t.c, owner: t.owner }));
+  triangles = snapshot.triangles.map(t => ({ a: t.a, b: t.b, c: t.c, ownerId: t.ownerId }));
+  eventLog = Array.isArray(snapshot.events) ? snapshot.events.slice() : [];
   players = snapshot.players.map(p => ({
+    id: p.id,
+    userId: p.userId ?? null,
     name: p.name,
     initial: p.initial,
     score: p.score,
@@ -187,7 +196,13 @@ function esEnteroEnRango(v, min, max) { return Number.isInteger(v) && v >= min &
 function migrateGameSnapshot(s) {
   if (!s || typeof s !== 'object') return null;
   if (s.schemaVersion === STATE_SCHEMA_VERSION) return s;
-  if (s.schemaVersion === 1) {
+  // Los formatos 1 y 2 usaban índices de jugador; convertirlos a ids
+  // estables es posible, pero el juego aún no lo usa nadie más y no hay
+  // partidas ajenas que preservar, así que se descartan en vez de
+  // arrastrar código de compatibilidad que solo existiría para versiones
+  // que nunca salieron de un móvil.
+  if (s.schemaVersion === 1 || s.schemaVersion === 2) return null;
+  if (false) {
     const semilla = Math.floor(Math.random() * 0xFFFFFFFF);
     seedRng(semilla);
     return {
@@ -236,6 +251,7 @@ function isValidGameSnapshot(s) {
   if (!Array.isArray(s.players) || s.players.length === 0 || s.players.length > 6) return false;
   for (const p of s.players) {
     if (!p || typeof p.name !== 'string') return false;
+    if (typeof p.id !== 'string' || !p.id) return false;
     if (!esEnteroEnRango(p.colorIndex, 0, 5)) return false;
     if (!Number.isInteger(p.score) || p.score < 0) return false;
   }
@@ -244,7 +260,7 @@ function isValidGameSnapshot(s) {
   for (const t of s.triangles) {
     if (!t) return false;
     for (const v of [t.a, t.b, t.c]) if (!esEnteroEnRango(v, 0, n - 1)) return false;
-    if (!esEnteroEnRango(t.owner, 0, s.players.length - 1)) return false;
+    if (typeof t.ownerId !== 'string' || !s.players.some(p => p.id === t.ownerId)) return false;
   }
 
   if (!s.turn || !esEnteroEnRango(s.turn.currentPlayer, 0, s.players.length - 1)) return false;
