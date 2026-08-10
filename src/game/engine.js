@@ -144,3 +144,52 @@ function hasAnyLegalMove(state) {
   }
   return false;
 }
+
+// ── Replay ─────────────────────────────────────────────────────────────
+// Reconstruye una partida reproduciendo su registro de eventos sobre el
+// estado inicial. Los eventos son RESULTADOS, así que se traducen de
+// vuelta a las acciones que los causaron y se pasan por applyAction() —
+// no se aplican "a mano". Esa es la garantía que importa: si el replay
+// cuadra, es que el registro basta para reconstruir la partida usando
+// exactamente las mismas reglas, sin un segundo camino que pueda
+// desviarse del real.
+//
+// Devuelve { ok, state, appliedActions, mismatch } — mismatch señala el
+// primer evento cuyo resultado no coincidió con lo registrado.
+function eventToAction(ev) {
+  switch (ev.type) {
+    case 'DICE_ROLLED':  return { type: 'ROLL_DICE', playerId: ev.playerId };
+    case 'EDGE_ADDED':   return { type: 'CONNECT', playerId: ev.playerId, from: ev.from, to: ev.to };
+    case 'TURN_STARTED': return { type: 'ADVANCE_TURN' };
+    // TRIANGLE_COMPLETED y TURN_FINISHED son consecuencias de CONNECT, no
+    // acciones propias: al reproducir el CONNECT se generan solas.
+    default: return null;
+  }
+}
+
+function replayFromLog(initialState, events) {
+  let state = initialState;
+  let appliedActions = 0;
+
+  for (const ev of events) {
+    const action = eventToAction(ev);
+    if (!action) continue;
+
+    const r = applyAction(state, action);
+    if (!r.ok) {
+      return { ok: false, state, appliedActions, mismatch: { event: ev, reason: r.reason } };
+    }
+    // Comprobar que el resultado coincide con lo que se registró: si una
+    // tirada reproducida diera otro número, el registro y la secuencia
+    // aleatoria no cuadran y el replay no vale de nada.
+    if (ev.type === 'DICE_ROLLED') {
+      const nuevo = r.events.find(e => e.type === 'DICE_ROLLED');
+      if (!nuevo || nuevo.value !== ev.value) {
+        return { ok: false, state, appliedActions, mismatch: { event: ev, reason: 'dice-value-mismatch' } };
+      }
+    }
+    state = r.state;
+    appliedActions++;
+  }
+  return { ok: true, state, appliedActions, mismatch: null };
+}

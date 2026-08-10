@@ -45,6 +45,7 @@ eval(extract('createPlayer')); eval(extract('playerById')); eval(extract('curren
 eval(extract('nextPlayerId')); eval(extract('applyAction')); eval(extract('rechazar'));
 eval(extract('accionTirarDado')); eval(extract('accionConectar'));
 eval(extract('accionAvanzarTurno')); eval(extract('hasAnyLegalMove'));
+eval(extract('eventToAction')); eval(extract('replayFromLog'));
 
 let fallos = 0;
 function check(etiqueta, ok, detalle) {
@@ -170,6 +171,64 @@ check('Una acción desconocida se rechaza sin lanzar',
   !applyAction(s0, { type: 'INVENTADA' }).ok);
 
 check('hasAnyLegalMove() detecta que quedan jugadas', hasAnyLegalMove(s0) === true);
+
+// ── Replay: el registro de eventos debe bastar para reconstruir ────────
+function huella(st) {
+  return [
+    [...st.edges].sort().join(','),
+    st.triangles.map(t => `${t.a}-${t.b}-${t.c}:${t.ownerId}`).sort().join(','),
+    st.players.map(p => `${p.id}:${p.score}`).join(','),
+    `${st.currentPlayerId}/${st.linesLeft}/${st.diceRolled}/${st.turnPhase}`
+  ].join('||');
+}
+
+let replaysMal = 0, replaysProbados = 0;
+for (const semilla of [101, 202, 303, 404, 505]) {
+  seedRng(semilla);
+  const inicial = nuevoEstado(semilla);
+  if (!inicial) continue;
+  // Reiniciar la secuencia para que el estado inicial sea reproducible
+  const estadoRngInicial = getRngState();
+
+  // Jugar una partida registrando los eventos
+  let est = inicial;
+  const registro = [];
+  for (let turno = 0; turno < 12; turno++) {
+    const r = applyAction(est, { type: 'ROLL_DICE', playerId: est.currentPlayerId });
+    if (!r.ok) break;
+    est = r.state; registro.push(...r.events);
+    while (est.linesLeft > 0) {
+      const par = est.candidatePairs.find(({ i, j }) => checkMoveValidity(est, i, j).valid);
+      if (!par) break;
+      const rc = applyAction(est, { type: 'CONNECT', playerId: est.currentPlayerId, from: par.i, to: par.j });
+      if (!rc.ok) break;
+      est = rc.state; registro.push(...rc.events);
+    }
+    const ra = applyAction(est, { type: 'ADVANCE_TURN' });
+    if (!ra.ok) break;
+    est = ra.state; registro.push(...ra.events);
+  }
+  const huellaFinal = huella(est);
+
+  // Reproducir desde el estado inicial, con la secuencia aleatoria
+  // rebobinada al punto de partida.
+  restoreRngState(estadoRngInicial);
+  const rep = replayFromLog(inicial, registro);
+  replaysProbados++;
+  if (!rep.ok || huella(rep.state) !== huellaFinal) replaysMal++;
+}
+check(`El replay del registro reconstruye la partida exacta (${replaysProbados} partidas)`,
+  replaysProbados > 0 && replaysMal === 0, `${replaysMal} no cuadraron`);
+
+// Y debe DETECTAR un registro manipulado en vez de reconstruir algo falso
+seedRng(909);
+const base = nuevoEstado(909);
+const rngBase = getRngState();
+const r1b = applyAction(base, { type: 'ROLL_DICE', playerId: 'p1' });
+const registroFalso = r1b.events.map(e => e.type === 'DICE_ROLLED' ? { ...e, value: (e.value % 6) + 1 } : e);
+restoreRngState(rngBase);
+const repFalso = replayFromLog(base, registroFalso);
+check('El replay detecta un registro manipulado', !repFalso.ok && repFalso.mismatch.reason === 'dice-value-mismatch');
 
 console.log('');
 if (fallos > 0) { console.error(`${fallos} comprobación(es) fallaron`); process.exit(1); }
