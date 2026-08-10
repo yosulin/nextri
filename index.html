@@ -91,9 +91,16 @@
     width: 100%;
     max-width: 720px;
     grid-template-areas: "players" "actions" "board";
-    grid-template-columns: 1fr;
+    /* minmax(0,·) en vez de 1fr a secas: sin esto la columna crece hasta
+       el ancho MÍNIMO de su contenido (la fila de jugadores con 5-6
+       tarjetas), la página entera se desplaza en horizontal, y de paso el
+       tablero hereda ese ancho inflado al medir su contenedor. */
+    grid-template-columns: minmax(0, 1fr);
     justify-items: center;
   }
+  /* Los hijos de una cuadrícula no encogen por debajo de su contenido si
+     no se les dice explícitamente. */
+  #gameUI > * { min-width: 0; max-width: 100%; }
   #gameUI.is-active { display: grid; }
   #gameUI .canvas-wrap { grid-area: board; }
   #gameUI > .game-actions-row { grid-area: actions; }
@@ -165,6 +172,28 @@
   }
   .player-score { font-family: 'Fredoka One', cursive; font-size: 1.8rem; line-height: 1; }
   .player-initial { font-size: .8rem; font-weight: 600; }
+
+  /* Con 4-6 jugadores el tamaño cómodo de 2 no cabe en un móvil: se
+     encoge lo justo (tipografía, relleno y huecos) en vez de dejar que la
+     fila desborde la pantalla. Los cálculos de espacio son con la
+     pantalla más estrecha que se contempla (~360px). */
+  .top-panel.count-4, .top-panel.count-5, .top-panel.count-6 { gap: 6px; }
+  .top-panel.count-4 .player-card,
+  .top-panel.count-5 .player-card,
+  .top-panel.count-6 .player-card { padding: 6px 4px; }
+  .top-panel.count-4 .player-score { font-size: 1.5rem; }
+  .top-panel.count-5 .player-score { font-size: 1.3rem; }
+  .top-panel.count-6 .player-score { font-size: 1.15rem; }
+  .top-panel.count-5 .player-name,
+  .top-panel.count-6 .player-name { font-size: .6rem; letter-spacing: 0; }
+  .top-panel.count-4 .player-name { font-size: .66rem; letter-spacing: .2px; }
+  .top-panel.count-5 .player-initial,
+  .top-panel.count-6 .player-initial { font-size: .7rem; }
+  /* El dado también cede ancho cuando hay muchos jugadores. */
+  .top-panel.count-5 .dice-area,
+  .top-panel.count-6 .dice-area { width: 70px; }
+  .top-panel.count-5 .dice,
+  .top-panel.count-6 .dice { width: 44px; height: 44px; }
 
   /* ── Dado ── */
   .dice-area {
@@ -836,7 +865,7 @@
 // entre sí. sw.js sigue siendo aparte por necesidad (un service worker no
 // puede leer esta constante, vive en otro archivo) — al subir de versión,
 // solo hace falta tocar ESTA línea y la de sw.js, no una tercera copia más.
-const APP_VERSION = 'v2.43';
+const APP_VERSION = 'v2.44';
 // ?debug en la URL: números de índice en los círculos + tabla de métricas
 // del grafo de adyacencia en consola al generar el tablero.
 const DEBUG = new URLSearchParams(location.search).has('debug');
@@ -2265,6 +2294,10 @@ function buildGameUI() {
   // Limpiar tarjetas anteriores (conservar el dado)
   const diceArea = panel.querySelector('.dice-area');
   panel.innerHTML = '';
+  // Marca cuántos jugadores hay para que el CSS pueda encoger tarjetas,
+  // tipografía y huecos según haga falta — con 5-6 jugadores el tamaño
+  // cómodo de 2 no cabe en una pantalla de móvil.
+  panel.className = `top-panel count-${players.length}`;
 
   // Insertar tarjetas: mitad antes del dado, mitad después (o todas antes si 1-3)
   const half = Math.ceil(players.length / 2);
