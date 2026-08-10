@@ -1,10 +1,11 @@
-const CACHE = 'juego-circulos-v2.47';
+const CACHE = 'juego-circulos-v2.48';
 const ASSETS = [
   '/juego-circulos/',
   '/juego-circulos/index.html',
   '/juego-circulos/manifest.json',
   '/juego-circulos/icon-192.png',
   '/juego-circulos/icon-512.png',
+  '/juego-circulos/src/game/random.js',
   '/juego-circulos/src/game/geometry.js',
   '/juego-circulos/src/game/rules.js',
   '/juego-circulos/src/game/board.js',

@@ -28,13 +28,13 @@ function isAITurn() {
 
 function shuffleInPlace(arr) {
   for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const j = rngInt(i + 1);
     [arr[i], arr[j]] = [arr[j], arr[i]];
   }
 }
 
 function pickUniform(arr) {
-  return arr[Math.floor(Math.random() * arr.length)];
+  return arr[rngInt(arr.length)];
 }
 
 // Selección ponderada por número de triángulos (gain), no determinista —
@@ -44,7 +44,7 @@ function pickUniform(arr) {
 function weightedPickByGain(scoringMoves, power) {
   const weights = scoringMoves.map(m => Math.pow(m.gain, power));
   const total = weights.reduce((s, w) => s + w, 0);
-  let r = Math.random() * total;
+  let r = rngNext() * total;
   for (let k = 0; k < scoringMoves.length; k++) {
     r -= weights[k];
     if (r <= 0) return [scoringMoves[k].i, scoringMoves[k].j];
@@ -129,9 +129,9 @@ function chooseAIMove() {
 
   // 1. Intentar puntuar ahora
   let selectedType, move;
-  if (scoringMoves.length > 0 && Math.random() < level.scoringAwareness) {
+  if (scoringMoves.length > 0 && rngNext() < level.scoringAwareness) {
     selectedType = 'scoring';
-    if (Math.random() < level.bestScoringChance) {
+    if (rngNext() < level.bestScoringChance) {
       const maxGain = Math.max(...scoringMoves.map(m => m.gain));
       const best = scoringMoves.filter(m => m.gain === maxGain);
       const chosen = pickUniform(best);
@@ -139,11 +139,11 @@ function chooseAIMove() {
     } else {
       move = weightedPickByGain(scoringMoves, level.scoringPower);
     }
-  } else if (buildingMoves.length > 0 && Math.random() < level.buildingAwareness) {
+  } else if (buildingMoves.length > 0 && rngNext() < level.buildingAwareness) {
     // 2. Preparar un triángulo propio (si le queda otra línea este turno)
     selectedType = 'building';
     move = pickUniform(buildingMoves);
-  } else if (safeMoves.length > 0 && Math.random() < level.safetyAwareness) {
+  } else if (safeMoves.length > 0 && rngNext() < level.safetyAwareness) {
     // 3. Evitar dejar un cierre servido
     selectedType = 'safe';
     move = pickUniform(safeMoves);

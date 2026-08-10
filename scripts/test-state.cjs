@@ -10,6 +10,7 @@ const { readFileSync } = require('node:fs');
 const path = require('path');
 
 const html = readFileSync(path.join(__dirname, '..', 'index.html'), 'utf-8');
+const randomJs = readFileSync(path.join(__dirname, '..', 'src', 'game', 'random.js'), 'utf-8');
 const geometryJs = readFileSync(path.join(__dirname, '..', 'src', 'game', 'geometry.js'), 'utf-8');
 const rulesJs = readFileSync(path.join(__dirname, '..', 'src', 'game', 'rules.js'), 'utf-8');
 const boardJs = readFileSync(path.join(__dirname, '..', 'src', 'game', 'board.js'), 'utf-8');
@@ -17,7 +18,7 @@ const stateJs = readFileSync(path.join(__dirname, '..', 'src', 'game', 'state.js
 
 function extract(name) {
   const re = new RegExp(`function ${name}\\(.*?\\n\\}\\n`, 's');
-  const m = html.match(re) || geometryJs.match(re) || rulesJs.match(re) || boardJs.match(re) || stateJs.match(re);
+  const m = html.match(re) || randomJs.match(re) || geometryJs.match(re) || rulesJs.match(re) || boardJs.match(re) || stateJs.match(re);
   if (!m) throw new Error(`No se encontró function ${name}()`);
   return m[0];
 }
@@ -32,7 +33,12 @@ let circles, edges, triangles, players, currentPlayer, linesLeft, diceRolled;
 let lastRolledValue, gameStatus, aiDifficulty, selectedCircle;
 let candidatePairs, candidateNeighbors, lastMoveSnapshot;
 let activeCirclesCache, selectedTargetsCache;
+let rngSeed, rngCalls, rngFn;
 
+eval(extract('mulberry32')); eval(extract('seedRng')); eval(extract('rngNext'));
+eval(extract('rngInt')); eval(extract('getRngSeed')); eval(extract('getRngCalls'));
+eval(extract('restoreRng'));
+seedRng(1); // secuencia conocida para estas pruebas
 eval(extract('dist'));
 eval(extract('distSq'));
 eval(extract('cross2d'));

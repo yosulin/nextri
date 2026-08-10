@@ -10,6 +10,7 @@
 const { readFileSync } = require('node:fs');
 const path = require('path');
 const html = readFileSync(path.join(__dirname, '..', 'index.html'), 'utf-8');
+const randomJs = readFileSync(path.join(__dirname, '..', 'src', 'game', 'random.js'), 'utf-8');
 const geometryJs = readFileSync(path.join(__dirname, '..', 'src', 'game', 'geometry.js'), 'utf-8');
 const rulesJs = readFileSync(path.join(__dirname, '..', 'src', 'game', 'rules.js'), 'utf-8');
 const boardJs = readFileSync(path.join(__dirname, '..', 'src', 'game', 'board.js'), 'utf-8');
@@ -18,7 +19,7 @@ const aiJs = readFileSync(path.join(__dirname, '..', 'src', 'ai', 'ai.js'), 'utf
 
 function extract(name) {
   const re = new RegExp(`function ${name}\\(.*?\\n\\}\\n`, 's');
-  const m = html.match(re) || geometryJs.match(re) || rulesJs.match(re) || boardJs.match(re) || aiJs.match(re);
+  const m = html.match(re) || randomJs.match(re) || geometryJs.match(re) || rulesJs.match(re) || boardJs.match(re) || aiJs.match(re);
   if (!m) throw new Error(`No se encontró function ${name}() en index.html, geometry.js, rules.js, board.js ni ai.js`);
   return m[0];
 }
@@ -33,6 +34,11 @@ const DIST_EPS = 1e-6;
 const ADJACENCY_TARGET = { minDegree: 3, p10Degree: 5, meanMin: 8, meanMax: 11 };
 let CIRCLE_R, MAX_DIST_SQ, circles, edges, triangles, candidatePairs, candidateNeighbors, linesLeft, DEBUG = false;
 
+let rngSeed, rngCalls, rngFn;
+
+eval(extract('seedRng')); eval(extract('rngNext')); eval(extract('rngInt'));
+eval(extract('getRngSeed')); eval(extract('getRngCalls')); eval(extract('restoreRng'));
+seedRng(20260810); // semilla fija: la simulacion queda reproducible
 eval(extract('dist'));
 eval(extract('distSq'));
 eval(extract('cross2d'));

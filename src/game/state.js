@@ -46,6 +46,14 @@ function serializeGameState() {
       aiDifficulty
     },
 
+    // Semilla y cuántos números se han consumido: sin el contador, una
+    // partida reanudada seguiría con números distintos de los que le
+    // tocaban, y dejaría de coincidir con la partida original.
+    rng: {
+      seed: getRngSeed(),
+      calls: getRngCalls()
+    },
+
     // Geometría del tablero. Se congela al generar la partida y no cambia
     // hasta la siguiente, así que basta con guardarla tal cual.
     board: {
@@ -135,6 +143,9 @@ function restoreGameState(snapshot) {
     colorIndex: p.colorIndex,
     ...(p.isAI ? { isAI: true } : {})
   }));
+
+  // Rebobinar la secuencia al punto exacto en que se guardó.
+  if (snapshot.rng) restoreRng(snapshot.rng.seed, snapshot.rng.calls);
 
   currentPlayer = snapshot.turn.currentPlayer;
   linesLeft = snapshot.turn.linesLeft;

@@ -853,6 +853,7 @@
   </div>
 </div>
 
+<script src="src/game/random.js"></script>
 <script src="src/game/geometry.js"></script>
 <script src="src/game/rules.js"></script>
 <script src="src/game/board.js"></script>
@@ -867,7 +868,7 @@
 // entre sí. sw.js sigue siendo aparte por necesidad (un service worker no
 // puede leer esta constante, vive en otro archivo) — al subir de versión,
 // solo hace falta tocar ESTA línea y la de sw.js, no una tercera copia más.
-const APP_VERSION = 'v2.47';
+const APP_VERSION = 'v2.48';
 // ?debug en la URL: números de índice en los círculos + tabla de métricas
 // del grafo de adyacencia en consola al generar el tablero.
 const DEBUG = new URLSearchParams(location.search).has('debug');
@@ -1171,6 +1172,12 @@ function initPlayerCountSelector() {
 function startGame() {
   gameGeneration++;
   clearSavedGame(); // la partida nueva sustituye a cualquier guardado previo
+  // Semilla de la partida: al azar salvo que se fuerce con ?seed=12345 en
+  // la URL, que sirve para reproducir un tablero exacto (depurar un caso
+  // raro, o repetir una partida concreta).
+  const semillaForzada = new URLSearchParams(location.search).get('seed');
+  seedRng(semillaForzada !== null ? Number(semillaForzada) : undefined);
+  if (DEBUG) console.log('semilla de la partida:', getRngSeed());
   lastMoveSnapshot = null;
   lastAIEdgeKey = null;
   aiHighlightGen++;
@@ -1200,7 +1207,7 @@ function startGame() {
   // Orden aleatorio: mezclar array de jugadores si está activado
   if (isRandomOrder()) {
     for (let i = players.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
+      const j = rngInt(i + 1);
       [players[i], players[j]] = [players[j], players[i]];
     }
   }
@@ -1446,7 +1453,7 @@ function rollDice(isAICall) {
     }
     dice.classList.remove('rolling');
     dice.removeAttribute('aria-disabled');
-    const val = Math.floor(Math.random() * 6) + 1;
+    const val = rngInt(6) + 1;
     linesLeft  = val;
     lastRolledValue = val;
     diceRolled = true;
