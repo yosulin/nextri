@@ -105,7 +105,7 @@ function runOne(N, seed) {
 }
 
 const SAMPLE_SIZES = [25, 35, 50, 65, 80, 100];
-const RUNS_PER_SIZE = 250;
+const RUNS_PER_SIZE = Number(process.env.RUNS_PER_SIZE) || 250; // configurable para CI
 let anyFailure = false;
 const failedSeeds = [];
 

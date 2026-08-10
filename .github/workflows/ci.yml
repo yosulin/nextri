@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:   # ejecución completa a mano desde la pestaña Actions
+  schedule:
+    - cron: '0 3 * * *'  # nocturno: simulaciones largas
+
+jobs:
+  # Rápido, en cada push: sintaxis + coherencia + pruebas deterministas.
+  # Estas no dependen del tamaño de muestra, así que se corren enteras.
+  comprobaciones:
+    name: Sintaxis y pruebas
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Sintaxis, precaché y versiones
+        run: node scripts/check-syntax.cjs
+
+      - name: Estado serializable (ida y vuelta)
+        run: node scripts/test-state.cjs
+
+      - name: Guardar / continuar partida
+        run: node scripts/test-storage.cjs
+
+  # Simulaciones estadísticas. En push/PR van reducidas para no eternizar
+  # cada commit; enteras por la noche y cuando se lanzan a mano.
+  simulaciones:
+    name: Simulaciones del motor
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Elegir tamaño de muestra
+        id: muestra
+        run: |
+          if [ "${{ github.event_name }}" = "push" ] || [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "runs=60"      >> "$GITHUB_OUTPUT"
+            echo "scenarios=40" >> "$GITHUB_OUTPUT"
+          else
+            echo "runs=250"      >> "$GITHUB_OUTPUT"
+            echo "scenarios=120" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Generación de tableros y calibración de adyacencia
+        env:
+          RUNS_PER_SIZE: ${{ steps.muestra.outputs.runs }}
+        run: node scripts/simulate-adjacency.cjs
+
+      # Con menos de 120 escenarios, averageGain no es concluyente y el
+      # propio script lo trata como aviso en vez de fallo (ver el comentario
+      # allí). giftRate y "cero movimientos ilegales" sí son estrictos
+      # también en la versión reducida.
+      - name: Niveles de Circuit (Fácil / Medio / Difícil)
+        env:
+          SCENARIOS: ${{ steps.muestra.outputs.scenarios }}
+        run: node scripts/simulate-ai.cjs

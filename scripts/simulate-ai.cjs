@@ -129,7 +129,10 @@ const LEVELS = ['easy', 'medium', 'hard'];
 // regresión que no lo es (comprobado: otros 35 escenarios distintos sí
 // diferencian). giftRate y "movimientos ilegales" sí dan señal fiable con
 // pocos escenarios. Para juzgar averageGain, dejar 120.
-const SCENARIOS = 120;
+// Configurable para CI (SCENARIOS=50 node scripts/simulate-ai.cjs). Por
+// defecto 120, que es lo que hace falta para juzgar averageGain.
+const SCENARIOS = Number(process.env.SCENARIOS) || 120;
+const MUESTRA_FIABLE_GAIN = 120; // por debajo, averageGain no es concluyente
 const TRIALS_PER_SCENARIO = 40;
 
 const stats = {};
@@ -183,11 +186,21 @@ for (const level of LEVELS) {
 console.log('');
 let ok = true;
 
-if (!(summary.hard.avgGain > summary.medium.avgGain && summary.medium.avgGain > summary.easy.avgGain)) {
+const gainCreciente = summary.hard.avgGain > summary.medium.avgGain &&
+                      summary.medium.avgGain > summary.easy.avgGain;
+if (gainCreciente) {
+  console.log('OK: averageGainHard > averageGainMedium > averageGainEasy');
+} else if (SCENARIOS < MUESTRA_FIABLE_GAIN) {
+  // Con pocos escenarios esta métrica NO es concluyente y hacerla fallar
+  // seria una falsa alarma (comprobado: subconjuntos distintos del mismo
+  // codigo dan 1.000 exacto o 1.017/1.022/1.028). Se avisa y se sigue;
+  // giftRate y "movimientos ilegales" si dan señal fiable aqui.
+  console.warn(`AVISO: averageGain no diferencia con SCENARIOS=${SCENARIOS} ` +
+    `(${summary.hard.avgGain.toFixed(3)} / ${summary.medium.avgGain.toFixed(3)} / ${summary.easy.avgGain.toFixed(3)}). ` +
+    `No es concluyente por debajo de ${MUESTRA_FIABLE_GAIN} escenarios; no se considera fallo.`);
+} else {
   console.error(`FALLO: averageGain no es estrictamente creciente Hard>Medium>Easy (${summary.hard.avgGain.toFixed(3)} / ${summary.medium.avgGain.toFixed(3)} / ${summary.easy.avgGain.toFixed(3)})`);
   ok = false;
-} else {
-  console.log('OK: averageGainHard > averageGainMedium > averageGainEasy');
 }
 
 if (!(summary.hard.giftRate < summary.medium.giftRate && summary.medium.giftRate < summary.easy.giftRate)) {
