@@ -13,16 +13,19 @@ const html = readFileSync(path.join(__dirname, '..', 'index.html'), 'utf-8');
 const geometryJs = readFileSync(path.join(__dirname, '..', 'src', 'game', 'geometry.js'), 'utf-8');
 const rulesJs = readFileSync(path.join(__dirname, '..', 'src', 'game', 'rules.js'), 'utf-8');
 const boardJs = readFileSync(path.join(__dirname, '..', 'src', 'game', 'board.js'), 'utf-8');
+const levelsJs = readFileSync(path.join(__dirname, '..', 'src', 'ai', 'levels.js'), 'utf-8');
+const aiJs = readFileSync(path.join(__dirname, '..', 'src', 'ai', 'ai.js'), 'utf-8');
 
 function extract(name) {
   const re = new RegExp(`function ${name}\\(.*?\\n\\}\\n`, 's');
-  const m = html.match(re) || geometryJs.match(re) || rulesJs.match(re) || boardJs.match(re);
-  if (!m) throw new Error(`No se encontró function ${name}() en index.html, geometry.js, rules.js ni board.js`);
+  const m = html.match(re) || geometryJs.match(re) || rulesJs.match(re) || boardJs.match(re) || aiJs.match(re);
+  if (!m) throw new Error(`No se encontró function ${name}() en index.html, geometry.js, rules.js, board.js ni ai.js`);
   return m[0];
 }
 function extractConst(name) {
-  const m = html.match(new RegExp(`const ${name} = (\\{.*?\\n\\});\\n`, 's'));
-  if (!m) throw new Error(`No se encontró const ${name} en index.html`);
+  const re = new RegExp(`const ${name} = (\\{.*?\\n\\});\\n`, 's');
+  const m = html.match(re) || levelsJs.match(re);
+  if (!m) throw new Error(`No se encontró const ${name} en index.html ni en src/ai/levels.js`);
   return m[1]; // solo el objeto literal, sin "const NOMBRE ="
 }
 

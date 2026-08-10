@@ -826,6 +826,8 @@
 <script src="src/game/geometry.js"></script>
 <script src="src/game/rules.js"></script>
 <script src="src/game/board.js"></script>
+<script src="src/ai/levels.js"></script>
+<script src="src/ai/ai.js"></script>
 <script>
 // ── Constantes ──────────────────────────────────────────────────────────────
 // Única fuente de la versión visible — antes se escribía a mano en tres
@@ -833,7 +835,7 @@
 // entre sí. sw.js sigue siendo aparte por necesidad (un service worker no
 // puede leer esta constante, vive en otro archivo) — al subir de versión,
 // solo hace falta tocar ESTA línea y la de sw.js, no una tercera copia más.
-const APP_VERSION = 'v2.41';
+const APP_VERSION = 'v2.42';
 // ?debug en la URL: números de índice en los círculos + tabla de métricas
 // del grafo de adyacencia en consola al generar el tablero.
 const DEBUG = new URLSearchParams(location.search).has('debug');
@@ -1851,153 +1853,16 @@ function advanceTurn() {
 }
 
 // ── Modo 1 jugador: la máquina ────────────────────────────────────────────
-// UN ÚNICO algoritmo (chooseAIMove) — la dificultad es configuración
-// (AI_LEVELS), no tres motores distintos. checkMoveValidity() sigue siendo
-// la única fuente de verdad sobre legalidad; la IA nunca se salta esa
-// comprobación ni conoce nada que el humano no pudiera calcular él mismo
-// mirando el tablero. La dificultad se consigue con "racionalidad
-// limitada" (cuánto analiza, con qué frecuencia detecta/elige bien), NO
-// haciendo trampas ni mirando la puntuación del rival (nada de
-// rubber-banding) — el nivel se mantiene igual gane o pierda.
-const AI_LEVELS = {
-  easy: {
-    scoringAwareness: 0.65,   // prob. de "ver" que hay jugada(s) puntuable(s)
-    bestScoringChance: 0.35,  // entre las vistas, prob. de coger la de más triángulos
-    scoringPower: 1.2,        // ponderación por triángulos si no coge la mejor
-    buildingAwareness: 0.40,  // prob. de aprovechar una construcción propia
-    safetyAwareness: 0.45,    // prob. de evitar dejar un cierre servido
-    candidateLimit: 20        // cuántos movimientos legales analiza como mucho
-  },
-  medium: {
-    scoringAwareness: 0.88,
-    bestScoringChance: 0.60,
-    scoringPower: 1.6,
-    buildingAwareness: 0.70,
-    safetyAwareness: 0.75,
-    candidateLimit: 45
-  },
-  hard: {
-    scoringAwareness: 0.98,
-    bestScoringChance: 0.88,
-    scoringPower: 2.2,
-    buildingAwareness: 0.90,
-    safetyAwareness: 0.92,
-    candidateLimit: 9999 // prácticamente todos
-  }
-};
-let aiDifficulty = 'medium';
-
-function isAITurn() {
-  return !!players[currentPlayer]?.isAI;
-}
-
-function shuffleInPlace(arr) {
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-}
-
-function pickUniform(arr) {
-  return arr[Math.floor(Math.random() * arr.length)];
-}
-
-// Selección ponderada por número de triángulos (gain), no determinista —
-// más triángulos aumenta la PROBABILIDAD de elegirse, no la garantiza.
-// Sin esto, la máquina jugaría sistemáticamente mejor que una persona
-// (que no siempre ve/prioriza la jugada objetivamente óptima).
-function weightedPickByGain(scoringMoves, power) {
-  const weights = scoringMoves.map(m => Math.pow(m.gain, power));
-  const total = weights.reduce((s, w) => s + w, 0);
-  let r = Math.random() * total;
-  for (let k = 0; k < scoringMoves.length; k++) {
-    r -= weights[k];
-    if (r <= 0) return [scoringMoves[k].i, scoringMoves[k].j];
-  }
-  const last = scoringMoves[scoringMoves.length - 1];
-  return [last.i, last.j];
-}
-
-function chooseAIMove() {
-  const level = AI_LEVELS[aiDifficulty] || AI_LEVELS.medium;
-
-  // Movimientos legales — checkMoveValidity() sigue siendo la única fuente
-  // de verdad, aquí no se reimplementa ninguna regla por su cuenta.
-  const legalMoves = [];
-  for (const { i, j } of candidatePairs) {
-    if (checkMoveValidity(i, j).valid) legalMoves.push([i, j]);
-  }
-  if (legalMoves.length === 0) return null;
-
-  // "Visión" limitada según dificultad — no analiza el tablero entero,
-  // una muestra al azar de hasta candidateLimit movimientos. Así Fácil de
-  // verdad se deja cosas por mirar, no es que juegue mal a propósito con
-  // información completa.
-  shuffleInPlace(legalMoves);
-  const visible = legalMoves.slice(0, level.candidateLimit);
-
-  // Si le queda otra línea este mismo turno, sentar la base de un
-  // triángulo no es un regalo al rival — es preparar cerrarlo ella misma
-  // en la siguiente jugada (ver v2.27). Solo en la última línea del turno
-  // ese mismo patrón sería un regalo de verdad.
-  const canFollowUpThisTurn = linesLeft > 1;
-  const scoringMoves = []; // {i, j, gain}
-  const buildingMoves = [];
-  const safeMoves = [];
-
-  for (const [i, j] of visible) {
-    const gain = findNewTriangles(i, j).length;
-    if (gain > 0) {
-      scoringMoves.push({ i, j, gain });
-      continue;
-    }
-    const setsUpReply = createsScoringReply(i, j);
-    if (setsUpReply && canFollowUpThisTurn) {
-      buildingMoves.push([i, j]);
-    } else if (!setsUpReply) {
-      safeMoves.push([i, j]);
-    }
-  }
-
-  // 1. Intentar puntuar ahora
-  let selectedType, move;
-  if (scoringMoves.length > 0 && Math.random() < level.scoringAwareness) {
-    selectedType = 'scoring';
-    if (Math.random() < level.bestScoringChance) {
-      const maxGain = Math.max(...scoringMoves.map(m => m.gain));
-      const best = scoringMoves.filter(m => m.gain === maxGain);
-      const chosen = pickUniform(best);
-      move = [chosen.i, chosen.j];
-    } else {
-      move = weightedPickByGain(scoringMoves, level.scoringPower);
-    }
-  } else if (buildingMoves.length > 0 && Math.random() < level.buildingAwareness) {
-    // 2. Preparar un triángulo propio (si le queda otra línea este turno)
-    selectedType = 'building';
-    move = pickUniform(buildingMoves);
-  } else if (safeMoves.length > 0 && Math.random() < level.safetyAwareness) {
-    // 3. Evitar dejar un cierre servido
-    selectedType = 'safe';
-    move = pickUniform(safeMoves);
-  } else {
-    // 4. No hay alternativa (o el nivel decidió no aplicar ninguna de las
-    // anteriores): cualquier movimiento legal de los visibles.
-    selectedType = 'any';
-    move = pickUniform(visible);
-  }
-
-  if (DEBUG) {
-    const gain = selectedType === 'scoring' ? findNewTriangles(move[0], move[1]).length : 0;
-    window.aiDebug = {
-      difficulty: aiDifficulty, linesLeft, legalMoves: legalMoves.length,
-      consideredMoves: visible.length, scoringMoves: scoringMoves.length,
-      buildingMoves: buildingMoves.length, safeMoves: safeMoves.length,
-      selectedType, selectedMove: move, gain
-    };
-  }
-  return move;
-}
-
+// AI_LEVELS/aiDifficulty ahora vienen de src/ai/levels.js, y
+// isAITurn()/chooseAIMove()/createsScoringReply() y sus ayudantes de
+// src/ai/ai.js. scheduleAITurnIfNeeded()/runAIMoves() se quedan aquí abajo
+// a propósito: son orquestación de turno (temporizadores, dado, aplicar la
+// jugada), no la decisión en sí.
+//
+// Este registro de window.circlesAI() TIENE que quedarse aquí y no en
+// ai.js: se ejecuta al cargar, y DEBUG se declara en este mismo script,
+// que corre DESPUÉS de los de src/ — allí daría ReferenceError y rompería
+// la app entera al arrancar.
 // Con ?debug: window.circlesAI() en consola para ver la última decisión
 // de la máquina — útil para calibrar Fácil/Medio/Difícil tras jugar.
 if (DEBUG) {
@@ -2005,41 +1870,6 @@ if (DEBUG) {
     console.table(window.aiDebug || { info: 'la máquina no ha jugado todavía' });
     return window.aiDebug;
   };
-}
-
-// ¿Añadir la arista i-j deja lista una jugada posterior que cerraría un
-// triángulo? La INTERPRETACIÓN depende de quién juega a continuación:
-// con linesLeft>1 puede ser una oportunidad para la propia máquina (ver
-// chooseAIMove); con linesLeft===1 sería un regalo al siguiente jugador.
-// Esta función solo contesta el hecho geométrico, no decide si es bueno o
-// malo — por eso ya no se llama "wouldGift...".
-//
-// Optimizada: cualquier triángulo nuevo causado por la arista i-j tiene
-// que tener la forma i-j-k, así que solo hace falta mirar los vecinos
-// candidatos de i o de j, no candidatePairs entero (evitaba acercarse a
-// candidatos×candidatos comparaciones). try/finally garantiza que la
-// arista de prueba se retira siempre, incluso si algo de en medio lanzara
-// un error.
-// edgeKey() ahora viene de src/game/rules.js
-
-function createsScoringReply(i, j) {
-  const key = edgeKey(i, j);
-  edges.add(key);
-  try {
-    const neighbors = new Set([...(candidateNeighbors[i] || []), ...(candidateNeighbors[j] || [])]);
-    for (const k of neighbors) {
-      if (k === i || k === j) continue;
-      const ik = edgeExists(i, k);
-      const jk = edgeExists(j, k);
-      if (ik === jk) continue; // hace falta que falte EXACTAMENTE el tercer lado
-      const from = ik ? j : i;
-      if (!checkMoveValidity(from, k).valid) continue;
-      if (findNewTriangles(from, k).length > 0) return true;
-    }
-    return false;
-  } finally {
-    edges.delete(key);
-  }
 }
 
 function scheduleAITurnIfNeeded() {
