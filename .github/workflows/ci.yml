@@ -73,3 +73,23 @@ jobs:
         env:
           SCENARIOS: ${{ steps.muestra.outputs.scenarios }}
         run: node scripts/simulate-ai.cjs
+
+  # Prueba de humo en un navegador real. Es el hueco que dejó pasar tres
+  # fallos que solo aparecían al abrir el juego: todo lo demás corre en
+  # Node, que no carga index.html ni tiene DOM.
+  navegador:
+    name: Prueba de humo en navegador
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Instalar Playwright y servidor estático
+        run: |
+          npm install --no-save @playwright/test http-server
+          npx playwright install --with-deps chromium
+
+      - name: Cargar la app real y jugar una partida
+        run: npx playwright test --config=playwright.config.mjs

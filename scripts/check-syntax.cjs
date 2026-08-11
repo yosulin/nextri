@@ -134,6 +134,21 @@ for (const m of modulos) {
   }
 }
 
+// Ningún atributo on* incrustado en el HTML. Con el script principal como
+// módulo ES, esas funciones NO están en window, así que un onclick/oninput
+// residual simplemente no hace nada — sin error ni aviso. Pasó con el
+// deslizador y la casilla al convertir a módulos.
+const soloHtml = html.replace(/<script[\s\S]*?<\/script>/g, '');
+const inline = [...soloHtml.matchAll(/\son([a-z]+)\s*=\s*"/gi)];
+if (inline.length) {
+  for (const m of inline) {
+    console.error(`ERR atributo on${m[1]}= incrustado en el HTML: no funciona con <script type="module">`);
+    fallos++;
+  }
+} else {
+  console.log('OK  sin manejadores on* incrustados en el HTML');
+}
+
 // Cada data-accion del HTML debe tener manejador, y cada manejador debe
 // usarse. Sin esto, un botón puede quedarse mudo sin que nada avise: no
 // es un error de sintaxis, simplemente no pasa nada al pulsarlo.

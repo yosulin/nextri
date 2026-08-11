@@ -751,7 +751,7 @@
       <div class="setup-label">Círculos en el tablero</div>
       <div class="slider-row">
         <input type="range" id="circleSlider" min="25" max="100" value="35"
-          oninput="onSliderChange(this.value)" onchange="vibrate(HAPTIC.tap)">
+          data-accion="circulos">
         <div class="slider-val" id="sliderVal">35</div>
       </div>
       <div class="rec-hint" id="recHint"></div>
@@ -760,7 +760,7 @@
     <!-- Orden aleatorio -->
     <div class="setup-section">
       <label class="toggle-row">
-        <input type="checkbox" id="randomToggleInput" class="sr-toggle-input" onchange="toggleRandom()">
+        <input type="checkbox" id="randomToggleInput" class="sr-toggle-input" data-accion="orden-aleatorio">
         <div class="toggle-track" id="toggleTrack" aria-hidden="true">
           <div class="toggle-thumb" id="toggleThumb"></div>
         </div>
@@ -859,26 +859,26 @@
 // global — funcionaba, pero nada declaraba qué necesitaba cada uno, y una
 // mezcla de versiones en caché podía emparejar mitades incompatibles sin
 // que nada lo detectara.
-import { seedRng, rngNextFrom, rngIntFrom, getRngSeed, getRngState, restoreRngState } from './src/game/random.js?v=2.57';
-import { dist, distSq, segmentPassesOverCircle, pointInTriangle, segmentsIntersect } from './src/game/geometry.js?v=2.57';
+import { seedRng, rngNextFrom, rngIntFrom, getRngSeed, getRngState, restoreRngState } from './src/game/random.js?v=2.58';
+import { dist, distSq, segmentPassesOverCircle, pointInTriangle, segmentsIntersect } from './src/game/geometry.js?v=2.58';
 import { MOVE_REASON_TEXT, edgeKey, edgeExists, connectionCount, areAdjacent,
-         lineIntersectsAny, findNewTriangles, triangleTraps, checkMoveValidity } from './src/game/rules.js?v=2.57';
+         lineIntersectsAny, findNewTriangles, triangleTraps, checkMoveValidity } from './src/game/rules.js?v=2.58';
 import { ADJACENCY_TARGET, generateCirclePositions, buildCandidateGraph,
-         attemptBoardGeneration, chooseAdjacency, finalizeAdjacency } from './src/game/board.js?v=2.57';
+         attemptBoardGeneration, chooseAdjacency, finalizeAdjacency } from './src/game/board.js?v=2.58';
 import { createPlayer, playerById, nextPlayerId, applyAction, hasAnyLegalMove,
-         replayFromLog } from './src/game/engine.js?v=2.57';
+         replayFromLog } from './src/game/engine.js?v=2.58';
 import { STATE_SCHEMA_VERSION, RULES_VERSION, serializeGameState, restoreGameState,
-         migrateGameSnapshot, isValidGameSnapshot } from './src/game/state.js?v=2.57';
-import { AI_LEVELS, setDifficulty, getDifficulty } from './src/ai/levels.js?v=2.57';
-import { chooseAIMove, createsScoringReply } from './src/ai/ai.js?v=2.57';
-import { saveGame, loadSavedGame, clearSavedGame, hasSavedGame } from './src/platform/storage.js?v=2.57';
+         migrateGameSnapshot, isValidGameSnapshot } from './src/game/state.js?v=2.58';
+import { AI_LEVELS, setDifficulty, getDifficulty } from './src/ai/levels.js?v=2.58';
+import { chooseAIMove, createsScoringReply } from './src/ai/ai.js?v=2.58';
+import { saveGame, loadSavedGame, clearSavedGame, hasSavedGame } from './src/platform/storage.js?v=2.58';
 // ── Constantes ──────────────────────────────────────────────────────────────
 // Única fuente de la versión visible — antes se escribía a mano en tres
 // sitios (aquí, el panel de info, y el CACHE de sw.js) y se desincronizaban
 // entre sí. sw.js sigue siendo aparte por necesidad (un service worker no
 // puede leer esta constante, vive en otro archivo) — al subir de versión,
 // solo hace falta tocar ESTA línea y la de sw.js, no una tercera copia más.
-const APP_VERSION = 'v2.57';
+const APP_VERSION = 'v2.58';
 // Tres conceptos distintos, deliberadamente separados:
 //   APP_VERSION         — versión desplegada; sube aunque solo cambie un icono.
 //   RULES_VERSION       — reglas del juego; solo sube si cambia CÓMO se juega.
@@ -2556,8 +2556,16 @@ const ACCIONES = {
   'abrir-info':  () => { vibrate(HAPTIC.select); openDialog('infoOverlay'); },
   cerrar:        (el) => closeDialog(el.dataset.objetivo),
   jugadores:     (el) => pcButtonClick(Number(el.dataset.n)),
-  dificultad:    (el) => setAIDifficulty(el.dataset.nivel)
+  dificultad:    (el) => setAIDifficulty(el.dataset.nivel),
+  circulos:      (el) => onSliderChange(el.value),
+  'orden-aleatorio': () => toggleRandom()
 };
+
+// Algunos controles no se manejan con 'click' sino con sus propios
+// eventos: un deslizador necesita 'input' (mientras se arrastra) y una
+// casilla 'change'. Se declaran aquí para que conectarAcciones() sepa a
+// qué evento engancharse.
+const EVENTO_DE = { circulos: 'input', 'orden-aleatorio': 'change' };
 
 function conectarAcciones() {
   document.querySelectorAll('[data-accion]').forEach(el => {
@@ -2570,7 +2578,7 @@ function conectarAcciones() {
       return;
     }
     const fn = ACCIONES[nombre];
-    if (fn) el.addEventListener('click', () => fn(el));
+    if (fn) el.addEventListener(EVENTO_DE[nombre] || 'click', () => fn(el));
   });
 }
 

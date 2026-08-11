@@ -9,7 +9,7 @@
 // la app no arranque por eso sería mucho peor. Ante cualquier duda:
 // devolver null / no hacer nada, nunca propagar el error.
 
-import { serializeGameState, migrateGameSnapshot, isValidGameSnapshot } from '../game/state.js?v=2.57';
+import { serializeGameState, migrateGameSnapshot, isValidGameSnapshot } from '../game/state.js?v=2.58';
 
 export const SAVE_KEY = 'juego-circulos:partida';
 
