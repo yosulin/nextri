@@ -38,6 +38,25 @@ export const AI_LEVELS = {
   }
 };
 
+// Los tres rivales. No son "niveles de dificultad" sino personalidades:
+// un mismo chooseAIMove() con parámetros distintos. Presentarlos como
+// rivales con nombre hace la elección más concreta que Fácil/Medio/Difícil.
+export const RIVALES = {
+  delta:   { nivel: 'easy',   nombre: 'Delta',   apodo: 'Espontáneo',
+             descripcion: 'Juega por instinto y se despista. Buen rival para empezar.' },
+  circuit: { nivel: 'medium', nombre: 'Circuit', apodo: 'Estratega',
+             descripcion: 'Busca oportunidades y sabe defenderse.', recomendado: true },
+  vector:  { nivel: 'hard',   nombre: 'Vector',  apodo: 'Analista',
+             descripcion: 'Ve casi todo el tablero y castiga cualquier descuido.' }
+};
+
+export let rivalElegido = 'circuit';
+export function setRival(id) {
+  if (RIVALES[id]) { rivalElegido = id; aiDifficulty = RIVALES[id].nivel; }
+  return rivalElegido;
+}
+export function getRival() { return RIVALES[rivalElegido]; }
+
 export let aiDifficulty = 'medium';
 
 // Un módulo ES no permite que quien importa asigne a la variable

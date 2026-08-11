@@ -31,9 +31,14 @@ test('la aplicación arranca y se puede jugar', async ({ page }) => {
   // 1. Arranca y la inicialización ha corrido de verdad (esto es lo que
   //    fallaba en v2.57: la página se veía bien pero no respondía).
   await expect(page.locator('#versionTag')).not.toBeEmpty();
-  await expect(page.locator('#nameInput0')).toHaveCount(1); // setPlayerCount(2) corrió
+  await expect(page.locator('#nameInput0')).toHaveCount(1); // la inicialización corrió
+  // Modo Local para probar el flujo de varios jugadores
+  await page.locator('[data-accion="modo"][data-modo="local"]').click();
+  await expect(page.locator('#localPlayersSection')).toBeVisible();
 
   // 2. Controles que antes eran atributos on* incrustados
+  // Las opciones están plegadas: hay que abrirlas para tocar el deslizador.
+  await page.locator('#opcionesPartida summary').click();
   const slider = page.locator('#circleSlider');
   await slider.evaluate(el => { el.value = '50'; el.dispatchEvent(new Event('input', { bubbles: true })); });
   await expect(page.locator('#sliderVal')).toHaveText('50');
@@ -77,9 +82,10 @@ test('el modo Solo contra la máquina arranca sin errores', async ({ page }) => 
   const errores = vigilarErrores(page);
   await page.goto('/index.html');
 
-  await page.locator('[data-accion="jugadores"][data-n="1"]').click();
+  await page.locator('[data-accion="modo"][data-modo="solo"]').click();
   await expect(page.locator('#soloModeInfo')).toBeVisible();
-  await page.locator('[data-accion="dificultad"][data-nivel="hard"]').click();
+  await page.locator('[data-accion="rival"][data-rival="vector"]').click();
+  await expect(page.locator('#startBtn')).toContainText('Vector');
   await page.locator('#setupPanel [data-accion="empezar"]').click();
   await expect(page.locator('#gameUI')).toHaveClass(/is-active/);
 

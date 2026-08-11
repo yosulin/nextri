@@ -638,6 +638,56 @@
   .corner-btn.bottom-right { right: 16px; }
   .corner-btn:hover { color: var(--text); border-color: var(--p1-color); }
 
+  /* ── Selector de modo y rivales ── */
+  .mode-row { display: flex; gap: 10px; width: 100%; }
+  .mode-btn {
+    flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;
+    background: var(--surface); border: 2px solid var(--border); border-radius: 14px;
+    padding: 12px 8px; color: var(--muted); cursor: pointer;
+    font-family: 'Nunito', sans-serif; font-weight: 700; font-size: .9rem;
+    transition: border-color .2s, color .2s;
+  }
+  .mode-btn .mode-icon { font-size: 1.4rem; }
+  .mode-btn.is-active { border-color: var(--p1-color); color: var(--p1-color); }
+
+  .rival-row { display: flex; gap: 8px; width: 100%; }
+  .rival-btn {
+    flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 2px;
+    background: var(--surface); border: 2px solid var(--border); border-radius: 12px;
+    padding: 10px 4px; cursor: pointer; font-family: 'Nunito', sans-serif;
+    transition: border-color .2s;
+  }
+  .rival-btn .rival-name { font-weight: 800; font-size: .95rem; color: var(--text); }
+  .rival-btn .rival-tag { font-size: .68rem; color: var(--muted); }
+  .rival-btn.is-active { border-color: var(--p2-color); }
+  .rival-btn.is-active .rival-name { color: var(--p2-color); }
+  .rival-desc {
+    font-size: .8rem; color: var(--muted); text-align: center;
+    margin-top: 8px; line-height: 1.4;
+  }
+  .rival-desc strong { color: var(--text); }
+  .rival-rec {
+    display: inline-block; font-size: .68rem; font-weight: 700;
+    color: var(--p2-color); border: 1px solid var(--p2-color);
+    border-radius: 999px; padding: 1px 8px; margin-left: 4px;
+  }
+
+  /* Opciones secundarias: plegadas para no competir con la decisión principal */
+  .setup-options { width: 100%; }
+  .setup-options > summary {
+    cursor: pointer; list-style: none; padding: 10px 0;
+    font-size: .75rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 1px; color: var(--muted);
+    display: flex; justify-content: space-between; align-items: center; gap: 8px;
+  }
+  .setup-options > summary::-webkit-details-marker { display: none; }
+  .setup-options > summary::after { content: '›'; font-size: 1.2rem; }
+  .setup-options[open] > summary::after { content: '⌄'; }
+  .options-summary {
+    text-transform: none; letter-spacing: 0; font-weight: 600;
+    font-size: .78rem; color: var(--muted); margin-left: auto;
+  }
+
   /* ── Panel de info ── */
   .info-overlay {
     position: fixed;
@@ -709,34 +759,52 @@
 </head>
 <body>
 
-<h1>● Juego de Círculos</h1>
+<h1 id="tituloApp">● Juego de Círculos</h1>
 <div id="versionTag" style="font-size:.72rem;color:var(--muted);letter-spacing:1px;margin-top:-8px;"></div>
 
 <!-- Config de nombres -->
 <div id="setupPanel" style="display:flex;flex-direction:column;align-items:center;gap:16px;width:100%;max-width:480px;">
   <div class="setup-box">
 
-    <!-- Número de jugadores -->
+    <!-- Cómo jugar: Solo o Local (queda sitio para 'online') -->
     <div class="setup-section">
+      <div class="setup-label">¿Cómo quieres jugar?</div>
+      <div class="mode-row" role="radiogroup" aria-label="Modo de juego">
+        <button type="button" class="mode-btn is-active" data-accion="modo" data-modo="solo" role="radio" aria-checked="true">
+          <span class="mode-icon">🤖</span><span>Solo</span>
+        </button>
+        <button type="button" class="mode-btn" data-accion="modo" data-modo="local" role="radio" aria-checked="false">
+          <span class="mode-icon">👥</span><span>Local</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Solo: elegir rival -->
+    <div class="setup-section" id="soloModeInfo">
+      <div class="setup-label">Elige tu rival</div>
+      <div class="rival-row" role="radiogroup" aria-label="Rival">
+        <button type="button" class="rival-btn" data-accion="rival" data-rival="delta" role="radio" aria-checked="false">
+          <span class="rival-name">Delta</span><span class="rival-tag">Espontáneo</span>
+        </button>
+        <button type="button" class="rival-btn is-active" data-accion="rival" data-rival="circuit" role="radio" aria-checked="true">
+          <span class="rival-name">Circuit</span><span class="rival-tag">Estratega</span>
+        </button>
+        <button type="button" class="rival-btn" data-accion="rival" data-rival="vector" role="radio" aria-checked="false">
+          <span class="rival-name">Vector</span><span class="rival-tag">Analista</span>
+        </button>
+      </div>
+      <div class="rival-desc" id="rivalDesc"></div>
+    </div>
+
+    <!-- Local: cuántos jugadores -->
+    <div class="setup-section" id="localPlayersSection" style="display:none;">
       <div class="setup-label">Número de jugadores</div>
       <div class="player-count-row" id="pcRow" role="radiogroup" aria-label="Número de jugadores">
-        <button type="button" class="pc-btn" data-n="1" role="radio" aria-checked="false" data-accion="jugadores" style="font-size:.85rem;">Solo</button>
         <button type="button" class="pc-btn" data-n="2" role="radio" aria-checked="false" data-accion="jugadores">2</button>
         <button type="button" class="pc-btn" data-n="3" role="radio" aria-checked="false" data-accion="jugadores">3</button>
         <button type="button" class="pc-btn" data-n="4" role="radio" aria-checked="false" data-accion="jugadores">4</button>
         <button type="button" class="pc-btn" data-n="5" role="radio" aria-checked="false" data-accion="jugadores">5</button>
         <button type="button" class="pc-btn" data-n="6" role="radio" aria-checked="false" data-accion="jugadores">6</button>
-      </div>
-    </div>
-
-    <!-- Modo Solo: se muestra solo con numPlayers === 1 -->
-    <div class="setup-section" id="soloModeInfo" style="display:none;">
-      <div class="solo-banner">🤖 Jugarás contra Circuit</div>
-      <div class="setup-label">Dificultad</div>
-      <div class="player-count-row" id="difficultyRow" role="radiogroup" aria-label="Dificultad de la máquina">
-        <button type="button" class="pc-btn diff-btn" data-diff="easy" role="radio" aria-checked="false" data-accion="dificultad" data-nivel="easy">Fácil</button>
-        <button type="button" class="pc-btn diff-btn is-active" data-diff="medium" role="radio" aria-checked="true" data-accion="dificultad" data-nivel="medium">Medio</button>
-        <button type="button" class="pc-btn diff-btn" data-diff="hard" role="radio" aria-checked="false" data-accion="dificultad" data-nivel="hard">Difícil</button>
       </div>
     </div>
 
@@ -746,7 +814,9 @@
       <div class="names-grid" id="namesGrid"></div>
     </div>
 
-    <!-- Tamaño del tablero -->
+    <!-- Opciones secundarias: no estorban la decisión principal -->
+    <details class="setup-options" id="opcionesPartida">
+      <summary>Opciones de partida <span class="options-summary" id="optionsSummary"></span></summary>
     <div class="setup-section">
       <div class="setup-label">Círculos en el tablero</div>
       <div class="slider-row">
@@ -770,17 +840,18 @@
         </div>
       </label>
     </div>
+    </details>
 
   </div>
   <button class="btn-new" id="resumeBtn" data-accion="continuar" style="display:none;width:100%;max-width:480px;padding:14px;font-size:1rem;border-color:var(--p1-color);color:var(--p1-color);">💾 Continuar partida</button>
-  <button class="btn-new" data-accion="empezar" style="width:100%;max-width:480px;padding:14px;font-size:1rem;">▶ Empezar</button>
+  <button class="btn-new" data-accion="empezar" id="startBtn" style="width:100%;max-width:480px;padding:14px;font-size:1rem;">▶ Empezar</button>
 </div>
 
 <div id="portraitGuard" class="portrait-guard" aria-live="polite">
   <div>
     <div class="portrait-icon">↻</div>
     <strong>Gira el móvil</strong>
-    <p>Juego de Círculos se juega en vertical.</p>
+    <p id="portraitMsg">Juego de Círculos se juega en vertical.</p>
   </div>
 </div>
 
@@ -859,26 +930,26 @@
 // global — funcionaba, pero nada declaraba qué necesitaba cada uno, y una
 // mezcla de versiones en caché podía emparejar mitades incompatibles sin
 // que nada lo detectara.
-import { seedRng, rngNextFrom, rngIntFrom, getRngSeed, getRngState, restoreRngState } from './src/game/random.js?v=2.59';
-import { dist, distSq, segmentPassesOverCircle, pointInTriangle, segmentsIntersect } from './src/game/geometry.js?v=2.59';
+import { seedRng, rngNextFrom, rngIntFrom, getRngSeed, getRngState, restoreRngState } from './src/game/random.js?v=2.60';
+import { dist, distSq, segmentPassesOverCircle, pointInTriangle, segmentsIntersect } from './src/game/geometry.js?v=2.60';
 import { MOVE_REASON_TEXT, edgeKey, edgeExists, connectionCount, areAdjacent,
-         lineIntersectsAny, findNewTriangles, triangleTraps, checkMoveValidity } from './src/game/rules.js?v=2.59';
+         lineIntersectsAny, findNewTriangles, triangleTraps, checkMoveValidity } from './src/game/rules.js?v=2.60';
 import { ADJACENCY_TARGET, generateCirclePositions, buildCandidateGraph,
-         attemptBoardGeneration, chooseAdjacency, finalizeAdjacency } from './src/game/board.js?v=2.59';
+         attemptBoardGeneration, chooseAdjacency, finalizeAdjacency } from './src/game/board.js?v=2.60';
 import { createPlayer, playerById, nextPlayerId, applyAction, hasAnyLegalMove,
-         replayFromLog } from './src/game/engine.js?v=2.59';
+         replayFromLog } from './src/game/engine.js?v=2.60';
 import { STATE_SCHEMA_VERSION, RULES_VERSION, serializeGameState, restoreGameState,
-         migrateGameSnapshot, isValidGameSnapshot } from './src/game/state.js?v=2.59';
-import { AI_LEVELS, setDifficulty, getDifficulty } from './src/ai/levels.js?v=2.59';
-import { chooseAIMove, createsScoringReply } from './src/ai/ai.js?v=2.59';
-import { saveGame, loadSavedGame, clearSavedGame, hasSavedGame } from './src/platform/storage.js?v=2.59';
+         migrateGameSnapshot, isValidGameSnapshot } from './src/game/state.js?v=2.60';
+import { AI_LEVELS, setDifficulty, getDifficulty, RIVALES, setRival, getRival } from './src/ai/levels.js?v=2.60';
+import { chooseAIMove, createsScoringReply } from './src/ai/ai.js?v=2.60';
+import { saveGame, loadSavedGame, clearSavedGame, hasSavedGame } from './src/platform/storage.js?v=2.60';
 // ── Constantes ──────────────────────────────────────────────────────────────
 // Única fuente de la versión visible — antes se escribía a mano en tres
 // sitios (aquí, el panel de info, y el CACHE de sw.js) y se desincronizaban
 // entre sí. sw.js sigue siendo aparte por necesidad (un service worker no
 // puede leer esta constante, vive en otro archivo) — al subir de versión,
 // solo hace falta tocar ESTA línea y la de sw.js, no una tercera copia más.
-const APP_VERSION = 'v2.59';
+const APP_VERSION = 'v2.60';
 // Tres conceptos distintos, deliberadamente separados:
 //   APP_VERSION         — versión desplegada; sube aunque solo cambie un icono.
 //   RULES_VERSION       — reglas del juego; solo sube si cambia CÓMO se juega.
@@ -924,6 +995,8 @@ let gameGeneration = 0;
 // otras variables (diceRolled, isAITurn, etc. por separado, que es como
 // estaba antes y podía desincronizarse).
 let aiDifficulty = getDifficulty();
+// 'solo' | 'local'. Queda sitio para 'online' sin tocar el resto.
+let gameMode = 'solo';
 let gameStatus = 'setup';
 // Fase dentro del turno. Sin esto, "esperando tirada" y "turno recién
 // terminado, en el margen para deshacer" son indistinguibles al reanudar
@@ -2218,7 +2291,7 @@ let lastResultText = '';
 function buildShareText(sorted, resultLine) {
   const scores = sorted.map(p => `${p.name}: ${p.score}`).join(' · ');
   const url = window.location.href.split('?')[0].split('#')[0];
-  return [`● Juego de Círculos`, scores, resultLine, '', '¿Te animas a jugar?', url].join('\n');
+  return [`● ${PRODUCTO}`, scores, resultLine, '', '¿Te animas a jugar?', url].join('\n');
 }
 
 async function shareResult() {
@@ -2496,6 +2569,55 @@ function setPlayerCount(n) {
   document.getElementById('circleSlider').value = rec;
   document.getElementById('sliderVal').textContent = rec;
   updateRecHint(n, rec);
+  actualizarTextoJugar();
+}
+
+function setGameMode(modo) {
+  vibrate(HAPTIC.tap);
+  gameMode = modo;
+  document.querySelectorAll('[data-accion="modo"]').forEach(b => {
+    const activo = b.dataset.modo === modo;
+    b.classList.toggle('is-active', activo);
+    b.setAttribute('aria-checked', activo ? 'true' : 'false');
+  });
+  document.getElementById('soloModeInfo').style.display = (modo === 'solo') ? 'flex' : 'none';
+  document.getElementById('localPlayersSection').style.display = (modo === 'local') ? 'flex' : 'none';
+  // En Solo hay un humano; en Local, los que se elijan (mínimo 2).
+  setPlayerCount(modo === 'solo' ? 1 : Math.max(2, numPlayers));
+  actualizarTextoJugar();
+}
+
+function elegirRival(id) {
+  vibrate(HAPTIC.tap);
+  setRival(id);
+  aiDifficulty = getDifficulty();
+  document.querySelectorAll('[data-accion="rival"]').forEach(b => {
+    const activo = b.dataset.rival === id;
+    b.classList.toggle('is-active', activo);
+    b.setAttribute('aria-checked', activo ? 'true' : 'false');
+  });
+  const r = getRival();
+  document.getElementById('rivalDesc').innerHTML =
+    `<strong>${escapeHtml(r.nombre)} · ${escapeHtml(r.apodo)}</strong><br>${escapeHtml(r.descripcion)}` +
+    (r.recomendado ? ' <span class="rival-rec">Recomendado</span>' : '');
+  actualizarTextoJugar();
+}
+
+// El botón dice exactamente qué va a pasar al pulsarlo.
+function actualizarTextoJugar() {
+  const btn = document.getElementById('startBtn');
+  if (!btn) return;
+  btn.textContent = (gameMode === 'solo')
+    ? `▶ Jugar contra ${getRival().nombre}`
+    : `▶ Jugar ${numPlayers} jugadores`;
+}
+
+// Resumen de las opciones plegadas, para no tener que abrirlas por curiosidad.
+function actualizarResumenOpciones() {
+  const el = document.getElementById('optionsSummary');
+  if (!el) return;
+  const n = document.getElementById('circleSlider').value;
+  el.textContent = `${n} círculos · ${isRandomOrder() ? 'Inicio aleatorio' : 'Inicio normal'}`;
 }
 
 function setAIDifficulty(level) {
@@ -2583,9 +2705,10 @@ const ACCIONES = {
   'abrir-info':  () => { vibrate(HAPTIC.select); openDialog('infoOverlay'); },
   cerrar:        (el) => closeDialog(el.dataset.objetivo),
   jugadores:     (el) => pcButtonClick(Number(el.dataset.n)),
-  dificultad:    (el) => setAIDifficulty(el.dataset.nivel),
-  circulos:      (el) => onSliderChange(el.value),
-  'orden-aleatorio': () => toggleRandom()
+  modo:          (el) => setGameMode(el.dataset.modo),
+  rival:         (el) => elegirRival(el.dataset.rival),
+  circulos:      (el) => { onSliderChange(el.value); actualizarResumenOpciones(); },
+  'orden-aleatorio': () => { toggleRandom(); actualizarResumenOpciones(); }
 };
 
 // Algunos controles no se manejan con 'click' sino con sus propios
@@ -2626,6 +2749,13 @@ function iniciarApp() {
   applyTheme(getInitialTheme());
   initPlayerCountSelector();
   setPlayerCount(2); // mínimo y default: 2 jugadores
+  document.getElementById('tituloApp').textContent = `● ${PRODUCTO}`;
+  document.getElementById('infoTitle').textContent = `● ${PRODUCTO}`;
+  document.getElementById('portraitMsg').textContent = `${PRODUCTO} se juega en vertical.`;
+  document.title = PRODUCTO;
+  elegirRival('circuit');   // rival recomendado por defecto
+  setGameMode('solo');      // el modo más probable al abrir en el móvil
+  actualizarResumenOpciones();
   syncResumeButton(); // ofrecer "continuar" solo si hay partida a medias
 }
 
