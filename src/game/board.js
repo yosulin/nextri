@@ -3,8 +3,7 @@
 // Generación del tablero: dónde van los círculos y qué distancia máxima
 // de adyacencia produce un grafo "jugable" (ni demasiado disperso ni
 // demasiado denso). Mismo enfoque que geometry.js/rules.js: script normal
-// en scope global, sigue leyendo CIRCLE_R/N_CIRCLES/W/H/circles como
-// variables globales.
+// puro: todo lo que necesita llega por parámetro.
 //
 // generateCircles() (la función que de verdad se llama al empezar una
 // partida) se queda en index.html a propósito — muestra un alert() y
@@ -14,18 +13,21 @@
 // Requiere que geometry.js (dist, segmentPassesOverCircle) esté cargado
 // antes.
 
-// candidatePairs/candidateNeighbors se declaran en index.html (las usan
-// muchas más cosas aparte de la generación: la IA, computeActiveCircles,
-// getLegalTargets...) — buildCandidateGraph() solo las rellena.
+// buildCandidateGraph() DEVUELVE los vecinos en vez de escribir variables
+// globales: quien lo llama decide dónde guardarlos.
 
-function generateCirclePositions(minDist) {
-  const padding = CIRCLE_R + 20;
+import { dist, segmentPassesOverCircle } from './geometry.js?v=2.55';
+import { rngNextFrom } from './random.js?v=2.55';
+
+export function generateCirclePositions(cfg, minDist) {
+  const { count, width, height, circleRadius } = cfg;
+  const padding = circleRadius + 20;
   const placed = [];
   let attempts = 0;
-  while (placed.length < N_CIRCLES && attempts < 5000) {
+  while (placed.length < count && attempts < 5000) {
     attempts++;
-    const x = padding + rngNextFrom('board') * (W - padding * 2);
-    const y = padding + rngNextFrom('board') * (H - padding * 2);
+    const x = padding + rngNextFrom('board') * (width - padding * 2);
+    const y = padding + rngNextFrom('board') * (height - padding * 2);
     let valid = true;
     for (const c of placed) {
       if (dist(x, y, c.x, c.y) < minDist) { valid = false; break; }
@@ -35,13 +37,13 @@ function generateCirclePositions(minDist) {
   return placed;
 }
 
-function buildCandidateGraph(pairs) {
-  candidatePairs = pairs;
-  candidateNeighbors = Array.from({ length: circles.length }, () => []);
+export function buildCandidateGraph(pairs, circleCount) {
+  const neighbors = Array.from({ length: circleCount }, () => []);
   for (const { i, j } of pairs) {
-    candidateNeighbors[i].push(j);
-    candidateNeighbors[j].push(i);
+    neighbors[i].push(j);
+    neighbors[j].push(i);
   }
+  return neighbors;
 }
 
 // Intenta generar un tablero completo (los N_CIRCLES pedidos, colocados)
@@ -49,13 +51,13 @@ function buildCandidateGraph(pairs) {
 // objetivo "bonito" (grado medio 8-11); si ninguno lo alcanza pero sí hay
 // alguno conectado con el mínimo aceptable, ese sirve de red de
 // seguridad. Nunca devuelve un tablero con menos círculos de los pedidos.
-function attemptBoardGeneration(minDist, maxAttempts) {
+export function attemptBoardGeneration(cfg, minDist, maxAttempts) {
   let best = null;
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    const positions = generateCirclePositions(minDist);
-    if (positions.length !== N_CIRCLES) continue; // no cupieron todos: descartar, no aceptar de menos
+    const positions = generateCirclePositions(cfg, minDist);
+    if (positions.length !== cfg.count) continue; // no cupieron todos: descartar, no aceptar de menos
 
-    const adjacency = chooseAdjacency(positions, CIRCLE_R);
+    const adjacency = chooseAdjacency(positions, cfg.circleRadius);
     if (!adjacency) continue;
 
     best = { positions, adjacency };
@@ -72,7 +74,7 @@ function attemptBoardGeneration(minDist, maxAttempts) {
 // Objetivos de calibración del grado del grafo de adyacencia — nombrados,
 // no embebidos en la función, para poder ajustarlos (o probar NORMAL/
 // DENSE/SPARSE) sin tocar el algoritmo.
-const ADJACENCY_TARGET = {
+export const ADJACENCY_TARGET = {
   minDegree: 3,
   p10Degree: 5,
   meanMin: 8,
@@ -90,7 +92,7 @@ const ADJACENCY_TARGET = {
 // ADJACENCY_TARGET. Devuelve null si ni siquiera el peor de los
 // respaldos resulta razonable — generateCircles() decide entonces si
 // regenerar el tablero entero con otras posiciones.
-function chooseAdjacency(circleList, circleRadius) {
+export function chooseAdjacency(circleList, circleRadius) {
   const n = circleList.length;
   if (n < 2) return null;
 
@@ -172,7 +174,7 @@ function chooseAdjacency(circleList, circleRadius) {
   return finalizeAdjacency(pairs, chosen.maxDistanceSq, chosen.metrics);
 }
 
-function finalizeAdjacency(pairs, maxDistanceSq, metrics) {
+export function finalizeAdjacency(pairs, maxDistanceSq, metrics) {
   // Nombre local distinto del global candidatePairs — antes se llamaba
   // igual (candidatePairs) y lo TAPABA dentro de esta función; inofensivo
   // porque nunca se leía el global aquí dentro, pero confuso de más.

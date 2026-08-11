@@ -9,21 +9,23 @@
 // la app no arranque por eso sería mucho peor. Ante cualquier duda:
 // devolver null / no hacer nada, nunca propagar el error.
 
-const SAVE_KEY = 'juego-circulos:partida';
+import { serializeGameState, migrateGameSnapshot, isValidGameSnapshot } from '../game/state.js?v=2.55';
 
-function saveGame() {
+export const SAVE_KEY = 'juego-circulos:partida';
+
+export function saveGame(g) {
   // Solo tiene sentido guardar una partida en curso. Una terminada o el
   // menú no deben dejar nada que luego ofrezca "continuar".
-  if (gameStatus !== 'playing') return false;
+  if (!g || g.status !== 'playing') return false;
   try {
-    localStorage.setItem(SAVE_KEY, JSON.stringify(serializeGameState()));
+    localStorage.setItem(SAVE_KEY, JSON.stringify(serializeGameState(g)));
     return true;
   } catch (e) {
     return false; // cuota, modo privado, etc. — no es motivo para romper la partida
   }
 }
 
-function loadSavedGame() {
+export function loadSavedGame() {
   try {
     const raw = localStorage.getItem(SAVE_KEY);
     if (!raw) return null;
@@ -37,7 +39,7 @@ function loadSavedGame() {
   }
 }
 
-function clearSavedGame() {
+export function clearSavedGame() {
   try {
     localStorage.removeItem(SAVE_KEY);
   } catch (e) {
@@ -45,6 +47,6 @@ function clearSavedGame() {
   }
 }
 
-function hasSavedGame() {
+export function hasSavedGame() {
   return loadSavedGame() !== null;
 }

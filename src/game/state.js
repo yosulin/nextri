@@ -21,7 +21,11 @@
 // descartar en vez de restaurarse mal y a medias.
 // v1 (v2.45-v2.47): sin datos del generador aleatorio.
 // v2 (v2.49+): incluye rng con los tres flujos, y turnPhase.
-const STATE_SCHEMA_VERSION = 3; // v3: ownerId/playerId estables y registro de eventos
+import { distSq, segmentPassesOverCircle } from './geometry.js?v=2.55';
+import { getRngState, restoreRngState, seedRng } from './random.js?v=2.55';
+import { buildCandidateGraph } from './board.js?v=2.55';
+
+export const STATE_SCHEMA_VERSION = 3; // v3: ownerId/playerId estables y registro de eventos
 
 // Qué NO se guarda, a propósito:
 //   - canvas/ctx, audioCtx, referencias al DOM: se recrean al montar la UI.
@@ -38,16 +42,16 @@ const STATE_SCHEMA_VERSION = 3; // v3: ownerId/playerId estables y registro de e
 //     CIRCLE_R, y guardarlos duplicaría cientos de entradas que podrían
 //     quedar incoherentes con el resto.
 
-function serializeGameState() {
+export function serializeGameState(g) {
   return {
     schemaVersion: STATE_SCHEMA_VERSION,
     // RULES_VERSION, no APP_VERSION: la versión de la app sube por cosas
     // como cambiar un icono, y eso no es una regla de juego distinta.
-    rulesVersion: RULES_VERSION,
+    rulesVersion: g.rulesVersion,
 
     config: {
-      circleCount: N_CIRCLES,
-      aiDifficulty
+      circleCount: g.circleCount,
+      aiDifficulty: g.aiDifficulty
     },
 
     // Semilla y cuántos números se han consumido: sin el contador, una
@@ -58,22 +62,22 @@ function serializeGameState() {
     // Geometría del tablero. Se congela al generar la partida y no cambia
     // hasta la siguiente, así que basta con guardarla tal cual.
     board: {
-      width: W,
-      height: H,
-      circleRadius: CIRCLE_R,
-      hitRadius: HIT_R,
-      minDist: MIN_DIST,
-      maxDist: MAX_DIST,
-      maxDistSq: MAX_DIST_SQ,
-      circles: circles.map(c => ({ x: c.x, y: c.y }))
+      width: g.width,
+      height: g.height,
+      circleRadius: g.circleRadius,
+      hitRadius: g.hitRadius,
+      minDist: g.minDist,
+      maxDist: g.maxDist,
+      maxDistSq: g.maxDistSq,
+      circles: g.circles.map(c => ({ x: c.x, y: c.y }))
     },
 
     // edges es un Set en memoria; en el guardado va como array (un Set no
     // sobrevive a JSON.stringify: se convertiría en {}).
-    edges: [...edges],
-    triangles: triangles.map(t => ({ a: t.a, b: t.b, c: t.c, ownerId: t.ownerId })),
+    edges: [...g.edges],
+    triangles: g.triangles.map(t => ({ a: t.a, b: t.b, c: t.c, ownerId: t.ownerId })),
 
-    players: players.map(p => ({
+    players: g.players.map(p => ({
       id: p.id,
       userId: p.userId ?? null,
       name: p.name,
@@ -85,20 +89,20 @@ function serializeGameState() {
 
     // Registro de eventos: permite repetir la partida y, más adelante,
     // sincronizar una sala. Se guarda recortado por si acaso.
-    events: eventLog.slice(-500),
+    events: g.events.slice(-500),
 
     turn: {
-      currentPlayer,
-      linesLeft,
-      diceRolled,
-      lastRolledValue,
+      currentPlayer: g.currentPlayer,
+      linesLeft: g.linesLeft,
+      diceRolled: g.diceRolled,
+      lastRolledValue: g.lastRolledValue,
       // Sin esto no se puede distinguir al reanudar entre "esperando una
       // tirada nueva" y "acaba de terminar el turno, en el margen para
       // deshacer" — los dos tienen diceRolled=false y linesLeft=0.
-      phase: turnPhase
+      phase: g.turnPhase
     },
 
-    status: gameStatus
+    status: g.status
   };
 }
 
@@ -106,85 +110,64 @@ function serializeGameState() {
 // Reproduce exactamente el mismo criterio que chooseAdjacency() +
 // finalizeAdjacency() en board.js: parejas dentro de maxDistanceSq que
 // además no pasen por encima de otro círculo.
-function rebuildCandidateGraph() {
+export function candidatePairsFor(circles, maxDistSq, circleRadius) {
   const pairs = [];
   for (let i = 0; i < circles.length; i++) {
     for (let j = i + 1; j < circles.length; j++) {
       const d2 = distSq(circles[i].x, circles[i].y, circles[j].x, circles[j].y);
-      if (d2 > MAX_DIST_SQ + DIST_EPS) continue;
-      if (segmentPassesOverCircle(circles, i, j, CIRCLE_R)) continue;
+      if (d2 > maxDistSq + DIST_EPS) continue;
+      if (segmentPassesOverCircle(circles, i, j, circleRadius)) continue;
       pairs.push({ i, j, distSq: d2 });
     }
   }
   pairs.sort((a, b) => a.distSq - b.distSq); // mismo orden que board.js
-  candidatePairs = pairs;
-  candidateNeighbors = Array.from({ length: circles.length }, () => []);
-  for (const { i, j } of pairs) {
-    candidateNeighbors[i].push(j);
-    candidateNeighbors[j].push(i);
-  }
   return pairs;
 }
 
 // Devuelve true si se restauró, false si el guardado no es utilizable.
 // No lanza excepción con datos corruptos: una partida guardada rota no
 // debería impedir abrir la app.
-function restoreGameState(snapshot) {
-  if (!isValidGameSnapshot(snapshot)) return false;
+// Devuelve un objeto de estado listo para usar, o null si el guardado no
+// sirve. Antes ESCRIBÍA las variables globales del juego directamente;
+// ahora es una función pura y quien llama decide qué hacer con lo que
+// devuelve — necesario para que este archivo sea un módulo de verdad.
+export function restoreGameState(snapshot) {
+  if (!isValidGameSnapshot(snapshot)) return null;
 
-  N_CIRCLES = snapshot.config.circleCount;
-  aiDifficulty = snapshot.config.aiDifficulty || 'medium';
-
-  const b = snapshot.board;
-  W = b.width;
-  H = b.height;
-  CIRCLE_R = b.circleRadius;
-  HIT_R = b.hitRadius;
-  MIN_DIST = b.minDist;
-  MAX_DIST = b.maxDist;
-  MAX_DIST_SQ = b.maxDistSq;
-  circles = b.circles.map(c => ({ x: c.x, y: c.y }));
-
-  edges = new Set(snapshot.edges);
-  triangles = snapshot.triangles.map(t => ({ a: t.a, b: t.b, c: t.c, ownerId: t.ownerId }));
-  eventLog = Array.isArray(snapshot.events) ? snapshot.events.slice() : [];
-  players = snapshot.players.map(p => ({
-    id: p.id,
-    userId: p.userId ?? null,
-    name: p.name,
-    initial: p.initial,
-    score: p.score,
-    colorIndex: p.colorIndex,
-    ...(p.isAI ? { isAI: true } : {})
-  }));
-
-  // Rebobinar los flujos aleatorios al punto exacto en que se guardó.
   restoreRngState(snapshot.rng);
 
-  currentPlayer = snapshot.turn.currentPlayer;
-  linesLeft = snapshot.turn.linesLeft;
-  diceRolled = snapshot.turn.diceRolled;
-  lastRolledValue = snapshot.turn.lastRolledValue;
-  turnPhase = snapshot.turn.phase || 'awaiting-roll';
-  gameStatus = snapshot.status;
+  const b = snapshot.board;
+  const circles = b.circles.map(c => ({ x: c.x, y: c.y }));
+  const pares = candidatePairsFor(circles, b.maxDistSq, b.circleRadius);
 
-  rebuildCandidateGraph();
-
-  // Estado momentáneo: una partida restaurada arranca en reposo.
-  lastMoveSnapshot = null;
-  selectedCircle = null;
-  activeCirclesCache = null;
-  selectedTargetsCache = null;
-
-  return true;
+  return {
+    circleCount: snapshot.config.circleCount,
+    aiDifficulty: snapshot.config.aiDifficulty || 'medium',
+    width: b.width, height: b.height,
+    circleRadius: b.circleRadius, hitRadius: b.hitRadius,
+    minDist: b.minDist, maxDist: b.maxDist, maxDistSq: b.maxDistSq,
+    circles,
+    candidatePairs: pares,
+    candidateNeighbors: buildCandidateGraph(pares, circles.length),
+    edges: new Set(snapshot.edges),
+    triangles: snapshot.triangles.map(t => ({ a: t.a, b: t.b, c: t.c, ownerId: t.ownerId })),
+    players: snapshot.players.map(p => ({ ...p })),
+    currentPlayer: snapshot.turn.currentPlayer,
+    linesLeft: snapshot.turn.linesLeft,
+    diceRolled: snapshot.turn.diceRolled,
+    lastRolledValue: snapshot.turn.lastRolledValue,
+    turnPhase: snapshot.turn.phase || 'awaiting-roll',
+    status: snapshot.status,
+    events: Array.isArray(snapshot.events) ? snapshot.events.slice() : []
+  };
 }
 
 // Comprobaciones mínimas de forma. No pretende validar que la partida sea
 // coherente jugablemente (eso lo garantiza haberla generado el propio
 // juego), solo que el objeto tiene lo que restoreGameState() va a leer, y
 // que viene de un formato que esta versión entiende.
-function esNumFinito(v) { return typeof v === 'number' && Number.isFinite(v); }
-function esEnteroEnRango(v, min, max) { return Number.isInteger(v) && v >= min && v <= max; }
+export function esNumFinito(v) { return typeof v === 'number' && Number.isFinite(v); }
+export function esEnteroEnRango(v, min, max) { return Number.isInteger(v) && v >= min && v <= max; }
 
 // Migra un guardado de un formato anterior, o devuelve null si no se
 // puede. v1 (v2.45-v2.47) no guardaba nada del generador aleatorio: al
@@ -193,7 +176,7 @@ function esEnteroEnRango(v, min, max) { return Number.isInteger(v) && v >= min &
 // pierde nada; lo que no vale es aceptarlas como si trajeran secuencia y
 // continuar con números que no les corresponden, que es justo lo que
 // pasaba al hacer el campo opcional.
-function migrateGameSnapshot(s) {
+export function migrateGameSnapshot(s) {
   if (!s || typeof s !== 'object') return null;
   if (s.schemaVersion === STATE_SCHEMA_VERSION) return s;
   // Los formatos 1 y 2 usaban índices de jugador; convertirlos a ids
@@ -219,7 +202,7 @@ function migrateGameSnapshot(s) {
 // utilizables. Para localStorage esto es prudencia; cuando el estado
 // llegue por red será imprescindible, porque un guardado manipulado no
 // debe poder dejar la partida en un estado imposible.
-function isValidGameSnapshot(s) {
+export function isValidGameSnapshot(s) {
   if (!s || typeof s !== 'object') return false;
   if (s.schemaVersion !== STATE_SCHEMA_VERSION) return false;
   if (s.rulesVersion !== RULES_VERSION) return false;

@@ -15,8 +15,8 @@ const fuentes = ['index.html', 'src/game/random.js', 'src/game/geometry.js',
   .map(f => readFileSync(path.join(raiz, f), 'utf-8'));
 
 function extract(nombre) {
-  const re = new RegExp(`function ${nombre}\\(.*?\\n\\}\\n`, 's');
-  for (const src of fuentes) { const m = src.match(re); if (m) return m[0]; }
+  const re = new RegExp(`(?:export )?function ${nombre}\\(.*?\\n\\}\\n`, 's');
+  for (const src of fuentes) { const m = src.match(re); if (m) return m[0].replace(/(^|\n)export /g, '$1'); }
   throw new Error(`No se encontró function ${nombre}()`);
 }
 
@@ -61,7 +61,7 @@ function nuevoEstado(semilla) {
   MIN_DIST = Math.max(CIRCLE_R * 2 + 6, Math.sqrt((W * H) / N_CIRCLES) * 0.55);
   let pos = null, ady = null;
   for (let a = 0; a < 20; a++) {
-    pos = generateCirclePositions(MIN_DIST);
+    pos = generateCirclePositions({ count: N_CIRCLES, width: W, height: H, circleRadius: CIRCLE_R }, MIN_DIST);
     if (pos.length !== N_CIRCLES) continue;
     ady = chooseAdjacency(pos, CIRCLE_R);
     if (ady) break;

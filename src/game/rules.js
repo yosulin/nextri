@@ -16,7 +16,9 @@
 // Requiere que geometry.js (segmentsIntersect, pointInTriangle) esté
 // cargado antes.
 
-const MOVE_REASON_TEXT = {
+import { distSq, segmentsIntersect, pointInTriangle } from './geometry.js?v=2.55';
+
+export const MOVE_REASON_TEXT = {
   'edge-exists': 'Esas dos ya están conectadas',
   'too-far': 'Demasiado lejos para conectar',
   'over-circle': 'La línea pasaría sobre otro círculo',
@@ -25,15 +27,15 @@ const MOVE_REASON_TEXT = {
   'traps-circle': 'Dejaría un círculo atrapado dentro'
 };
 
-function edgeKey(i, j) {
+export function edgeKey(i, j) {
   return `${Math.min(i, j)}-${Math.max(i, j)}`;
 }
 
-function edgeExists(st, i, j) {
+export function edgeExists(st, i, j) {
   return st.edges.has(`${Math.min(i,j)}-${Math.max(i,j)}`);
 }
 
-function connectionCount(st, idx) {
+export function connectionCount(st, idx) {
   let count = 0;
   st.edges.forEach(key => {
     const [i, j] = key.split('-').map(Number);
@@ -42,12 +44,12 @@ function connectionCount(st, idx) {
   return count;
 }
 
-function areAdjacent(st, i, j) {
+export function areAdjacent(st, i, j) {
   return distSq(st.circles[i].x, st.circles[i].y, st.circles[j].x, st.circles[j].y) <= st.maxDistSq + DIST_EPS;
 }
 
 // ¿El segmento a-b cruza alguna arista existente o atraviesa algún triángulo cerrado?
-function lineIntersectsAny(st, idxA, idxB, withReason) {
+export function lineIntersectsAny(st, idxA, idxB, withReason) {
   const ax = st.circles[idxA].x, ay = st.circles[idxA].y;
   const bx = st.circles[idxB].x, by = st.circles[idxB].y;
 
@@ -114,7 +116,7 @@ function lineIntersectsAny(st, idxA, idxB, withReason) {
   return withReason ? null : false;
 }
 
-function findNewTriangles(st, a, b) {
+export function findNewTriangles(st, a, b) {
   const found = [];
   for (let c = 0; c < st.circles.length; c++) {
     if (c === a || c === b) continue;
@@ -130,7 +132,7 @@ function findNewTriangles(st, a, b) {
   return found;
 }
 
-function triangleTraps(st, a, b, c) {
+export function triangleTraps(st, a, b, c) {
   const ca = st.circles[a], cb = st.circles[b], cc = st.circles[c];
   for (let i = 0; i < st.circles.length; i++) {
     if (i === a || i === b || i === c) continue;
@@ -144,7 +146,7 @@ function triangleTraps(st, a, b, c) {
 // Devuelve {valid:true} o {valid:false, reason, message} — usado tanto al
 // soltar una conexión como en vivo durante el arrastre, para explicar POR
 // QUÉ algo no es válido en vez de simplemente no hacer nada.
-function checkMoveValidity(st, fromIdx, toIdx) {
+export function checkMoveValidity(st, fromIdx, toIdx) {
   const a = Math.min(fromIdx, toIdx);
   const b = Math.max(fromIdx, toIdx);
   const key = `${a}-${b}`;

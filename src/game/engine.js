@@ -20,7 +20,10 @@
 //
 // Requiere: rules.js, random.js.
 
-function createPlayer(index, { name, isAI = false, userId = null } = {}) {
+import { checkMoveValidity, findNewTriangles, edgeKey } from './rules.js?v=2.55';
+import { rngIntFrom } from './random.js?v=2.55';
+
+export function createPlayer(index, { name, isAI = false, userId = null } = {}) {
   const nombre = name || `Jugador ${index + 1}`;
   return {
     id: `p${index + 1}`,
@@ -33,15 +36,15 @@ function createPlayer(index, { name, isAI = false, userId = null } = {}) {
   };
 }
 
-function playerById(state, id) {
+export function playerById(state, id) {
   return state.players.find(p => p.id === id) || null;
 }
 
-function currentPlayerOf(state) {
+export function currentPlayerOf(state) {
   return playerById(state, state.currentPlayerId);
 }
 
-function nextPlayerId(state) {
+export function nextPlayerId(state) {
   const i = state.players.findIndex(p => p.id === state.currentPlayerId);
   return state.players[(i + 1) % state.players.length].id;
 }
@@ -51,7 +54,7 @@ function nextPlayerId(state) {
 // quien manda la acción tenga derecho a hacerla. En local es redundante;
 // en red es la línea que impide jugar en el turno ajeno.
 
-function applyAction(state, action) {
+export function applyAction(state, action) {
   switch (action.type) {
     case 'ROLL_DICE':   return accionTirarDado(state, action);
     case 'CONNECT':     return accionConectar(state, action);
@@ -61,11 +64,11 @@ function applyAction(state, action) {
   }
 }
 
-function rechazar(state, reason) {
+export function rechazar(state, reason) {
   return { ok: false, reason, state, events: [] };
 }
 
-function accionTirarDado(state, action) {
+export function accionTirarDado(state, action) {
   if (state.status !== 'playing') return rechazar(state, 'game-not-playing');
   if (action.playerId !== state.currentPlayerId) return rechazar(state, 'not-your-turn');
   if (state.turnPhase !== 'awaiting-roll') return rechazar(state, 'already-rolled');
@@ -81,7 +84,7 @@ function accionTirarDado(state, action) {
   return { ok: true, state: next, events: [{ type: 'DICE_ROLLED', playerId: action.playerId, value }] };
 }
 
-function accionConectar(state, action) {
+export function accionConectar(state, action) {
   if (state.status !== 'playing') return rechazar(state, 'game-not-playing');
   if (action.playerId !== state.currentPlayerId) return rechazar(state, 'not-your-turn');
   if (state.turnPhase !== 'drawing' || state.linesLeft <= 0) return rechazar(state, 'no-lines-left');
@@ -124,7 +127,7 @@ function accionConectar(state, action) {
   return { ok: true, state: next, events: eventos };
 }
 
-function accionAvanzarTurno(state) {
+export function accionAvanzarTurno(state) {
   if (state.status !== 'playing') return rechazar(state, 'game-not-playing');
   const siguiente = nextPlayerId(state);
   const next = {
@@ -138,7 +141,7 @@ function accionAvanzarTurno(state) {
 }
 
 // ¿Queda alguna jugada legal para quien tenga el turno?
-function hasAnyLegalMove(state) {
+export function hasAnyLegalMove(state) {
   for (const { i, j } of state.candidatePairs) {
     if (checkMoveValidity(state, i, j).valid) return true;
   }
@@ -156,7 +159,7 @@ function hasAnyLegalMove(state) {
 //
 // Devuelve { ok, state, appliedActions, mismatch } — mismatch señala el
 // primer evento cuyo resultado no coincidió con lo registrado.
-function eventToAction(ev) {
+export function eventToAction(ev) {
   switch (ev.type) {
     case 'DICE_ROLLED':  return { type: 'ROLL_DICE', playerId: ev.playerId };
     case 'EDGE_ADDED':   return { type: 'CONNECT', playerId: ev.playerId, from: ev.from, to: ev.to };
@@ -167,7 +170,7 @@ function eventToAction(ev) {
   }
 }
 
-function replayFromLog(initialState, events) {
+export function replayFromLog(initialState, events) {
   let state = initialState;
   let appliedActions = 0;
 

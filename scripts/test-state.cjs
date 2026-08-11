@@ -17,10 +17,10 @@ const boardJs = readFileSync(path.join(__dirname, '..', 'src', 'game', 'board.js
 const stateJs = readFileSync(path.join(__dirname, '..', 'src', 'game', 'state.js'), 'utf-8');
 
 function extract(name) {
-  const re = new RegExp(`function ${name}\\(.*?\\n\\}\\n`, 's');
+  const re = new RegExp(`(?:export )?function ${name}\\(.*?\\n\\}\\n`, 's');
   const m = html.match(re) || randomJs.match(re) || geometryJs.match(re) || rulesJs.match(re) || boardJs.match(re) || stateJs.match(re);
   if (!m) throw new Error(`No se encontró function ${name}()`);
-  return m[0];
+  return m[0].replace(/(^|\n)export /g, '$1');
 }
 
 const DIST_EPS = 1e-6;
@@ -59,7 +59,7 @@ eval(extract('findNewTriangles'));
 eval(extract('chooseAdjacency'));
 eval(extract('finalizeAdjacency'));
 eval(extract('serializeGameState'));
-eval(extract('rebuildCandidateGraph'));
+eval(extract('candidatePairsFor')); eval(extract('buildCandidateGraph'));
 eval(extract('restoreGameState'));
 eval(extract('esNumFinito')); eval(extract('esEnteroEnRango'));
 eval(extract('migrateGameSnapshot')); eval(extract('isValidGameSnapshot'));
@@ -163,6 +163,25 @@ const ST = {
   get linesLeft(){return linesLeft;}, get currentPlayer(){return currentPlayer;}, get aiDifficulty(){return aiDifficulty;}
 };
 
+function estadoVivo() {
+  return { rulesVersion: RULES_VERSION, circleCount: N_CIRCLES, aiDifficulty,
+    width: W, height: H, circleRadius: CIRCLE_R, hitRadius: HIT_R,
+    minDist: MIN_DIST, maxDist: MAX_DIST, maxDistSq: MAX_DIST_SQ,
+    circles, edges, triangles, players, currentPlayer, linesLeft,
+    diceRolled, lastRolledValue, turnPhase, status: gameStatus, events: [] };
+}
+function aplicar(n) {
+  if (!n) return false;
+  N_CIRCLES=n.circleCount; aiDifficulty=n.aiDifficulty; W=n.width; H=n.height;
+  CIRCLE_R=n.circleRadius; HIT_R=n.hitRadius; MIN_DIST=n.minDist;
+  MAX_DIST=n.maxDist; MAX_DIST_SQ=n.maxDistSq; circles=n.circles;
+  candidatePairs=n.candidatePairs; candidateNeighbors=n.candidateNeighbors;
+  edges=n.edges; triangles=n.triangles; players=n.players;
+  currentPlayer=n.currentPlayer; linesLeft=n.linesLeft; diceRolled=n.diceRolled;
+  lastRolledValue=n.lastRolledValue; turnPhase=n.turnPhase; gameStatus=n.status;
+  return true;
+}
+
 let failures = 0;
 function check(label, ok, detail) {
   if (ok) { console.log(`OK: ${label}`); }
@@ -189,8 +208,8 @@ for (let s = 0; s < SCENARIOS; s++) {
   // convierte en {}) solo se nota atravesando JSON.
   let restored;
   try {
-    const json = JSON.stringify(serializeGameState());
-    restored = restoreGameState(JSON.parse(json));
+    const json = JSON.stringify(serializeGameState(estadoVivo()));
+    restored = aplicar(restoreGameState(JSON.parse(json)));
   } catch (e) {
     jsonFailures++;
     continue;
@@ -216,7 +235,7 @@ check('El juego responde IGUAL a toda jugada posible tras restaurar', behaviourM
 // El Set de edges es la trampa clásica: JSON.stringify(new Set()) da {}.
 buildScenario(700000, 10);
 const edgeCount = edges.size;
-const viaJson = JSON.parse(JSON.stringify(serializeGameState()));
+const viaJson = JSON.parse(JSON.stringify(serializeGameState(estadoVivo())));
 check('edges viaja como array, no como Set vacío',
   Array.isArray(viaJson.edges) && viaJson.edges.length === edgeCount,
   `esperados ${edgeCount}, llegaron ${Array.isArray(viaJson.edges) ? viaJson.edges.length : 'no-array'}`);
@@ -229,7 +248,7 @@ const badInputs = [
 ];
 let threw = 0, wronglyAccepted = 0;
 for (const bad of badInputs) {
-  try { if (restoreGameState(bad) !== false) wronglyAccepted++; }
+  try { if (aplicar(restoreGameState(bad)) !== false) wronglyAccepted++; }
   catch (e) { threw++; }
 }
 check('Guardados corruptos se rechazan sin lanzar excepción', threw === 0 && wronglyAccepted === 0,

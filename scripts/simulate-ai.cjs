@@ -18,13 +18,13 @@ const levelsJs = readFileSync(path.join(__dirname, '..', 'src', 'ai', 'levels.js
 const aiJs = readFileSync(path.join(__dirname, '..', 'src', 'ai', 'ai.js'), 'utf-8');
 
 function extract(name) {
-  const re = new RegExp(`function ${name}\\(.*?\\n\\}\\n`, 's');
+  const re = new RegExp(`(?:export )?function ${name}\\(.*?\\n\\}\\n`, 's');
   const m = html.match(re) || randomJs.match(re) || geometryJs.match(re) || rulesJs.match(re) || boardJs.match(re) || aiJs.match(re);
   if (!m) throw new Error(`No se encontró function ${name}() en index.html, geometry.js, rules.js, board.js ni ai.js`);
-  return m[0];
+  return m[0].replace(/(^|\n)export /g, '$1');
 }
 function extractConst(name) {
-  const re = new RegExp(`const ${name} = (\\{.*?\\n\\});\\n`, 's');
+  const re = new RegExp(`(?:export )?const ${name} = (\\{.*?\\n\\});\\n`, 's');
   const m = html.match(re) || levelsJs.match(re);
   if (!m) throw new Error(`No se encontró const ${name} en index.html ni en src/ai/levels.js`);
   return m[1]; // solo el objeto literal, sin "const NOMBRE ="

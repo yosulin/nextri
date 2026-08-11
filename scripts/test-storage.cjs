@@ -17,11 +17,11 @@ const stateJs = readFileSync(path.join(__dirname, '..', 'src', 'game', 'state.js
 const storageJs = readFileSync(path.join(__dirname, '..', 'src', 'platform', 'storage.js'), 'utf-8');
 
 function extract(name) {
-  const re = new RegExp(`function ${name}\\(.*?\\n\\}\\n`, 's');
+  const re = new RegExp(`(?:export )?function ${name}\\(.*?\\n\\}\\n`, 's');
   const m = html.match(re) || randomJs.match(re) || geometryJs.match(re) || rulesJs.match(re) ||
             boardJs.match(re) || stateJs.match(re) || storageJs.match(re);
   if (!m) throw new Error(`No se encontró function ${name}()`);
-  return m[0];
+  return m[0].replace(/(^|\n)export /g, '$1');
 }
 
 const DIST_EPS = 1e-6;
@@ -61,7 +61,7 @@ eval(extract('edgeExists')); eval(extract('areAdjacent'));
 eval(extract('triangleTraps')); eval(extract('lineIntersectsAny'));
 eval(extract('checkMoveValidity')); eval(extract('findNewTriangles'));
 eval(extract('chooseAdjacency')); eval(extract('finalizeAdjacency'));
-eval(extract('serializeGameState')); eval(extract('rebuildCandidateGraph'));
+eval(extract('serializeGameState')); eval(extract('candidatePairsFor')); eval(extract('buildCandidateGraph'));
 eval(extract('restoreGameState')); eval(extract('esNumFinito')); eval(extract('esEnteroEnRango'));
 eval(extract('migrateGameSnapshot')); eval(extract('isValidGameSnapshot'));
 eval(extract('saveGame')); eval(extract('loadSavedGame'));
@@ -138,6 +138,25 @@ const ST = {
   get linesLeft(){return linesLeft;}, get currentPlayer(){return currentPlayer;}, get aiDifficulty(){return aiDifficulty;}
 };
 
+function estadoVivo() {
+  return { rulesVersion: RULES_VERSION, circleCount: N_CIRCLES, aiDifficulty,
+    width: W, height: H, circleRadius: CIRCLE_R, hitRadius: HIT_R,
+    minDist: MIN_DIST, maxDist: MAX_DIST, maxDistSq: MAX_DIST_SQ,
+    circles, edges, triangles, players, currentPlayer, linesLeft,
+    diceRolled, lastRolledValue, turnPhase, status: gameStatus, events: [] };
+}
+function aplicar(n) {
+  if (!n) return false;
+  N_CIRCLES=n.circleCount; aiDifficulty=n.aiDifficulty; W=n.width; H=n.height;
+  CIRCLE_R=n.circleRadius; HIT_R=n.hitRadius; MIN_DIST=n.minDist;
+  MAX_DIST=n.maxDist; MAX_DIST_SQ=n.maxDistSq; circles=n.circles;
+  candidatePairs=n.candidatePairs; candidateNeighbors=n.candidateNeighbors;
+  edges=n.edges; triangles=n.triangles; players=n.players;
+  currentPlayer=n.currentPlayer; linesLeft=n.linesLeft; diceRolled=n.diceRolled;
+  lastRolledValue=n.lastRolledValue; turnPhase=n.turnPhase; gameStatus=n.status;
+  return true;
+}
+
 let failures = 0;
 function check(label, ok, detail) {
   if (ok) console.log(`OK: ${label}`);
@@ -152,12 +171,12 @@ for (let s = 0; s < 25; s++) {
   store.clear(); failMode = null;
   if (!buildScenario(800000 + s, 5 + (s % 12))) continue;
   const before = fingerprint();
-  saveGame();
+  saveGame(estadoVivo());
   // Simular "cerrar la app": ensuciar el estado vivo por completo
   circles = []; edges = new Set(); triangles = []; players = [];
   currentPlayer = 99; linesLeft = -1; diceRolled = false; gameStatus = 'setup';
   const snap = loadSavedGame();
-  if (!snap || !restoreGameState(snap) || fingerprint() !== before) cycleMismatches++;
+  if (!snap || !aplicar(restoreGameState(snap)) || fingerprint() !== before) cycleMismatches++;
 }
 check('25 partidas se guardan y recuperan idénticas', cycleMismatches === 0, `${cycleMismatches} distintas`);
 
@@ -165,14 +184,14 @@ check('25 partidas se guardan y recuperan idénticas', cycleMismatches === 0, `$
 store.clear(); failMode = null;
 buildScenario(800000, 8);
 gameStatus = 'finished';
-saveGame();
+saveGame(estadoVivo());
 check('Una partida terminada no se guarda', !hasSavedGame());
 gameStatus = 'setup';
-saveGame();
+saveGame(estadoVivo());
 check('El menú (setup) no se guarda', !hasSavedGame());
 
 // 3. clearSavedGame lo borra de verdad
-gameStatus = 'playing'; saveGame();
+gameStatus = 'playing'; saveGame(estadoVivo());
 const hadSave = hasSavedGame();
 clearSavedGame();
 check('clearSavedGame() borra el guardado', hadSave && !hasSavedGame());
@@ -181,9 +200,9 @@ check('clearSavedGame() borra el guardado', hadSave && !hasSavedGame());
 store.clear(); buildScenario(800000, 8); gameStatus = 'playing';
 let threw = null;
 try {
-  failMode = 'set'; saveGame();
+  failMode = 'set'; saveGame(estadoVivo());
   failMode = 'get'; loadSavedGame(); hasSavedGame();
-  failMode = 'all'; saveGame(); loadSavedGame(); clearSavedGame(); hasSavedGame();
+  failMode = 'all'; saveGame(estadoVivo()); loadSavedGame(); clearSavedGame(); hasSavedGame();
 } catch (e) { threw = e.message; }
 failMode = null;
 check('Fallos de localStorage (cuota, modo privado) no lanzan excepción', threw === null, threw);
@@ -202,7 +221,7 @@ check('Un guardado de un formato anterior se ignora', loadSavedGame() === null);
 // nunca salieron de un móvil. Lo que no vale es aceptarlas a medias.
 store.clear(); failMode = null;
 buildScenario(800000, 8); gameStatus = 'playing';
-const v3 = JSON.parse(JSON.stringify(serializeGameState()));
+const v3 = JSON.parse(JSON.stringify(serializeGameState(estadoVivo())));
 
 for (const esquemaViejo of [1, 2]) {
   const viejo = { ...v3, schemaVersion: esquemaViejo };

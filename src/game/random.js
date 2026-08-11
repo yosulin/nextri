@@ -10,7 +10,7 @@
 //
 // mulberry32: pequeño, rápido y de calidad de sobra para un juego. Lo
 // importante aquí no es la calidad estadística sino la reproducibilidad.
-function mulberry32(seed) {
+export function mulberry32(seed) {
   let s = seed >>> 0;
   const fn = function () {
     s = (s + 0x6D2B79F5) >>> 0;
@@ -33,10 +33,10 @@ function mulberry32(seed) {
 // distinta de números. Con flujos independientes, Circuit puede consumir
 // los que quiera sin tocar el dado, y se pueden comparar Fácil/Medio/
 // Difícil bajo exactamente las mismas tiradas.
-const RNG_STREAMS = ['board', 'dice', 'ai'];
+export const RNG_STREAMS = ['board', 'dice', 'ai'];
 // Desplazamientos fijos y distintos por flujo, para que de una sola
 // semilla maestra salgan tres secuencias que no se solapan.
-const STREAM_OFFSET = { board: 0x9E3779B9, dice: 0x85EBCA6B, ai: 0xC2B2AE35 };
+export const STREAM_OFFSET = { board: 0x9E3779B9, dice: 0x85EBCA6B, ai: 0xC2B2AE35 };
 
 let rngSeed = 0;
 let rngCalls = 0;      // total consumido (informativo)
@@ -45,7 +45,7 @@ let streams = {};      // nombre -> { fn, calls }
 // Arranca (o rearranca) la secuencia. Si no se da semilla, se saca una al
 // azar de verdad: cada partida nueva es distinta, pero UNA VEZ elegida
 // queda registrada y esa partida es reproducible.
-function seedRng(seed) {
+export function seedRng(seed) {
   rngSeed = (seed === undefined || seed === null)
     ? Math.floor(Math.random() * 0xFFFFFFFF)
     : (seed >>> 0);
@@ -57,26 +57,26 @@ function seedRng(seed) {
   return rngSeed;
 }
 
-function rngNextFrom(stream) {
+export function rngNextFrom(stream) {
   const s = streams[stream] || streams.board;
   s.calls++;
   rngCalls++;
   return s.fn();
 }
 
-function rngIntFrom(stream, maxExclusive) {
+export function rngIntFrom(stream, maxExclusive) {
   return Math.floor(rngNextFrom(stream) * maxExclusive);
 }
 
 // Compatibilidad: quien no diga flujo, usa el del tablero.
-function rngNext() { return rngNextFrom('board'); }
-function rngInt(maxExclusive) { return rngIntFrom('board', maxExclusive); }
+export function rngNext() { return rngNextFrom('board'); }
+export function rngInt(maxExclusive) { return rngIntFrom('board', maxExclusive); }
 
-function getRngSeed() { return rngSeed; }
-function getRngCalls() { return rngCalls; }
+export function getRngSeed() { return rngSeed; }
+export function getRngCalls() { return rngCalls; }
 
 // Estado completo y serializable de los tres flujos.
-function getRngState() {
+export function getRngState() {
   const out = { seed: rngSeed, streams: {} };
   for (const nombre of RNG_STREAMS) {
     out.streams[nombre] = { state: streams[nombre].fn.getState(), calls: streams[nombre].calls };
@@ -84,7 +84,7 @@ function getRngState() {
   return out;
 }
 
-function restoreRngState(snapshot) {
+export function restoreRngState(snapshot) {
   seedRng(snapshot.seed);
   for (const nombre of RNG_STREAMS) {
     const s = snapshot.streams && snapshot.streams[nombre];

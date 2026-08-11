@@ -18,10 +18,10 @@ const geometryJs = readFileSync(path.join(__dirname, '..', 'src', 'game', 'geome
 const rulesJs = readFileSync(path.join(__dirname, '..', 'src', 'game', 'rules.js'), 'utf-8');
 const boardJs = readFileSync(path.join(__dirname, '..', 'src', 'game', 'board.js'), 'utf-8');
 function extract(name) {
-  const re = new RegExp(`function ${name}\\(.*?\\n\\}\\n`, 's');
+  const re = new RegExp(`(?:export )?function ${name}\\(.*?\\n\\}\\n`, 's');
   const m = html.match(re) || randomJs.match(re) || geometryJs.match(re) || rulesJs.match(re) || boardJs.match(re);
   if (!m) throw new Error(`No se encontró function ${name}() en index.html, geometry.js, rules.js ni board.js`);
-  return m[0];
+  return m[0].replace(/(^|\n)export /g, '$1');
 }
 const ADJACENCY_TARGET = { minDegree: 3, p10Degree: 5, meanMin: 8, meanMax: 11 };
 const DIST_EPS = 1e-6;

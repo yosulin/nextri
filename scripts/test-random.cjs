@@ -21,15 +21,15 @@ const fuentes = {
 };
 
 function extract(nombre) {
-  const re = new RegExp(`function ${nombre}\\(.*?\\n\\}\\n`, 's');
+  const re = new RegExp(`(?:export )?function ${nombre}\\(.*?\\n\\}\\n`, 's');
   for (const src of Object.values(fuentes)) {
     const m = src.match(re);
-    if (m) return m[0];
+    if (m) return m[0].replace(/(^|\n)export /g, '$1');
   }
   throw new Error(`No se encontró function ${nombre}()`);
 }
 function extractConst(nombre) {
-  const re = new RegExp(`const ${nombre} = (\\{.*?\\n\\});\\n`, 's');
+  const re = new RegExp(`(?:export )?const ${nombre} = (\\{.*?\\n\\});\\n`, 's');
   for (const src of Object.values(fuentes)) {
     const m = src.match(re);
     if (m) return m[1];
@@ -65,7 +65,7 @@ eval(extract('checkMoveValidity')); eval(extract('findNewTriangles'));
 eval(extract('chooseAdjacency')); eval(extract('finalizeAdjacency'));
 eval(extract('generateCirclePositions')); eval(extract('buildCandidateGraph'));
 eval(extract('attemptBoardGeneration'));
-eval(extract('serializeGameState')); eval(extract('rebuildCandidateGraph'));
+eval(extract('serializeGameState')); eval(extract('candidatePairsFor')); eval(extract('buildCandidateGraph'));
 eval(extract('restoreGameState')); eval(extract('esNumFinito')); eval(extract('esEnteroEnRango'));
 eval(extract('migrateGameSnapshot')); eval(extract('isValidGameSnapshot'));
 eval(extract('shuffleInPlace')); eval(extract('pickUniform'));
@@ -79,6 +79,25 @@ const ST = {
   get candidatePairs(){return candidatePairs;}, get candidateNeighbors(){return candidateNeighbors;},
   get linesLeft(){return linesLeft;}, get currentPlayer(){return currentPlayer;}, get aiDifficulty(){return aiDifficulty;}
 };
+
+function estadoVivo() {
+  return { rulesVersion: RULES_VERSION, circleCount: N_CIRCLES, aiDifficulty,
+    width: W, height: H, circleRadius: CIRCLE_R, hitRadius: HIT_R,
+    minDist: MIN_DIST, maxDist: MAX_DIST, maxDistSq: MAX_DIST_SQ,
+    circles, edges, triangles, players, currentPlayer, linesLeft,
+    diceRolled, lastRolledValue, turnPhase, status: gameStatus, events: [] };
+}
+function aplicar(n) {
+  if (!n) return false;
+  N_CIRCLES=n.circleCount; aiDifficulty=n.aiDifficulty; W=n.width; H=n.height;
+  CIRCLE_R=n.circleRadius; HIT_R=n.hitRadius; MIN_DIST=n.minDist;
+  MAX_DIST=n.maxDist; MAX_DIST_SQ=n.maxDistSq; circles=n.circles;
+  candidatePairs=n.candidatePairs; candidateNeighbors=n.candidateNeighbors;
+  edges=n.edges; triangles=n.triangles; players=n.players;
+  currentPlayer=n.currentPlayer; linesLeft=n.linesLeft; diceRolled=n.diceRolled;
+  lastRolledValue=n.lastRolledValue; turnPhase=n.turnPhase; gameStatus=n.status;
+  return true;
+}
 
 let fallos = 0;
 function check(etiqueta, ok, detalle) {
@@ -98,12 +117,13 @@ function generarConSemilla(semilla) {
   seedRng(semilla);
   prepararMedidas();
   circles = [];
-  const best = attemptBoardGeneration(MIN_DIST, 20);
+  const best = attemptBoardGeneration({ count: N_CIRCLES, width: W, height: H, circleRadius: CIRCLE_R }, MIN_DIST, 20);
   if (!best) return null;
   circles = best.positions;
   MAX_DIST = best.adjacency.maxDistance;
   MAX_DIST_SQ = best.adjacency.maxDistanceSq;
-  buildCandidateGraph(best.adjacency.pairs);
+  candidatePairs = best.adjacency.pairs;
+  candidateNeighbors = buildCandidateGraph(candidatePairs, circles.length);
   edges = new Set(); triangles = [];
   players = [
     { id: 'p1', userId: null, name: 'Josu', initial: 'J', score: 0, colorIndex: 0 },
@@ -165,12 +185,12 @@ for (const semilla of [11, 22, 33, 44, 55]) {
   // consumir unos cuantos números, como haría una partida en marcha
   for (let i = 0; i < 17; i++) rngNext();
 
-  const guardado = JSON.parse(JSON.stringify(serializeGameState()));
+  const guardado = JSON.parse(JSON.stringify(serializeGameState(estadoVivo())));
   const siguientesSinGuardar = [];
   for (let i = 0; i < 10; i++) siguientesSinGuardar.push(rngInt(6) + 1);
 
   // Ahora restaurar desde el guardado y pedir los mismos 10 números
-  restoreGameState(guardado);
+  aplicar(restoreGameState(guardado));
   const siguientesTrasRestaurar = [];
   for (let i = 0; i < 10; i++) siguientesTrasRestaurar.push(rngInt(6) + 1);
 
@@ -181,7 +201,7 @@ check('Tras guardar y reanudar, las tiradas siguientes son las mismas', divergen
 
 // 6. La semilla viaja en el guardado
 generarConSemilla(31337);
-const snap = JSON.parse(JSON.stringify(serializeGameState()));
+const snap = JSON.parse(JSON.stringify(serializeGameState(estadoVivo())));
 check('La semilla y los tres flujos quedan registrados en el guardado',
   snap.rng && snap.rng.seed === 31337 &&
   ['board','dice','ai'].every(n => snap.rng.streams[n] &&

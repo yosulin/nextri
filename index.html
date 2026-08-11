@@ -853,23 +853,32 @@
   </div>
 </div>
 
-<script src="src/game/random.js?v=2.54"></script>
-<script src="src/game/geometry.js?v=2.54"></script>
-<script src="src/game/rules.js?v=2.54"></script>
-<script src="src/game/board.js?v=2.54"></script>
-<script src="src/game/engine.js?v=2.54"></script>
-<script src="src/game/state.js?v=2.54"></script>
-<script src="src/ai/levels.js?v=2.54"></script>
-<script src="src/ai/ai.js?v=2.54"></script>
-<script src="src/platform/storage.js?v=2.54"></script>
-<script>
+<script type="module">
+// Módulos ES de verdad: cada archivo con su propio ámbito, dependencias
+// explícitas. Antes eran scripts sueltos que se comunicaban por el ámbito
+// global — funcionaba, pero nada declaraba qué necesitaba cada uno, y una
+// mezcla de versiones en caché podía emparejar mitades incompatibles sin
+// que nada lo detectara.
+import { seedRng, rngNextFrom, rngIntFrom, getRngSeed, getRngState, restoreRngState } from './src/game/random.js?v=2.55';
+import { dist, distSq, segmentPassesOverCircle, pointInTriangle, segmentsIntersect } from './src/game/geometry.js?v=2.55';
+import { MOVE_REASON_TEXT, edgeKey, edgeExists, connectionCount, areAdjacent,
+         lineIntersectsAny, findNewTriangles, triangleTraps, checkMoveValidity } from './src/game/rules.js?v=2.55';
+import { ADJACENCY_TARGET, generateCirclePositions, buildCandidateGraph,
+         attemptBoardGeneration, chooseAdjacency, finalizeAdjacency } from './src/game/board.js?v=2.55';
+import { createPlayer, playerById, nextPlayerId, applyAction, hasAnyLegalMove,
+         replayFromLog } from './src/game/engine.js?v=2.55';
+import { STATE_SCHEMA_VERSION, serializeGameState, restoreGameState,
+         migrateGameSnapshot, isValidGameSnapshot } from './src/game/state.js?v=2.55';
+import { AI_LEVELS, setDifficulty, getDifficulty } from './src/ai/levels.js?v=2.55';
+import { chooseAIMove, createsScoringReply } from './src/ai/ai.js?v=2.55';
+import { saveGame, loadSavedGame, clearSavedGame, hasSavedGame } from './src/platform/storage.js?v=2.55';
 // ── Constantes ──────────────────────────────────────────────────────────────
 // Única fuente de la versión visible — antes se escribía a mano en tres
 // sitios (aquí, el panel de info, y el CACHE de sw.js) y se desincronizaban
 // entre sí. sw.js sigue siendo aparte por necesidad (un service worker no
 // puede leer esta constante, vive en otro archivo) — al subir de versión,
 // solo hace falta tocar ESTA línea y la de sw.js, no una tercera copia más.
-const APP_VERSION = 'v2.54';
+const APP_VERSION = 'v2.55';
 // Tres conceptos distintos, deliberadamente separados:
 //   APP_VERSION         — versión desplegada; sube aunque solo cambie un icono.
 //   RULES_VERSION       — reglas del juego; solo sube si cambia CÓMO se juega.
@@ -915,11 +924,16 @@ let gameGeneration = 0;
 // cambio de turno) debe comprobarlo, en vez de inferirlo indirectamente de
 // otras variables (diceRolled, isAITurn, etc. por separado, que es como
 // estaba antes y podía desincronizarse).
+let aiDifficulty = getDifficulty();
 let gameStatus = 'setup';
 // Fase dentro del turno. Sin esto, "esperando tirada" y "turno recién
 // terminado, en el margen para deshacer" son indistinguibles al reanudar
 // (ambos con diceRolled=false y linesLeft=0).
 let turnPhase = 'awaiting-roll'; // 'awaiting-roll' | 'drawing' | 'handoff'
+
+function isAITurn() {
+  return !!players[currentPlayer]?.isAI;
+}
 
 // Vista del estado para el motor puro. Los módulos de src/ ya no leen
 // variables globales: reciben el estado por parámetro. Este objeto se
@@ -961,6 +975,38 @@ window.addEventListener('error', (ev) => {
   const donde = ev.filename ? ` (${String(ev.filename).split('/').pop()}:${ev.lineno})` : '';
   el.innerHTML = `<span style="color:var(--p1-color)">⚠ ${escapeHtml(msg + donde)}</span>`;
 });
+
+// Reúne todo lo que serializeGameState() necesita. Antes ese módulo leía
+// las variables globales por su cuenta; ahora se las damos explícitamente,
+// que es lo que permite que sea un módulo de verdad.
+function estadoGuardable() {
+  return {
+    rulesVersion: RULES_VERSION,
+    circleCount: N_CIRCLES, aiDifficulty,
+    width: W, height: H,
+    circleRadius: CIRCLE_R, hitRadius: HIT_R,
+    minDist: MIN_DIST, maxDist: MAX_DIST, maxDistSq: MAX_DIST_SQ,
+    circles, edges, triangles, players,
+    currentPlayer, linesLeft, diceRolled, lastRolledValue,
+    turnPhase, status: gameStatus, events: eventLog
+  };
+}
+
+// Vuelca un estado restaurado sobre las variables vivas de la interfaz.
+function aplicarEstadoRestaurado(n) {
+  N_CIRCLES = n.circleCount; aiDifficulty = setDifficulty(n.aiDifficulty);
+  W = n.width; H = n.height;
+  CIRCLE_R = n.circleRadius; HIT_R = n.hitRadius;
+  MIN_DIST = n.minDist; MAX_DIST = n.maxDist; MAX_DIST_SQ = n.maxDistSq;
+  circles = n.circles;
+  candidatePairs = n.candidatePairs; candidateNeighbors = n.candidateNeighbors;
+  edges = n.edges; triangles = n.triangles; players = n.players;
+  currentPlayer = n.currentPlayer; linesLeft = n.linesLeft;
+  diceRolled = n.diceRolled; lastRolledValue = n.lastRolledValue;
+  turnPhase = n.turnPhase; gameStatus = n.status; eventLog = n.events;
+  lastMoveSnapshot = null; selectedCircle = null;
+  invalidateActiveCirclesCache(); selectedTargetsCache = null;
+}
 
 // Registro de eventos de la partida (Fase 5). Cada acción aceptada por el
 // motor genera uno o varios; aquí solo se acumulan. Sirve para depurar,
@@ -1374,7 +1420,9 @@ function resumeGame() {
   document.body.classList.add('in-game');
   closeDialog('modalOverlay');
 
-  if (!restoreGameState(snapshot)) return false;
+  const restaurado = restoreGameState(snapshot);
+  if (!restaurado) return false;
+  aplicarEstadoRestaurado(restaurado);
 
   // numPlayers se usa al volver al menú; mantenerlo coherente con lo
   // restaurado (en modo Solo son 2 jugadores pero numPlayers vale 1).
@@ -1476,10 +1524,11 @@ function generateCircles() {
   // cada vez, 10 intentos por escalón) en vez de aceptar un tablero con
   // menos círculos de los pedidos — eso sería silencioso e imposible de
   // notar hasta que alguien contara los círculos.
-  let best = attemptBoardGeneration(MIN_DIST, 20);
+  const cfgTablero = { count: N_CIRCLES, width: W, height: H, circleRadius: CIRCLE_R };
+  let best = attemptBoardGeneration(cfgTablero, MIN_DIST, 20);
   for (const relax of [0.97, 0.94, 0.91, 0.88]) {
     if (best) break;
-    best = attemptBoardGeneration(MIN_DIST * relax, 10);
+    best = attemptBoardGeneration(cfgTablero, MIN_DIST * relax, 10);
   }
 
   if (!best) {
@@ -1498,7 +1547,8 @@ function generateCircles() {
   circles = best.positions;
   MAX_DIST = best.adjacency.maxDistance;
   MAX_DIST_SQ = best.adjacency.maxDistanceSq;
-  buildCandidateGraph(best.adjacency.pairs);
+  candidatePairs = best.adjacency.pairs;
+  candidateNeighbors = buildCandidateGraph(candidatePairs, circles.length);
 
   if (DEBUG && best.adjacency.metrics) {
     console.table({ N_CIRCLES, MAX_DIST: Math.round(MAX_DIST), ...best.adjacency.metrics });
@@ -1577,7 +1627,7 @@ function rollDice(isAICall) {
     }
     updateTurnInfo();
     draw();
-    saveGame();
+    saveGame(estadoGuardable());
   }, 420);
 }
 
@@ -1799,7 +1849,7 @@ function attemptConnect(fromIdx, toIdx) {
       const el = document.getElementById('turnInfo');
       const color = playerColor(currentPlayer) || 'var(--p1-color)';
       el.innerHTML = `<span style="color:${color}">${escapeHtml(players[currentPlayer].name)}</span> — ¿todo bien? Puedes deshacer`;
-      saveGame(); // antes del margen: cerrar la app durante esos 3s perdía la última línea
+      saveGame(estadoGuardable()); // antes del margen: cerrar la app durante esos 3s perdía la última línea
       startUndoCountdown(TURN_HANDOFF_GRACE_MS);
       const handoffGeneration = gameGeneration;
       setTimeout(() => {
@@ -1816,7 +1866,7 @@ function attemptConnect(fromIdx, toIdx) {
     updateDiceDisplay(lastRolledValue);
     document.getElementById('linesLeftLabel').textContent = `${linesLeft} línea${linesLeft !== 1 ? 's' : ''}`;
     updateTurnInfo();
-    saveGame();
+    saveGame(estadoGuardable());
   }
   draw();
 }
@@ -2017,7 +2067,7 @@ function undoLastMove() {
   syncUndoEnabled();
   vibrate(HAPTIC.dismiss);
   draw();
-  saveGame(); // el guardado debe reflejar la jugada deshecha
+  saveGame(estadoGuardable()); // el guardado debe reflejar la jugada deshecha
 }
 
 function updateActiveCards() {
@@ -2049,7 +2099,7 @@ function updateTurnInfo() {
 
 function advanceTurn() {
   dispatch({ type: 'ADVANCE_TURN' });
-  saveGame();
+  saveGame(estadoGuardable());
   updateActiveCards();
   updateTurnInfo();
   draw();
@@ -2425,7 +2475,7 @@ function setPlayerCount(n) {
 
 function setAIDifficulty(level) {
   vibrate(HAPTIC.tap);
-  aiDifficulty = level;
+  aiDifficulty = setDifficulty(level);
   document.querySelectorAll('.diff-btn').forEach((btn) => {
     const active = btn.dataset.diff === level;
     btn.classList.toggle('is-active', active);

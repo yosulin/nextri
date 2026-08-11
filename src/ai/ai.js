@@ -22,18 +22,21 @@
 // petaría al cargar — por eso el registro de window.circlesAI() se quedó
 // allí. Dentro de las funciones no hay problema: se leen al llamarlas.
 
-function isAITurn() {
-  return !!players[currentPlayer]?.isAI;
-}
+import { AI_LEVELS } from './levels.js?v=2.55';
+import { checkMoveValidity, findNewTriangles, edgeExists, edgeKey } from '../game/rules.js?v=2.55';
+import { rngNextFrom, rngIntFrom } from '../game/random.js?v=2.55';
 
-function shuffleInPlace(arr) {
+// isAITurn() vive ahora en index.html: depende del turno actual de la
+// interfaz, no del motor.
+
+export function shuffleInPlace(arr) {
   for (let i = arr.length - 1; i > 0; i--) {
     const j = rngIntFrom('ai', i + 1);
     [arr[i], arr[j]] = [arr[j], arr[i]];
   }
 }
 
-function pickUniform(arr) {
+export function pickUniform(arr) {
   return arr[rngIntFrom('ai', arr.length)];
 }
 
@@ -41,7 +44,7 @@ function pickUniform(arr) {
 // más triángulos aumenta la PROBABILIDAD de elegirse, no la garantiza.
 // Sin esto, la máquina jugaría sistemáticamente mejor que una persona
 // (que no siempre ve/prioriza la jugada objetivamente óptima).
-function weightedPickByGain(scoringMoves, power) {
+export function weightedPickByGain(scoringMoves, power) {
   const weights = scoringMoves.map(m => Math.pow(m.gain, power));
   const total = weights.reduce((s, w) => s + w, 0);
   let r = rngNextFrom('ai') * total;
@@ -66,7 +69,7 @@ function weightedPickByGain(scoringMoves, power) {
 // candidatos×candidatos comparaciones). try/finally garantiza que la
 // arista de prueba se retira siempre, incluso si algo de en medio lanzara
 // un error.
-function createsScoringReply(st, i, j) {
+export function createsScoringReply(st, i, j) {
   const key = edgeKey(i, j);
   st.edges.add(key);
   try {
@@ -86,7 +89,7 @@ function createsScoringReply(st, i, j) {
   }
 }
 
-function chooseAIMove(st) {
+export function chooseAIMove(st) {
   const level = AI_LEVELS[st.aiDifficulty] || AI_LEVELS.medium;
 
   // Movimientos legales — checkMoveValidity() sigue siendo la única fuente

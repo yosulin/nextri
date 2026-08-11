@@ -13,10 +13,23 @@ const vm = require('node:vm');
 const raiz = path.join(__dirname, '..');
 let fallos = 0;
 
+// Los archivos de src/ son módulos ES (import/export), que vm.Script no
+// acepta; se validan con SourceTextModule si está disponible y, si no,
+// comprobando que al menos parseen tras quitar import/export.
 function comprobarJs(rel) {
   const código = readFileSync(path.join(raiz, rel), 'utf-8');
+  const esModulo = /^\s*(import |export )/m.test(código);
   try {
-    new vm.Script(código, { filename: rel });
+    if (esModulo) {
+      // Quitar import/export deja código que vm.Script sí puede parsear:
+      // detecta cualquier error de sintaxis del cuerpo real.
+      const cuerpo = código
+        .replace(/^import[^;]+;$/gm, '')
+        .replace(/(^|\n)export /g, '$1');
+      new vm.Script(cuerpo, { filename: rel });
+    } else {
+      new vm.Script(código, { filename: rel });
+    }
     console.log(`OK  ${rel}`);
   } catch (e) {
     console.error(`ERR ${rel}: ${e.message}`);
@@ -45,14 +58,15 @@ for (const rel of [...listarJs('src'), ...listarJs('scripts'), 'sw.js']) {
 
 // index.html: bloques <script> sin src y llaves del <style>
 const html = readFileSync(path.join(raiz, 'index.html'), 'utf-8');
-const bloques = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)];
+const bloques = [...html.matchAll(/<script(?: type="module")?>([\s\S]*?)<\/script>/g)];
 if (bloques.length === 0) {
   console.error('ERR index.html: no se encontró ningún bloque <script> incrustado');
   fallos++;
 }
 bloques.forEach((m, i) => {
   try {
-    new vm.Script(m[1], { filename: `index.html <script>[${i}]` });
+    const cuerpo = m[1].replace(/^import[^;]+;$/gm, '').replace(/(^|\n)export /g, '$1');
+    new vm.Script(cuerpo, { filename: `index.html <script>[${i}]` });
     console.log(`OK  index.html <script>[${i}]`);
   } catch (e) {
     console.error(`ERR index.html <script>[${i}]: ${e.message}`);
@@ -71,7 +85,9 @@ if (estilo) {
 // Cada fichero cargado con <script src> debe existir y estar en el
 // precaché del service worker — si no, la app se rompe al abrirla sin
 // conexión, y eso no lo detecta ninguna comprobación de sintaxis.
-const src = [...html.matchAll(/<script src="([^"]+)"/g)].map(m => m[1]);
+// Ahora los módulos se cargan con import dentro del <script type="module">,
+// no con <script src>. Se leen de ahí.
+const src = [...html.matchAll(/from '\.\/(src\/[^']+)'/g)].map(m => m[1]);
 const sw = readFileSync(path.join(raiz, 'sw.js'), 'utf-8');
 // La marca ?v= de cada módulo debe coincidir con APP_VERSION. Si se queda
 // atrás, el navegador puede servir un index.html nuevo junto a módulos

@@ -11,7 +11,7 @@
 // diferencia de puntuación para jugar mejor o peor (nada de
 // rubber-banding) — el nivel se mantiene igual gane o pierda.
 
-const AI_LEVELS = {
+export const AI_LEVELS = {
   easy: {
     scoringAwareness: 0.65,   // prob. de "ver" que hay jugada(s) puntuable(s)
     bestScoringChance: 0.35,  // entre las vistas, prob. de coger la de más triángulos
@@ -38,4 +38,12 @@ const AI_LEVELS = {
   }
 };
 
-let aiDifficulty = 'medium';
+export let aiDifficulty = 'medium';
+
+// Un módulo ES no permite que quien importa asigne a la variable
+// importada, así que el cambio se hace aquí dentro.
+export function setDifficulty(nivel) {
+  if (AI_LEVELS[nivel]) aiDifficulty = nivel;
+  return aiDifficulty;
+}
+export function getDifficulty() { return aiDifficulty; }
