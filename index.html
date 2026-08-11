@@ -859,26 +859,26 @@
 // global — funcionaba, pero nada declaraba qué necesitaba cada uno, y una
 // mezcla de versiones en caché podía emparejar mitades incompatibles sin
 // que nada lo detectara.
-import { seedRng, rngNextFrom, rngIntFrom, getRngSeed, getRngState, restoreRngState } from './src/game/random.js?v=2.56';
-import { dist, distSq, segmentPassesOverCircle, pointInTriangle, segmentsIntersect } from './src/game/geometry.js?v=2.56';
+import { seedRng, rngNextFrom, rngIntFrom, getRngSeed, getRngState, restoreRngState } from './src/game/random.js?v=2.57';
+import { dist, distSq, segmentPassesOverCircle, pointInTriangle, segmentsIntersect } from './src/game/geometry.js?v=2.57';
 import { MOVE_REASON_TEXT, edgeKey, edgeExists, connectionCount, areAdjacent,
-         lineIntersectsAny, findNewTriangles, triangleTraps, checkMoveValidity } from './src/game/rules.js?v=2.56';
+         lineIntersectsAny, findNewTriangles, triangleTraps, checkMoveValidity } from './src/game/rules.js?v=2.57';
 import { ADJACENCY_TARGET, generateCirclePositions, buildCandidateGraph,
-         attemptBoardGeneration, chooseAdjacency, finalizeAdjacency } from './src/game/board.js?v=2.56';
+         attemptBoardGeneration, chooseAdjacency, finalizeAdjacency } from './src/game/board.js?v=2.57';
 import { createPlayer, playerById, nextPlayerId, applyAction, hasAnyLegalMove,
-         replayFromLog } from './src/game/engine.js?v=2.56';
+         replayFromLog } from './src/game/engine.js?v=2.57';
 import { STATE_SCHEMA_VERSION, RULES_VERSION, serializeGameState, restoreGameState,
-         migrateGameSnapshot, isValidGameSnapshot } from './src/game/state.js?v=2.56';
-import { AI_LEVELS, setDifficulty, getDifficulty } from './src/ai/levels.js?v=2.56';
-import { chooseAIMove, createsScoringReply } from './src/ai/ai.js?v=2.56';
-import { saveGame, loadSavedGame, clearSavedGame, hasSavedGame } from './src/platform/storage.js?v=2.56';
+         migrateGameSnapshot, isValidGameSnapshot } from './src/game/state.js?v=2.57';
+import { AI_LEVELS, setDifficulty, getDifficulty } from './src/ai/levels.js?v=2.57';
+import { chooseAIMove, createsScoringReply } from './src/ai/ai.js?v=2.57';
+import { saveGame, loadSavedGame, clearSavedGame, hasSavedGame } from './src/platform/storage.js?v=2.57';
 // ── Constantes ──────────────────────────────────────────────────────────────
 // Única fuente de la versión visible — antes se escribía a mano en tres
 // sitios (aquí, el panel de info, y el CACHE de sw.js) y se desincronizaban
 // entre sí. sw.js sigue siendo aparte por necesidad (un service worker no
 // puede leer esta constante, vive en otro archivo) — al subir de versión,
 // solo hace falta tocar ESTA línea y la de sw.js, no una tercera copia más.
-const APP_VERSION = 'v2.56';
+const APP_VERSION = 'v2.57';
 // Tres conceptos distintos, deliberadamente separados:
 //   APP_VERSION         — versión desplegada; sube aunque solo cambie un icono.
 //   RULES_VERSION       — reglas del juego; solo sube si cambia CÓMO se juega.
@@ -2574,8 +2574,17 @@ function conectarAcciones() {
   });
 }
 
-// Inicializar setup al cargar
-window.addEventListener('DOMContentLoaded', () => {
+// Inicializar setup al cargar.
+//
+// OJO: un <script type="module"> se ejecuta SIEMPRE en diferido, es decir
+// DESPUÉS de que el documento esté montado y de que DOMContentLoaded haya
+// saltado. Escuchar ese evento aquí no sirve de nada: nunca se dispara, y
+// la app arranca a medias (sin botones conectados, sin jugadores, sin
+// tema). Pasó exactamente eso al convertir a módulos en la v2.55.
+// Como el módulo ya corre con el DOM listo, se llama directamente; el
+// respaldo con el evento queda solo por si alguna vez vuelve a cargarse
+// como script clásico.
+function iniciarApp() {
   conectarAcciones();
   document.getElementById('versionTag').textContent = APP_VERSION;
   document.getElementById('infoVersion').textContent = APP_VERSION;
@@ -2583,7 +2592,13 @@ window.addEventListener('DOMContentLoaded', () => {
   initPlayerCountSelector();
   setPlayerCount(2); // mínimo y default: 2 jugadores
   syncResumeButton(); // ofrecer "continuar" solo si hay partida a medias
-});
+}
+
+if (document.readyState === 'loading') {
+  window.addEventListener('DOMContentLoaded', iniciarApp);
+} else {
+  iniciarApp();
+}
 
 // Responsive: redibujar si cambia el tamaño
 // El resize/rotación YA NO toca circles/MAX_DIST/CIRCLE_R en absoluto —

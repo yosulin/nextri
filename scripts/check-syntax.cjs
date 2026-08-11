@@ -116,6 +116,24 @@ for (const rel of src.map(u => u.split('?')[0])) {
   }
 }
 
+// Un <script type="module"> se ejecuta SIEMPRE en diferido: para cuando
+// corre, DOMContentLoaded ya saltó y escucharlo ahí no hace nada. La app
+// arrancaría a medias, sin error de sintaxis ni excepción que lo delate.
+// Ya pasó al convertir a módulos en la v2.55.
+const modulos = [...html.matchAll(/<script type="module">([\s\S]*?)<\/script>/g)];
+for (const m of modulos) {
+  const sinComentarios = m[1].replace(/\/\/.*/g, '');
+  if (/addEventListener\(\s*['"]DOMContentLoaded['"]/.test(sinComentarios)) {
+    const tieneRespaldo = /document\.readyState/.test(sinComentarios);
+    if (!tieneRespaldo) {
+      console.error('ERR un <script type="module"> escucha DOMContentLoaded sin comprobar document.readyState: nunca se ejecutará');
+      fallos++;
+    } else {
+      console.log('OK  inicio del módulo protegido con document.readyState');
+    }
+  }
+}
+
 // Cada data-accion del HTML debe tener manejador, y cada manejador debe
 // usarse. Sin esto, un botón puede quedarse mudo sin que nada avise: no
 // es un error de sintaxis, simplemente no pasa nada al pulsarlo.
