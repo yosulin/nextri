@@ -1,20 +1,20 @@
-const CACHE = 'juego-circulos-v2.63';
+const CACHE = 'nextri-v2.64';
 const ASSETS = [
-  '/juego-circulos/',
-  '/juego-circulos/index.html',
-  '/juego-circulos/manifest.json',
-  '/juego-circulos/icon.svg',
-  '/juego-circulos/icon-192.png',
-  '/juego-circulos/icon-512.png',
-  '/juego-circulos/src/game/random.js?v=2.63',
-  '/juego-circulos/src/game/geometry.js?v=2.63',
-  '/juego-circulos/src/game/rules.js?v=2.63',
-  '/juego-circulos/src/game/board.js?v=2.63',
-  '/juego-circulos/src/game/engine.js?v=2.63',
-  '/juego-circulos/src/game/state.js?v=2.63',
-  '/juego-circulos/src/ai/levels.js?v=2.63',
-  '/juego-circulos/src/ai/ai.js?v=2.63',
-  '/juego-circulos/src/platform/storage.js?v=2.63'
+  '/nextri/',
+  '/nextri/index.html',
+  '/nextri/manifest.json',
+  '/nextri/icon.svg',
+  '/nextri/icon-192.png',
+  '/nextri/icon-512.png',
+  '/nextri/src/game/random.js?v=2.64',
+  '/nextri/src/game/geometry.js?v=2.64',
+  '/nextri/src/game/rules.js?v=2.64',
+  '/nextri/src/game/board.js?v=2.64',
+  '/nextri/src/game/engine.js?v=2.64',
+  '/nextri/src/game/state.js?v=2.64',
+  '/nextri/src/ai/levels.js?v=2.64',
+  '/nextri/src/ai/ai.js?v=2.64',
+  '/nextri/src/platform/storage.js?v=2.64'
 ];
 
 self.addEventListener('install', e => {
@@ -28,10 +28,15 @@ self.addEventListener('activate', e => {
   // (el quiz, las rutas, los viajes...), no está aislado por proyecto.
   // Filtrar por "!== CACHE" en vez de por prefijo propio borraría las
   // cachés de esos otros proyectos si el navegador los ha visitado.
-  const CACHE_PREFIX = 'juego-circulos-';
+  // Prefijo propio para no borrar las cachés de los demás proyectos que
+  // viven bajo yosulin.github.io. Se limpia también el prefijo antiguo:
+  // tras el cambio de nombre, las cachés viejas quedarían huérfanas
+  // ocupando espacio para siempre.
+  const CACHE_PREFIX = 'nextri-';
+  const PREFIJO_ANTIGUO = 'juego-circulos-';
   e.waitUntil(caches.keys().then(keys =>
     Promise.all(
-      keys.filter(k => k.startsWith(CACHE_PREFIX) && k !== CACHE).map(k => caches.delete(k))
+      keys.filter(k => (k.startsWith(CACHE_PREFIX) || k.startsWith(PREFIJO_ANTIGUO)) && k !== CACHE).map(k => caches.delete(k))
     )
   ));
   self.clients.claim();

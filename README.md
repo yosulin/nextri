@@ -11,4 +11,4 @@ cruzarse ni pasar por encima de otros círculos.
 - **Local**, de 2 a 6 jugadores en el mismo dispositivo.
 
 Aplicación web instalable (PWA), sin instalación ni conexión obligatoria:
-https://yosulin.github.io/juego-circulos/
+https://yosulin.github.io/nextri/

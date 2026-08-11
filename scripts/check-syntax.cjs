@@ -179,7 +179,7 @@ for (const m of html.matchAll(/<[^>]*data-accion="cerrar"[^>]*>/g)) {
 // La versión de index.html y la caché de sw.js tienen que ir a la par: si
 // se desincronizan, el navegador sirve una versión vieja desde caché.
 const versión = html.match(/const APP_VERSION = '([^']+)'/);
-const caché = sw.match(/const CACHE = 'juego-circulos-([^']+)'/);
+const caché = sw.match(/const CACHE = 'nextri-([^']+)'/);
 if (versión && caché) {
   if (versión[1] === caché[1]) console.log(`OK  versión ${versión[1]} coincide en index.html y sw.js`);
   else { console.error(`ERR APP_VERSION=${versión[1]} pero CACHE=${caché[1]}`); fallos++; }

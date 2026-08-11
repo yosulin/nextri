@@ -9,9 +9,13 @@
 // la app no arranque por eso sería mucho peor. Ante cualquier duda:
 // devolver null / no hacer nada, nunca propagar el error.
 
-import { serializeGameState, migrateGameSnapshot, isValidGameSnapshot } from '../game/state.js?v=2.63';
+import { serializeGameState, migrateGameSnapshot, isValidGameSnapshot } from '../game/state.js?v=2.64';
 
-export const SAVE_KEY = 'juego-circulos:partida';
+export const SAVE_KEY = 'nextri:partida';
+// Clave anterior al cambio de nombre. localStorage va por DOMINIO, no por
+// ruta, así que una partida guardada antes sigue ahí bajo el nombre viejo:
+// se recupera una vez y se traslada, en vez de perderla en silencio.
+const SAVE_KEY_ANTERIOR = 'juego-circulos:partida';
 
 export function saveGame(g) {
   // Solo tiene sentido guardar una partida en curso. Una terminada o el
@@ -27,7 +31,15 @@ export function saveGame(g) {
 
 export function loadSavedGame() {
   try {
-    const raw = localStorage.getItem(SAVE_KEY);
+    let raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) {
+      // Rescatar una partida guardada con el nombre anterior.
+      raw = localStorage.getItem(SAVE_KEY_ANTERIOR);
+      if (raw) {
+        localStorage.setItem(SAVE_KEY, raw);
+        localStorage.removeItem(SAVE_KEY_ANTERIOR);
+      }
+    }
     if (!raw) return null;
     // Migrar primero (un guardado de un formato anterior puede ser
     // recuperable), y validar DESPUÉS: si la migración no lo deja en un
