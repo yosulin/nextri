@@ -73,7 +73,23 @@ if (estilo) {
 // conexión, y eso no lo detecta ninguna comprobación de sintaxis.
 const src = [...html.matchAll(/<script src="([^"]+)"/g)].map(m => m[1]);
 const sw = readFileSync(path.join(raiz, 'sw.js'), 'utf-8');
-for (const rel of src) {
+// La marca ?v= de cada módulo debe coincidir con APP_VERSION. Si se queda
+// atrás, el navegador puede servir un index.html nuevo junto a módulos
+// viejos de caché — y con las firmas cambiadas eso rompe el juego con una
+// excepción dentro de draw() que deja el tablero en blanco. Ya pasó.
+const versiónApp = (html.match(/const APP_VERSION = 'v([^']+)'/) || [])[1];
+for (const url of src) {
+  const marca = (url.match(/\?v=(.+)$/) || [])[1];
+  if (!marca) {
+    console.error(`ERR ${url} se carga sin marca ?v= (riesgo de mezclar versiones en caché)`);
+    fallos++;
+  } else if (marca !== versiónApp) {
+    console.error(`ERR ${url} tiene ?v=${marca} pero APP_VERSION es v${versiónApp}`);
+    fallos++;
+  }
+}
+
+for (const rel of src.map(u => u.split('?')[0])) {
   try { statSync(path.join(raiz, rel)); }
   catch { console.error(`ERR index.html carga ${rel}, que no existe`); fallos++; continue; }
   if (!sw.includes(rel)) {
