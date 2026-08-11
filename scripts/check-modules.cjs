@@ -73,6 +73,29 @@ for (const rel of listar('src')) {
   }
 }
 
+// TODOS los import (los de index.html y los de unos módulos a otros)
+// deben apuntar a la MISMA URL para cada archivo, versión incluida. Si
+// difieren, el navegador carga DOS COPIAS del mismo módulo, cada una con
+// su propio estado: index.html siembra el generador de una y el resto usa
+// la otra, sin sembrar. Eso fue el fallo de la v2.57 ("Cannot read
+// properties of undefined (reading 'calls')"). Ojo: una ruta relativa NO
+// hereda la cadena ?v= del módulo que la importa, así que hay que ponerla
+// explícitamente en cada import.
+const indexHtml = readFileSync(path.join(raiz, 'index.html'), 'utf-8');
+const versiónApp = (indexHtml.match(/const APP_VERSION = 'v([^']+)'/) || [])[1];
+const fuentes = [['index.html', indexHtml], ...listar('src').map(r => [r, readFileSync(path.join(raiz, r), 'utf-8')])];
+let importsMal = 0;
+for (const [rel, src] of fuentes) {
+  for (const m of src.matchAll(/from '([^']+\.js)([^']*)'/g)) {
+    const marca = (m[2].match(/\?v=(.+)/) || [])[1];
+    if (marca !== versiónApp) {
+      console.error(`ERR ${rel}: importa ${m[1]} con ?v=${marca || '(ninguna)'}, pero APP_VERSION es v${versiónApp}`);
+      importsMal++; fallos++;
+    }
+  }
+}
+if (importsMal === 0) console.log(`OK  todos los import apuntan a v${versiónApp} (una sola copia de cada módulo)`);
+
 console.log('');
 if (fallos > 0) { console.error(`${fallos} módulo(s) con referencias sin resolver`); process.exit(1); }
 console.log('Todos los módulos resuelven sus referencias.');
