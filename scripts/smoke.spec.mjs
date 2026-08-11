@@ -31,11 +31,13 @@ test('la aplicación arranca y se puede jugar', async ({ page }) => {
   await slider.evaluate(el => { el.value = '50'; el.dispatchEvent(new Event('input', { bubbles: true })); });
   await expect(page.locator('#sliderVal')).toHaveText('50');
 
-  await page.locator('#randomToggleInput').check();
+  // La casilla está oculta a propósito (accesible pero no visible), así
+  // que se activa como lo haría una persona: pulsando su interruptor.
+  await page.locator('#randomToggleInput').check({ force: true });
   await expect(page.locator('#randomToggleInput')).toBeChecked();
 
   // 3. Empezar partida
-  await page.locator('[data-accion="empezar"]').click();
+  await page.locator('#setupPanel [data-accion="empezar"]').click();
   await expect(page.locator('#gameUI')).toHaveClass(/is-active/);
 
   // El tablero debe tener círculos pintados: si draw() revienta a medias,
@@ -68,7 +70,7 @@ test('el modo Solo contra la máquina arranca sin errores', async ({ page }) => 
   await page.locator('[data-accion="jugadores"][data-n="1"]').click();
   await expect(page.locator('#soloModeInfo')).toBeVisible();
   await page.locator('[data-accion="dificultad"][data-nivel="hard"]').click();
-  await page.locator('[data-accion="empezar"]').click();
+  await page.locator('#setupPanel [data-accion="empezar"]').click();
   await expect(page.locator('#gameUI')).toHaveClass(/is-active/);
 
   // Dejar que la máquina juegue su turno entero sin reventar
