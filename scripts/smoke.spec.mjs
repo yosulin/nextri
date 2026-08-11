@@ -10,10 +10,17 @@ import { test, expect } from '@playwright/test';
 
 // Cualquier excepción de la página hace fallar la prueba: es exactamente
 // la clase de fallo que buscamos.
+// Avisos del navegador que NO son fallos de la aplicación: Chromium
+// bloquea navigator.vibrate() si no considera que ha habido un gesto real
+// del usuario, y un clic sintético no siempre cuenta. En un móvil de
+// verdad funciona.
+const RUIDO_DEL_NAVEGADOR = [/navigator\.vibrate/i];
+
 function vigilarErrores(page) {
   const errores = [];
-  page.on('pageerror', e => errores.push(`pageerror: ${e.message}`));
-  page.on('console', m => { if (m.type() === 'error') errores.push(`console: ${m.text()}`); });
+  const anotar = (t) => { if (!RUIDO_DEL_NAVEGADOR.some(r => r.test(t))) errores.push(t); };
+  page.on('pageerror', e => anotar(`pageerror: ${e.message}`));
+  page.on('console', m => { if (m.type() === 'error') anotar(`console: ${m.text()}`); });
   return errores;
 }
 
@@ -52,7 +59,10 @@ test('la aplicación arranca y se puede jugar', async ({ page }) => {
   expect(hayCirculos, 'el tablero debe tener algo dibujado').toBe(true);
 
   // 4. Tirar el dado y comprobar que el turno avanza
-  await page.locator('#dice').click();
+  // El dado pulsa con una animación infinita mientras espera la tirada, y
+  // Playwright no considera "estable" un elemento en movimiento: se pulsa
+  // con force, que es lo que hace una persona igualmente.
+  await page.locator('#dice').click({ force: true });
   await expect(page.locator('#linesLeftLabel')).toContainText(/línea/, { timeout: 5000 });
 
   // 5. Nuevo juego deja el tablero jugable otra vez
@@ -74,7 +84,7 @@ test('el modo Solo contra la máquina arranca sin errores', async ({ page }) => 
   await expect(page.locator('#gameUI')).toHaveClass(/is-active/);
 
   // Dejar que la máquina juegue su turno entero sin reventar
-  await page.locator('#dice').click();
+  await page.locator('#dice').click({ force: true });
   await page.waitForTimeout(6000);
 
   expect(errores, 'la página no debe lanzar ninguna excepción').toEqual([]);
