@@ -230,6 +230,48 @@ restoreRngState(rngBase);
 const repFalso = replayFromLog(base, registroFalso);
 check('El replay detecta un registro manipulado', !repFalso.ok && repFalso.mismatch.reason === 'dice-value-mismatch');
 
+// ── Integridad del motor (v2.59) ───────────────────────────────────────
+// ADVANCE_TURN no puede saltarse un turno a medias
+const enCurso = { ...nuevoEstado(555), linesLeft: 3, diceRolled: true, turnPhase: 'drawing' };
+const prematuro = applyAction(enCurso, { type: 'ADVANCE_TURN', playerId: 'p1' });
+check('ADVANCE_TURN se rechaza con el turno a medias',
+  !prematuro.ok && prematuro.reason === 'turn-not-finished', prematuro.reason);
+
+const enHandoff = { ...enCurso, linesLeft: 0, diceRolled: false, turnPhase: 'handoff' };
+check('ADVANCE_TURN se acepta desde handoff', applyAction(enHandoff, { type: 'ADVANCE_TURN' }).ok);
+check('ADVANCE_TURN se rechaza si lo pide otro jugador',
+  !applyAction(enHandoff, { type: 'ADVANCE_TURN', playerId: 'p2' }).ok);
+
+// El motor detecta el fin de partida por su cuenta
+const sinJugadas = { ...nuevoEstado(556), turnPhase: 'handoff', linesLeft: 0, diceRolled: false };
+sinJugadas.candidatePairs = []; // ninguna pareja candidata: no quedan jugadas
+const finPorMotor = applyAction(sinJugadas, { type: 'ADVANCE_TURN' });
+check('El motor termina la partida cuando no quedan jugadas',
+  finPorMotor.ok && finPorMotor.state.status === 'finished' &&
+  finPorMotor.events.some(e => e.type === 'GAME_FINISHED'),
+  JSON.stringify(finPorMotor.events.map(e => e.type)));
+
+// Replay de una partida CON deshacer: la jugada anulada no debe repetirse
+let estU = { ...nuevoEstado(557), linesLeft: 3, diceRolled: true, turnPhase: 'drawing' };
+const logU = [];
+const par1 = estU.candidatePairs.find(({ i, j }) => checkMoveValidity(estU, i, j).valid);
+const r1u = applyAction(estU, { type: 'CONNECT', playerId: 'p1', from: par1.i, to: par1.j });
+logU.push(...r1u.events);
+const trasPrimera = r1u.state;
+// deshacer esa jugada: se anota MOVE_UNDONE y se vuelve al estado previo
+logU.push({ type: 'MOVE_UNDONE', playerId: 'p1', edge: edgeKey(par1.i, par1.j) });
+// y jugar otra distinta
+const par2 = estU.candidatePairs.find(({ i, j }) =>
+  checkMoveValidity(estU, i, j).valid && edgeKey(i, j) !== edgeKey(par1.i, par1.j));
+const r2u = applyAction(estU, { type: 'CONNECT', playerId: 'p1', from: par2.i, to: par2.j });
+logU.push(...r2u.events);
+
+const repU = replayFromLog({ ...nuevoEstado(557), linesLeft: 3, diceRolled: true, turnPhase: 'drawing' }, logU);
+check('El replay NO reproduce una jugada deshecha',
+  repU.ok && !repU.state.edges.has(edgeKey(par1.i, par1.j)) &&
+  repU.state.edges.has(edgeKey(par2.i, par2.j)),
+  repU.ok ? `aristas: ${[...repU.state.edges].join(',')}` : repU.mismatch?.reason);
+
 console.log('');
 if (fallos > 0) { console.error(`${fallos} comprobación(es) fallaron`); process.exit(1); }
 console.log('Todas las comprobaciones pasaron.');

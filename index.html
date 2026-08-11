@@ -859,26 +859,26 @@
 // global — funcionaba, pero nada declaraba qué necesitaba cada uno, y una
 // mezcla de versiones en caché podía emparejar mitades incompatibles sin
 // que nada lo detectara.
-import { seedRng, rngNextFrom, rngIntFrom, getRngSeed, getRngState, restoreRngState } from './src/game/random.js?v=2.58';
-import { dist, distSq, segmentPassesOverCircle, pointInTriangle, segmentsIntersect } from './src/game/geometry.js?v=2.58';
+import { seedRng, rngNextFrom, rngIntFrom, getRngSeed, getRngState, restoreRngState } from './src/game/random.js?v=2.59';
+import { dist, distSq, segmentPassesOverCircle, pointInTriangle, segmentsIntersect } from './src/game/geometry.js?v=2.59';
 import { MOVE_REASON_TEXT, edgeKey, edgeExists, connectionCount, areAdjacent,
-         lineIntersectsAny, findNewTriangles, triangleTraps, checkMoveValidity } from './src/game/rules.js?v=2.58';
+         lineIntersectsAny, findNewTriangles, triangleTraps, checkMoveValidity } from './src/game/rules.js?v=2.59';
 import { ADJACENCY_TARGET, generateCirclePositions, buildCandidateGraph,
-         attemptBoardGeneration, chooseAdjacency, finalizeAdjacency } from './src/game/board.js?v=2.58';
+         attemptBoardGeneration, chooseAdjacency, finalizeAdjacency } from './src/game/board.js?v=2.59';
 import { createPlayer, playerById, nextPlayerId, applyAction, hasAnyLegalMove,
-         replayFromLog } from './src/game/engine.js?v=2.58';
+         replayFromLog } from './src/game/engine.js?v=2.59';
 import { STATE_SCHEMA_VERSION, RULES_VERSION, serializeGameState, restoreGameState,
-         migrateGameSnapshot, isValidGameSnapshot } from './src/game/state.js?v=2.58';
-import { AI_LEVELS, setDifficulty, getDifficulty } from './src/ai/levels.js?v=2.58';
-import { chooseAIMove, createsScoringReply } from './src/ai/ai.js?v=2.58';
-import { saveGame, loadSavedGame, clearSavedGame, hasSavedGame } from './src/platform/storage.js?v=2.58';
+         migrateGameSnapshot, isValidGameSnapshot } from './src/game/state.js?v=2.59';
+import { AI_LEVELS, setDifficulty, getDifficulty } from './src/ai/levels.js?v=2.59';
+import { chooseAIMove, createsScoringReply } from './src/ai/ai.js?v=2.59';
+import { saveGame, loadSavedGame, clearSavedGame, hasSavedGame } from './src/platform/storage.js?v=2.59';
 // ── Constantes ──────────────────────────────────────────────────────────────
 // Única fuente de la versión visible — antes se escribía a mano en tres
 // sitios (aquí, el panel de info, y el CACHE de sw.js) y se desincronizaban
 // entre sí. sw.js sigue siendo aparte por necesidad (un service worker no
 // puede leer esta constante, vive en otro archivo) — al subir de versión,
 // solo hace falta tocar ESTA línea y la de sw.js, no una tercera copia más.
-const APP_VERSION = 'v2.58';
+const APP_VERSION = 'v2.59';
 // Tres conceptos distintos, deliberadamente separados:
 //   APP_VERSION         — versión desplegada; sube aunque solo cambie un icono.
 //   RULES_VERSION       — reglas del juego; solo sube si cambia CÓMO se juega.
@@ -1034,13 +1034,30 @@ function dispatch(action) {
   const idx = players.findIndex(p => p.id === n.currentPlayerId);
   if (idx >= 0) currentPlayer = idx;
 
-  for (const ev of resultado.events) {
-    eventLog.push({ seq: eventLog.length + 1, ...ev });
+  registrarEventos(resultado.events);
+  invalidateActiveCirclesCache();
+
+  // El fin de partida lo decide el MOTOR y llega como evento. La interfaz
+  // solo reacciona mostrándolo. Antes lo detectaba ella por su cuenta
+  // (computeActiveCircles().size === 0) y ponía gameStatus a mano, así que
+  // había dos jueces distintos para lo mismo — y un servidor que ejecutara
+  // las mismas acciones nunca habría terminado la partida.
+  if (resultado.events.some(e => e.type === 'GAME_FINISHED')) mostrarFinDePartida();
+
+  return resultado;
+}
+
+// Anota eventos en el registro, numerándolos de forma estrictamente
+// creciente. La secuencia sale del ÚLTIMO seq, no de la longitud del
+// array: al guardar solo se conservan los últimos eventos, así que tras
+// reanudar length+1 repetiría números ya usados — y en red, dos eventos
+// con el mismo seq son imposibles de ordenar.
+function registrarEventos(eventos) {
+  for (const ev of eventos) {
+    const ultimo = eventLog.length ? eventLog[eventLog.length - 1].seq : 0;
+    eventLog.push({ seq: ultimo + 1, ...ev });
   }
   if (eventLog.length > EVENT_LOG_MAX) eventLog = eventLog.slice(-EVENT_LOG_MAX);
-
-  invalidateActiveCirclesCache();
-  return resultado;
 }
 // Deshacer: solo la ÚLTIMA jugada, y solo mientras no haya pasado nada más
 // desde entonces (ni otra jugada, ni una tirada nueva) — se sobreescribe o
@@ -1621,7 +1638,7 @@ function rollDice(isAICall) {
     // Comprobar si hay movimientos disponibles tras tirar
     const active = computeActiveCircles();
     if (active.size === 0) {
-      endGame();
+      mostrarFinDePartida();
       return;
     }
     updateTurnInfo();
@@ -1842,7 +1859,7 @@ function attemptConnect(fromIdx, toIdx) {
 
   if (linesLeft === 0) {
     updateDiceDisplay(0);
-    if (computeActiveCircles().size === 0) { endGame(); return; }
+    if (computeActiveCircles().size === 0) { mostrarFinDePartida(); return; }
     if (!eraIA) {
       // Margen para deshacer antes de ceder el turno.
       const el = document.getElementById('turnInfo');
@@ -1861,7 +1878,7 @@ function attemptConnect(fromIdx, toIdx) {
       advanceTurn();
     }
   } else {
-    if (computeActiveCircles().size === 0) { endGame(); return; }
+    if (computeActiveCircles().size === 0) { mostrarFinDePartida(); return; }
     updateDiceDisplay(lastRolledValue);
     document.getElementById('linesLeftLabel').textContent = `${linesLeft} línea${linesLeft !== 1 ? 's' : ''}`;
     updateTurnInfo();
@@ -2037,6 +2054,14 @@ function undoLastMove() {
 
   const wasFinished = (gameStatus === 'finished');
 
+  // El registro es SOLO-AÑADIR: deshacer no borra el CONNECT que ya quedó
+  // anotado, sino que añade un evento que lo anula. Si se recortara el
+  // registro, un replay reproduciría una línea que en la partida real ya
+  // no existe; y en red, borrar historia sería imposible de sincronizar
+  // entre dos navegadores. Con MOVE_UNDONE la línea temporal es coherente
+  // hacia delante y auditable hacia atrás.
+  registrarEventos([{ type: 'MOVE_UNDONE', playerId: players[snap.currentPlayer]?.id, edge: snap.edgeKey }]);
+
   edges.delete(snap.edgeKey);
   // Quitar exactamente los triángulos que esta jugada añadió (los que
   // quedaron por encima del recuento de antes) y devolver los puntos.
@@ -2157,7 +2182,9 @@ function showBlockedMessage(remaining) {
   setSelectedCircle(null);
 }
 
-function endGame() {
+// Mostrar el final. El estado 'finished' ya lo puso el motor al emitir
+// GAME_FINISHED; aquí solo se refleja en pantalla.
+function mostrarFinDePartida() {
   gameStatus = 'finished';
   clearSavedGame(); // una partida terminada no debe ofrecer "continuar"
   vibrate(HAPTIC.celebrate);

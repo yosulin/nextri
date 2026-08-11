@@ -20,8 +20,8 @@
 //
 // Requiere: rules.js, random.js.
 
-import { checkMoveValidity, findNewTriangles, edgeKey } from './rules.js?v=2.58';
-import { rngIntFrom } from './random.js?v=2.58';
+import { checkMoveValidity, findNewTriangles, edgeKey } from './rules.js?v=2.59';
+import { rngIntFrom } from './random.js?v=2.59';
 
 export function createPlayer(index, { name, isAI = false, userId = null } = {}) {
   const nombre = name || `Jugador ${index + 1}`;
@@ -124,12 +124,35 @@ export function accionConectar(state, action) {
   if (linesLeft === 0) {
     eventos.push({ type: 'TURN_FINISHED', playerId: action.playerId });
   }
+
+  // Si tras esta línea ya no queda ninguna jugada posible en todo el
+  // tablero, la partida termina aquí — lo decide el motor, no la interfaz.
+  if (!hasAnyLegalMove(next)) {
+    next.status = 'finished';
+    eventos.push({ type: 'GAME_FINISHED', scores: next.players.map(p => ({ id: p.id, score: p.score })) });
+  }
   return { ok: true, state: next, events: eventos };
 }
 
-export function accionAvanzarTurno(state) {
+export function accionAvanzarTurno(state, action = {}) {
   if (state.status !== 'playing') return rechazar(state, 'game-not-playing');
+
+  // Solo se puede pasar turno desde 'handoff' (turno agotado) o cuando
+  // quien tiene el turno se ha quedado sin jugadas posibles. Antes se
+  // aceptaba en cualquier momento: un ADVANCE_TURN prematuro saltaba el
+  // turno de alguien sin que nada lo impidiera. En red eso sería una vía
+  // para robar turnos.
+  const bloqueado = state.turnPhase === 'drawing' && !hasAnyLegalMove(state);
+  if (state.turnPhase !== 'handoff' && !bloqueado) {
+    return rechazar(state, 'turn-not-finished');
+  }
+  // Si se indica quién lo pide, tiene que ser el del turno.
+  if (action.playerId && action.playerId !== state.currentPlayerId) {
+    return rechazar(state, 'not-your-turn');
+  }
+
   const siguiente = nextPlayerId(state);
+  const eventos = [{ type: 'TURN_STARTED', playerId: siguiente }];
   const next = {
     ...state,
     currentPlayerId: siguiente,
@@ -137,7 +160,17 @@ export function accionAvanzarTurno(state) {
     diceRolled: false,
     turnPhase: 'awaiting-roll'
   };
-  return { ok: true, state: next, events: [{ type: 'TURN_STARTED', playerId: siguiente }] };
+
+  // El fin de partida lo decide el MOTOR, no la interfaz: si al siguiente
+  // no le queda ninguna jugada posible, la partida ha terminado. Antes
+  // esto vivía en endGame() de index.html, fuera del motor, así que un
+  // servidor que ejecutara las mismas acciones no habría terminado nunca
+  // la partida.
+  if (!hasAnyLegalMove(next)) {
+    next.status = 'finished';
+    eventos.push({ type: 'GAME_FINISHED', scores: next.players.map(p => ({ id: p.id, score: p.score })) });
+  }
+  return { ok: true, state: next, events: eventos };
 }
 
 // ¿Queda alguna jugada legal para quien tenga el turno?
@@ -174,7 +207,24 @@ export function replayFromLog(initialState, events) {
   let state = initialState;
   let appliedActions = 0;
 
-  for (const ev of events) {
+  // El registro es solo-añadir: un MOVE_UNDONE anula el CONNECT anterior
+  // de esa misma arista en vez de borrarlo. Para reproducir la partida
+  // REAL hay que descartar ambos, o el replay volvería a trazar una línea
+  // que la persona ya deshizo.
+  const anulados = new Set();
+  events.forEach((ev, i) => {
+    if (ev.type !== 'MOVE_UNDONE') return;
+    anulados.add(i);
+    for (let k = i - 1; k >= 0; k--) {
+      if (anulados.has(k)) continue;
+      const e = events[k];
+      if (e.type === 'EDGE_ADDED' && edgeKey(e.from, e.to) === ev.edge) { anulados.add(k); break; }
+    }
+  });
+  // Los triángulos y el fin de turno de una jugada anulada tampoco cuentan.
+  const efectiva = events.filter((ev, i) => !anulados.has(i));
+
+  for (const ev of efectiva) {
     const action = eventToAction(ev);
     if (!action) continue;
 
