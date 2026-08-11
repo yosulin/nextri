@@ -182,6 +182,8 @@
   }
   .player-score { font-family: 'Fredoka One', cursive; font-size: 1.8rem; line-height: 1; }
   .player-initial { font-size: .8rem; font-weight: 600; }
+  .card-avatar { display: inline-block; width: 22px; height: 22px; vertical-align: middle; }
+  .card-avatar svg { width: 100%; height: 100%; }
 
   /* Con 4-6 jugadores el tamaño cómodo de 2 no cabe en un móvil: se
      encoge lo justo (tipografía, relleno y huecos) en vez de dejar que la
@@ -669,22 +671,47 @@
   .mode-btn .mode-icon { font-size: 1.4rem; }
   .mode-btn.is-active { border-color: var(--p1-color); color: var(--p1-color); }
 
-  .rival-row { display: flex; gap: 8px; width: 100%; }
+  .rival-row { display: flex; gap: 8px; width: 100%; align-items: stretch; }
   .rival-btn {
-    flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 2px;
-    background: var(--surface); border: 2px solid var(--border); border-radius: 12px;
-    padding: 10px 4px; cursor: pointer; font-family: 'Nunito', sans-serif;
-    transition: border-color .2s;
+    position: relative;
+    flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 3px;
+    background: var(--surface); border: 2px solid var(--border); border-radius: 16px;
+    padding: 14px 6px 12px; cursor: pointer; font-family: 'Nunito', sans-serif;
+    transition: border-color .2s, transform .15s;
   }
-  .rival-btn .rival-name { font-weight: 800; font-size: .95rem; color: var(--text); }
-  .rival-btn .rival-tag { font-size: .68rem; color: var(--muted); }
-  .rival-btn.is-active { border-color: var(--p2-color); }
-  .rival-btn.is-active .rival-name { color: var(--p2-color); }
+  .rival-btn:active { transform: scale(.97); }
+  /* Cada rival lleva su propio color de marca; el avatar lo hereda con
+     currentColor, así que el SVG no necesita saber nada de temas. */
+  .rival-avatar { display: block; width: 46px; height: 46px; color: var(--rival-color, var(--muted)); }
+  .rival-avatar svg { width: 100%; height: 100%; }
+  .rival-btn .rival-name { font-weight: 800; font-size: .92rem; color: var(--text); }
+  .rival-btn .rival-tag { font-size: .66rem; color: var(--muted); }
+  .rival-btn.is-active { border-color: var(--rival-color, var(--p2-color)); }
+  .rival-btn.is-active .rival-name { color: var(--rival-color, var(--p2-color)); }
+  .rival-check {
+    position: absolute; top: 6px; right: 6px;
+    width: 20px; height: 20px; border-radius: 50%;
+    background: var(--rival-color, var(--p2-color)); color: #fff;
+    font-size: .7rem; line-height: 20px; text-align: center; font-weight: 700;
+    display: none;
+  }
+  .rival-btn.is-active .rival-check { display: block; }
+  .rival-rec-badge {
+    display: none; margin-top: 6px; font-size: .6rem; font-weight: 700;
+    background: var(--rival-color, var(--p2-color)); color: #fff;
+    border-radius: 999px; padding: 3px 10px; white-space: nowrap;
+  }
+  .rival-btn.is-active .rival-rec-badge { display: inline-block; }
+
+  /* Ficha del rival elegido: explica la elección sin obligar a probarlos */
   .rival-desc {
-    font-size: .8rem; color: var(--muted); text-align: center;
-    margin-top: 8px; line-height: 1.4;
+    display: flex; align-items: center; gap: 12px; text-align: left;
+    background: var(--p2-light); border-radius: 14px; padding: 12px 14px;
+    margin-top: 12px; font-size: .82rem; color: var(--muted); line-height: 1.35;
   }
-  .rival-desc strong { color: var(--text); }
+  .rival-desc .rd-avatar { flex-shrink: 0; width: 38px; height: 38px; color: var(--rival-color); }
+  .rival-desc .rd-avatar svg { width: 100%; height: 100%; }
+  .rival-desc strong { display: block; color: var(--text); font-size: .92rem; }
   .rival-rec {
     display: inline-block; font-size: .68rem; font-weight: 700;
     color: var(--p2-color); border: 1px solid var(--p2-color);
@@ -702,6 +729,19 @@
   .setup-options > summary::-webkit-details-marker { display: none; }
   .setup-options > summary::after { content: '›'; font-size: 1.2rem; }
   .setup-options[open] > summary::after { content: '⌄'; }
+
+  /* Botón principal: es la acción de la pantalla, así que pesa más que
+     todo lo demás y dice exactamente qué va a pasar. */
+  #startBtn {
+    background: var(--p2-color);
+    border-color: var(--p2-color);
+    color: #fff;
+    font-weight: 800;
+    letter-spacing: .3px;
+    box-shadow: 0 8px 20px -8px var(--p2-color);
+  }
+  #startBtn:hover { background: var(--p2-color); border-color: var(--p2-color); }
+  #resumeBtn { font-weight: 800; }
   .options-summary {
     text-transform: none; letter-spacing: 0; font-weight: 600;
     font-size: .78rem; color: var(--muted); margin-left: auto;
@@ -782,7 +822,7 @@
 <body>
 
 <h1 id="tituloApp">● NEXTRI</h1>
-<p class="tagline" id="tagline">Une círculos, cierra triángulos</p>
+<p class="tagline" id="tagline">cada línea cuenta</p>
 <div id="versionTag" style="font-size:.72rem;color:var(--muted);letter-spacing:1px;margin-top:-8px;"></div>
 
 <!-- Config de nombres -->
@@ -807,12 +847,17 @@
       <div class="setup-label">Elige tu rival</div>
       <div class="rival-row" role="radiogroup" aria-label="Rival">
         <button type="button" class="rival-btn" data-accion="rival" data-rival="delta" role="radio" aria-checked="false">
+          <span class="rival-avatar"></span>
           <span class="rival-name">Delta</span><span class="rival-tag">Espontáneo</span>
         </button>
         <button type="button" class="rival-btn is-active" data-accion="rival" data-rival="circuit" role="radio" aria-checked="true">
+          <span class="rival-check" aria-hidden="true">✓</span>
+          <span class="rival-avatar"></span>
           <span class="rival-name">Circuit</span><span class="rival-tag">Estratega</span>
+          <span class="rival-rec-badge">★ Recomendado</span>
         </button>
         <button type="button" class="rival-btn" data-accion="rival" data-rival="vector" role="radio" aria-checked="false">
+          <span class="rival-avatar"></span>
           <span class="rival-name">Vector</span><span class="rival-tag">Analista</span>
         </button>
       </div>
@@ -838,7 +883,7 @@
     </div>
 
     <!-- Opciones secundarias: no estorban la decisión principal -->
-    <details class="setup-options" id="opcionesPartida">
+    <details class="setup-options" id="opcionesPartida" open>
       <summary>Opciones de partida <span class="options-summary" id="optionsSummary"></span></summary>
     <div class="setup-section">
       <div class="setup-label">Círculos en el tablero</div>
@@ -940,7 +985,7 @@
 <div class="info-overlay" id="infoOverlay" role="dialog" aria-modal="true" aria-labelledby="infoTitle" data-accion="cerrar-fondo" data-objetivo="infoOverlay">
   <div class="info-sheet">
     <h3 id="infoTitle">● NEXTRI</h3>
-    <p class="info-lema" id="infoLema">Une círculos, cierra triángulos</p>
+    <p class="info-lema" id="infoLema">cada línea cuenta</p>
     <dl class="info-rows">
       <div><dt>Versión</dt><dd id="infoVersion"></dd></div>
     </dl>
@@ -954,26 +999,26 @@
 // global — funcionaba, pero nada declaraba qué necesitaba cada uno, y una
 // mezcla de versiones en caché podía emparejar mitades incompatibles sin
 // que nada lo detectara.
-import { seedRng, rngNextFrom, rngIntFrom, getRngSeed, getRngState, restoreRngState } from './src/game/random.js?v=2.65';
-import { dist, distSq, segmentPassesOverCircle, pointInTriangle, segmentsIntersect } from './src/game/geometry.js?v=2.65';
+import { seedRng, rngNextFrom, rngIntFrom, getRngSeed, getRngState, restoreRngState } from './src/game/random.js?v=2.66';
+import { dist, distSq, segmentPassesOverCircle, pointInTriangle, segmentsIntersect } from './src/game/geometry.js?v=2.66';
 import { MOVE_REASON_TEXT, edgeKey, edgeExists, connectionCount, areAdjacent,
-         lineIntersectsAny, findNewTriangles, triangleTraps, checkMoveValidity } from './src/game/rules.js?v=2.65';
+         lineIntersectsAny, findNewTriangles, triangleTraps, checkMoveValidity } from './src/game/rules.js?v=2.66';
 import { ADJACENCY_TARGET, generateCirclePositions, buildCandidateGraph,
-         attemptBoardGeneration, chooseAdjacency, finalizeAdjacency } from './src/game/board.js?v=2.65';
+         attemptBoardGeneration, chooseAdjacency, finalizeAdjacency } from './src/game/board.js?v=2.66';
 import { createPlayer, playerById, nextPlayerId, applyAction, hasAnyLegalMove,
-         replayFromLog } from './src/game/engine.js?v=2.65';
+         replayFromLog } from './src/game/engine.js?v=2.66';
 import { STATE_SCHEMA_VERSION, RULES_VERSION, serializeGameState, restoreGameState,
-         migrateGameSnapshot, isValidGameSnapshot } from './src/game/state.js?v=2.65';
-import { AI_LEVELS, setDifficulty, getDifficulty, RIVALES, setRival, getRival } from './src/ai/levels.js?v=2.65';
-import { chooseAIMove, createsScoringReply } from './src/ai/ai.js?v=2.65';
-import { saveGame, loadSavedGame, clearSavedGame, hasSavedGame } from './src/platform/storage.js?v=2.65';
+         migrateGameSnapshot, isValidGameSnapshot } from './src/game/state.js?v=2.66';
+import { AI_LEVELS, setDifficulty, getDifficulty, RIVALES, setRival, getRival } from './src/ai/levels.js?v=2.66';
+import { chooseAIMove, createsScoringReply } from './src/ai/ai.js?v=2.66';
+import { saveGame, loadSavedGame, clearSavedGame, hasSavedGame } from './src/platform/storage.js?v=2.66';
 // ── Constantes ──────────────────────────────────────────────────────────────
 // Única fuente de la versión visible — antes se escribía a mano en tres
 // sitios (aquí, el panel de info, y el CACHE de sw.js) y se desincronizaban
 // entre sí. sw.js sigue siendo aparte por necesidad (un service worker no
 // puede leer esta constante, vive en otro archivo) — al subir de versión,
 // solo hace falta tocar ESTA línea y la de sw.js, no una tercera copia más.
-const APP_VERSION = 'v2.65';
+const APP_VERSION = 'v2.66';
 
 // Nombre del producto en un solo sitio. Si algún día cambia (NEXTRI u
 // otro), esto evita perseguirlo por cabecera, aviso de rotación, panel de
@@ -982,7 +1027,7 @@ const APP_VERSION = 'v2.65';
 const PRODUCTO = 'NEXTRI';
 // Lema de la marca: resume el juego en cuatro palabras y es lo que dice
 // la hoja de marca. Sale de aquí igual que el nombre.
-const LEMA = 'Une círculos, cierra triángulos';
+const LEMA = 'cada línea cuenta';
 // Tres conceptos distintos, deliberadamente separados:
 //   APP_VERSION         — versión desplegada; sube aunque solo cambie un icono.
 //   RULES_VERSION       — reglas del juego; solo sube si cambia CÓMO se juega.
@@ -2621,6 +2666,19 @@ function setGameMode(modo) {
   actualizarTextoJugar();
 }
 
+// Pinta los avatares una sola vez al arrancar. Los SVG viven junto a la
+// definición de cada rival (levels.js), no sueltos en el HTML, así que
+// añadir un rival nuevo no obliga a tocar el marcado.
+function pintarAvataresRivales() {
+  document.querySelectorAll('[data-accion="rival"]').forEach(b => {
+    const r = RIVALES[b.dataset.rival];
+    if (!r) return;
+    b.style.setProperty('--rival-color', r.color);
+    const hueco = b.querySelector('.rival-avatar');
+    if (hueco) hueco.innerHTML = r.avatar;
+  });
+}
+
 function elegirRival(id) {
   vibrate(HAPTIC.tap);
   setRival(id);
@@ -2631,9 +2689,11 @@ function elegirRival(id) {
     b.setAttribute('aria-checked', activo ? 'true' : 'false');
   });
   const r = getRival();
-  document.getElementById('rivalDesc').innerHTML =
-    `<strong>${escapeHtml(r.nombre)} · ${escapeHtml(r.apodo)}</strong><br>${escapeHtml(r.descripcion)}` +
-    (r.recomendado ? ' <span class="rival-rec">Recomendado</span>' : '');
+  const ficha = document.getElementById('rivalDesc');
+  ficha.style.setProperty('--rival-color', r.color);
+  ficha.innerHTML =
+    `<span class="rd-avatar">${r.avatar}</span>` +
+    `<span><strong>${escapeHtml(r.nombre)} · ${escapeHtml(r.apodo)}</strong>${escapeHtml(r.descripcion)}</span>`;
   actualizarTextoJugar();
 }
 
@@ -2695,6 +2755,13 @@ function updateRecHint(n, val) {
   }
 }
 
+// El avatar del rival en su tarjeta, para que se reconozca de un vistazo
+// contra quién juegas sin leer el nombre.
+function avatarDeRival(nombre) {
+  const r = Object.values(RIVALES).find(x => x.nombre === nombre);
+  return r ? `<span class="card-avatar" style="color:${r.color}">${r.avatar}</span>` : '🤖';
+}
+
 function buildGameUI() {
   const panel = document.getElementById('topPanel');
   // Limpiar tarjetas anteriores (conservar el dado)
@@ -2717,7 +2784,7 @@ function buildGameUI() {
     card.innerHTML = `
       <span class="player-name" id="label${i+1}">${escapeHtml(p.name.toUpperCase())}</span>
       <span class="player-score" id="score${i+1}">0</span>
-      <span class="player-initial" id="init${i+1}">${p.initial}</span>`;
+      <span class="player-initial" id="init${i+1}">${p.isAI ? avatarDeRival(p.name) : escapeHtml(p.initial)}</span>`;
     if (i === half) panel.appendChild(diceArea);
     panel.appendChild(card);
   });
@@ -2789,6 +2856,7 @@ function iniciarApp() {
   document.getElementById('tagline').textContent = LEMA;
   document.getElementById('infoLema').textContent = LEMA;
   document.title = PRODUCTO;
+  pintarAvataresRivales();
   elegirRival('circuit');   // rival recomendado por defecto
   setGameMode('solo');      // el modo más probable al abrir en el móvil
   actualizarResumenOpciones();

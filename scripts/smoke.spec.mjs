@@ -32,13 +32,15 @@ test('la aplicación arranca y se puede jugar', async ({ page }) => {
   //    fallaba en v2.57: la página se veía bien pero no respondía).
   await expect(page.locator('#versionTag')).not.toBeEmpty();
   await expect(page.locator('#nameInput0')).toHaveCount(1); // la inicialización corrió
+  // Los avatares se pintan desde levels.js al arrancar: si no aparecen,
+  // algo falló en esa parte sin lanzar excepción.
+  await expect(page.locator('[data-rival="circuit"] .rival-avatar svg')).toHaveCount(1);
+  await expect(page.locator('#rivalDesc')).toContainText('Circuit');
   // Modo Local para probar el flujo de varios jugadores
   await page.locator('[data-accion="modo"][data-modo="local"]').click();
   await expect(page.locator('#localPlayersSection')).toBeVisible();
 
   // 2. Controles que antes eran atributos on* incrustados
-  // Las opciones están plegadas: hay que abrirlas para tocar el deslizador.
-  await page.locator('#opcionesPartida summary').click();
   const slider = page.locator('#circleSlider');
   await slider.evaluate(el => { el.value = '50'; el.dispatchEvent(new Event('input', { bubbles: true })); });
   await expect(page.locator('#sliderVal')).toHaveText('50');

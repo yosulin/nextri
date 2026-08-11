@@ -20,8 +20,8 @@
 //
 // Requiere: rules.js, random.js.
 
-import { checkMoveValidity, findNewTriangles, edgeKey } from './rules.js?v=2.65';
-import { rngIntFrom } from './random.js?v=2.65';
+import { checkMoveValidity, findNewTriangles, edgeKey } from './rules.js?v=2.66';
+import { rngIntFrom } from './random.js?v=2.66';
 
 export function createPlayer(index, { name, isAI = false, userId = null } = {}) {
   const nombre = name || `Jugador ${index + 1}`;

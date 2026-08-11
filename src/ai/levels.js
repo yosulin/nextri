@@ -41,13 +41,51 @@ export const AI_LEVELS = {
 // Los tres rivales. No son "niveles de dificultad" sino personalidades:
 // un mismo chooseAIMove() con parámetros distintos. Presentarlos como
 // rivales con nombre hace la elección más concreta que Fácil/Medio/Difícil.
+// Cada rival lleva su propio avatar dibujado con el lenguaje de la marca
+// (nodos y conexiones), y un color que lo distingue de un vistazo: Delta
+// disperso y suelto, Circuit ordenado en triángulo, Vector con todo
+// conectado a un núcleo. Son SVG en línea para que escalen limpio y
+// cambien de color solo con CSS.
 export const RIVALES = {
-  delta:   { nivel: 'easy',   nombre: 'Delta',   apodo: 'Espontáneo',
-             descripcion: 'Juega por instinto y se despista. Buen rival para empezar.' },
-  circuit: { nivel: 'medium', nombre: 'Circuit', apodo: 'Estratega',
-             descripcion: 'Busca oportunidades y sabe defenderse.', recomendado: true },
-  vector:  { nivel: 'hard',   nombre: 'Vector',  apodo: 'Analista',
-             descripcion: 'Ve casi todo el tablero y castiga cualquier descuido.' }
+  delta: {
+    nivel: 'easy', nombre: 'Delta', apodo: 'Espontáneo', color: '#6bcb77',
+    descripcion: 'Juega por instinto y se despista. Buen rival para empezar.',
+    avatar: `<svg viewBox="0 0 64 64" aria-hidden="true">
+      <line x1="16" y1="20" x2="44" y2="16" stroke="currentColor" stroke-width="3" opacity=".45"/>
+      <line x1="16" y1="20" x2="22" y2="46" stroke="currentColor" stroke-width="3" opacity=".45"/>
+      <line x1="44" y1="16" x2="50" y2="42" stroke="currentColor" stroke-width="3" opacity=".25"/>
+      <circle cx="16" cy="20" r="7" fill="currentColor"/>
+      <circle cx="44" cy="16" r="5" fill="currentColor" opacity=".7"/>
+      <circle cx="22" cy="46" r="5" fill="currentColor" opacity=".55"/>
+      <circle cx="50" cy="42" r="4" fill="currentColor" opacity=".35"/>
+    </svg>`
+  },
+  circuit: {
+    nivel: 'medium', nombre: 'Circuit', apodo: 'Estratega', color: '#2f7ef0',
+    descripcion: 'Busca oportunidades y sabe defenderse.', recomendado: true,
+    avatar: `<svg viewBox="0 0 64 64" aria-hidden="true">
+      <polygon points="32,14 50,46 14,46" fill="currentColor" opacity=".16"/>
+      <polygon points="32,14 50,46 14,46" fill="none" stroke="currentColor" stroke-width="3"/>
+      <circle cx="32" cy="14" r="6" fill="currentColor"/>
+      <circle cx="50" cy="46" r="6" fill="currentColor"/>
+      <circle cx="14" cy="46" r="6" fill="currentColor"/>
+    </svg>`
+  },
+  vector: {
+    nivel: 'hard', nombre: 'Vector', apodo: 'Analista', color: '#ff8c32',
+    descripcion: 'Ve casi todo el tablero y castiga cualquier descuido.',
+    avatar: `<svg viewBox="0 0 64 64" aria-hidden="true">
+      <g stroke="currentColor" stroke-width="2.5" opacity=".5">
+        <line x1="32" y1="32" x2="32" y2="12"/><line x1="32" y1="32" x2="50" y2="22"/>
+        <line x1="32" y1="32" x2="50" y2="44"/><line x1="32" y1="32" x2="32" y2="52"/>
+        <line x1="32" y1="32" x2="14" y2="44"/><line x1="32" y1="32" x2="14" y2="22"/>
+      </g>
+      <circle cx="32" cy="12" r="4" fill="currentColor"/><circle cx="50" cy="22" r="4" fill="currentColor"/>
+      <circle cx="50" cy="44" r="4" fill="currentColor"/><circle cx="32" cy="52" r="4" fill="currentColor"/>
+      <circle cx="14" cy="44" r="4" fill="currentColor"/><circle cx="14" cy="22" r="4" fill="currentColor"/>
+      <circle cx="32" cy="32" r="8" fill="currentColor"/>
+    </svg>`
+  }
 };
 
 export let rivalElegido = 'circuit';
