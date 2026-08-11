@@ -1,4 +1,4 @@
-const CACHE = 'juego-circulos-v2.62';
+const CACHE = 'juego-circulos-v2.63';
 const ASSETS = [
   '/juego-circulos/',
   '/juego-circulos/index.html',
@@ -6,15 +6,15 @@ const ASSETS = [
   '/juego-circulos/icon.svg',
   '/juego-circulos/icon-192.png',
   '/juego-circulos/icon-512.png',
-  '/juego-circulos/src/game/random.js?v=2.62',
-  '/juego-circulos/src/game/geometry.js?v=2.62',
-  '/juego-circulos/src/game/rules.js?v=2.62',
-  '/juego-circulos/src/game/board.js?v=2.62',
-  '/juego-circulos/src/game/engine.js?v=2.62',
-  '/juego-circulos/src/game/state.js?v=2.62',
-  '/juego-circulos/src/ai/levels.js?v=2.62',
-  '/juego-circulos/src/ai/ai.js?v=2.62',
-  '/juego-circulos/src/platform/storage.js?v=2.62'
+  '/juego-circulos/src/game/random.js?v=2.63',
+  '/juego-circulos/src/game/geometry.js?v=2.63',
+  '/juego-circulos/src/game/rules.js?v=2.63',
+  '/juego-circulos/src/game/board.js?v=2.63',
+  '/juego-circulos/src/game/engine.js?v=2.63',
+  '/juego-circulos/src/game/state.js?v=2.63',
+  '/juego-circulos/src/ai/levels.js?v=2.63',
+  '/juego-circulos/src/ai/ai.js?v=2.63',
+  '/juego-circulos/src/platform/storage.js?v=2.63'
 ];
 
 self.addEventListener('install', e => {
