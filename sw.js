@@ -1,20 +1,25 @@
-const CACHE = 'nextri-v2.64';
+const CACHE = 'nextri-v2.65';
+// Rutas RELATIVAS al propio service worker, no absolutas. Con
+// '/nextri/...' la app quedaba atada a esa ruta exacta: al renombrar el
+// repositorio hubo que reescribirlas una por una, y habría vuelto a
+// pasar con un dominio propio, un subdirectorio distinto o una copia de
+// pruebas. Así funciona esté donde esté, sin tocar nada.
 const ASSETS = [
-  '/nextri/',
-  '/nextri/index.html',
-  '/nextri/manifest.json',
-  '/nextri/icon.svg',
-  '/nextri/icon-192.png',
-  '/nextri/icon-512.png',
-  '/nextri/src/game/random.js?v=2.64',
-  '/nextri/src/game/geometry.js?v=2.64',
-  '/nextri/src/game/rules.js?v=2.64',
-  '/nextri/src/game/board.js?v=2.64',
-  '/nextri/src/game/engine.js?v=2.64',
-  '/nextri/src/game/state.js?v=2.64',
-  '/nextri/src/ai/levels.js?v=2.64',
-  '/nextri/src/ai/ai.js?v=2.64',
-  '/nextri/src/platform/storage.js?v=2.64'
+  './',
+  './index.html',
+  './manifest.json',
+  './icon.svg',
+  './icon-192.png',
+  './icon-512.png',
+  './src/game/random.js?v=2.65',
+  './src/game/geometry.js?v=2.65',
+  './src/game/rules.js?v=2.65',
+  './src/game/board.js?v=2.65',
+  './src/game/engine.js?v=2.65',
+  './src/game/state.js?v=2.65',
+  './src/ai/levels.js?v=2.65',
+  './src/ai/ai.js?v=2.65',
+  './src/platform/storage.js?v=2.65'
 ];
 
 self.addEventListener('install', e => {
@@ -26,12 +31,10 @@ self.addEventListener('activate', e => {
   // Borrar SOLO las cachés antiguas de esta app, no todo el origen — Cache
   // Storage se comparte entre TODO lo que vive bajo yosulin.github.io
   // (el quiz, las rutas, los viajes...), no está aislado por proyecto.
-  // Filtrar por "!== CACHE" en vez de por prefijo propio borraría las
-  // cachés de esos otros proyectos si el navegador los ha visitado.
-  // Prefijo propio para no borrar las cachés de los demás proyectos que
-  // viven bajo yosulin.github.io. Se limpia también el prefijo antiguo:
-  // tras el cambio de nombre, las cachés viejas quedarían huérfanas
-  // ocupando espacio para siempre.
+  // Filtrar por "!== CACHE" borraría las cachés de esos otros proyectos.
+  //
+  // El prefijo antiguo se limpia también: tras el cambio de nombre esas
+  // cachés quedarían huérfanas ocupando espacio para siempre.
   const CACHE_PREFIX = 'nextri-';
   const PREFIJO_ANTIGUO = 'juego-circulos-';
   e.waitUntil(caches.keys().then(keys =>

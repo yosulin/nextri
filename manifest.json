@@ -2,7 +2,7 @@
   "name": "NEXTRI",
   "short_name": "NEXTRI",
   "description": "Une círculos, cierra triángulos. En solitario contra Delta, Circuit o Vector, o de 2 a 6 jugadores",
-  "start_url": "/nextri/",
+  "start_url": "./",
   "display": "standalone",
   "background_color": "#0f1729",
   "theme_color": "#0f1729",
@@ -20,5 +20,6 @@
       "type": "image/png",
       "purpose": "any maskable"
     }
-  ]
+  ],
+  "scope": "./"
 }

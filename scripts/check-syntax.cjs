@@ -176,6 +176,31 @@ for (const m of html.matchAll(/<[^>]*data-accion="cerrar"[^>]*>/g)) {
   }
 }
 
+// Nada de rutas absolutas atadas a una ruta de publicación concreta. Con
+// '/nextri/...' la app solo funciona ahí: renombrar el repositorio, usar
+// un dominio propio o levantar una copia en otro subdirectorio la rompe.
+// Todo debe ser relativo al propio archivo.
+{
+  const swSrc = readFileSync(path.join(raiz, 'sw.js'), 'utf-8').replace(/\/\/.*/g, '');
+  const absolutasSw = [...swSrc.matchAll(/['"]\/[a-z][^'"]*['"]/gi)].map(m => m[0]);
+  if (absolutasSw.length) {
+    console.error(`ERR sw.js usa rutas absolutas: ${absolutasSw.join(', ')} — deben ser relativas ('./...')`);
+    fallos++;
+  } else {
+    console.log('OK  sw.js usa rutas relativas');
+  }
+
+  const man = JSON.parse(readFileSync(path.join(raiz, 'manifest.json'), 'utf-8'));
+  const rutasMan = [man.start_url, man.scope, ...(man.icons || []).map(i => i.src)].filter(Boolean);
+  const absolutasMan = rutasMan.filter(r => r.startsWith('/'));
+  if (absolutasMan.length) {
+    console.error(`ERR manifest.json usa rutas absolutas: ${absolutasMan.join(', ')}`);
+    fallos++;
+  } else {
+    console.log('OK  manifest.json usa rutas relativas');
+  }
+}
+
 // La versión de index.html y la caché de sw.js tienen que ir a la par: si
 // se desincronizan, el navegador sirve una versión vieja desde caché.
 const versión = html.match(/const APP_VERSION = '([^']+)'/);
