@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Icono de marca NEXTRI: una N estilizada construida con nodos y
+       líneas de conexión, que es literalmente el juego (unir círculos,
+       cerrar triángulos). Trazado a mano en SVG para que escale limpio a
+       cualquier tamaño y para poder regenerar los PNG cuando haga falta. -->
+  <defs>
+    <linearGradient id="naranja" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ff8c32"/>
+      <stop offset="100%" stop-color="#c26a2a"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Fondo: el azul profundo de la marca, con esquinas redondeadas.
+       El margen interior deja espacio de sobra para el recorte circular
+       que aplican Android e iOS (zona segura del icono adaptable). -->
+  <rect width="512" height="512" rx="114" fill="#0f1729"/>
+
+  <g transform="translate(256 256) scale(0.62) translate(-256 -256)">
+    <!-- Caras del triángulo, muy tenues: dan cuerpo a la N sin competir
+         con los trazos -->
+    <polygon points="120,120 256,256 120,392" fill="#ffffff" opacity="0.10"/>
+    <polygon points="392,120 392,392 256,256" fill="#ffffff" opacity="0.07"/>
+
+    <g stroke-linecap="round" fill="none" stroke-width="30">
+      <!-- Asta izquierda de la N -->
+      <line x1="120" y1="120" x2="120" y2="392" stroke="#3b5a8f"/>
+      <!-- Diagonal superior -->
+      <line x1="120" y1="120" x2="256" y2="256" stroke="#3b5a8f"/>
+      <!-- Diagonal inferior -->
+      <line x1="256" y1="256" x2="120" y2="392" stroke="#2f7ef0"/>
+      <!-- Base -->
+      <line x1="120" y1="392" x2="392" y2="392" stroke="#2f7ef0"/>
+      <!-- Diagonal hacia el vértice naranja -->
+      <line x1="256" y1="256" x2="392" y2="392" stroke="#2f7ef0"/>
+      <!-- Asta derecha, degradada al naranja de acento -->
+      <line x1="392" y1="120" x2="392" y2="392" stroke="#ff8c32"/>
+    </g>
+
+    <!-- Nodos: los círculos del juego -->
+    <circle cx="120" cy="120" r="34" fill="#3b5a8f"/>
+    <circle cx="392" cy="120" r="34" fill="#ff8c32"/>
+    <circle cx="256" cy="256" r="30" fill="#2f7ef0"/>
+    <circle cx="120" cy="392" r="34" fill="#2f7ef0"/>
+    <circle cx="392" cy="392" r="30" fill="#1b4fa0"/>
+  </g>
+</svg>

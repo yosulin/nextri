@@ -9,29 +9,39 @@
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+  /* Paleta NEXTRI. Los dos colores de marca son el azul profundo (#0f1729)
+     y el naranja de acento (#ff8c32), con el azul vivo (#2f7ef0) como
+     color de conexión — los mismos del icono, para que la app y la marca
+     se reconozcan como lo mismo. */
   :root {
-    --bg: #1a1f2e;
-    --surface: #252b3b;
-    --border: #343d54;
-    --p1-color: #f4844a;
-    --p2-color: #5b9cf6;
-    --p1-light: rgba(244,132,74,0.25);
-    --p2-light: rgba(91,156,246,0.25);
-    --text: #e8eaf0;
-    --muted: #8991af;
+    --marca-azul: #0f1729;
+    --marca-naranja: #ff8c32;
+    --marca-azul-vivo: #2f7ef0;
+
+    --bg: #0f1729;
+    --surface: #1a2438;
+    --border: #2b3a55;
+    --p1-color: #ff8c32;
+    --p2-color: #2f7ef0;
+    --p1-light: rgba(255,140,50,0.25);
+    --p2-light: rgba(47,126,240,0.25);
+    --text: #e8ecf5;
+    --muted: #8496b8;
     --circle-r: 14;
   }
 
   [data-theme='light'] {
-    --bg: #f3f4f8;
+    --bg: #f4f6fa;
     --surface: #ffffff;
-    --border: #dcdfe8;
-    --p1-color: #d9662a;
-    --p2-color: #2f6fd6;
-    --p1-light: rgba(217,102,42,0.15);
-    --p2-light: rgba(47,111,214,0.15);
-    --text: #1a1f2e;
-    --muted: #6b7280;
+    --border: #dbe1ec;
+    /* En claro se oscurecen para que mantengan contraste sobre blanco,
+       sin dejar de ser reconociblemente los mismos. */
+    --p1-color: #d96c14;
+    --p2-color: #1f62cc;
+    --p1-light: rgba(217,108,20,0.15);
+    --p2-light: rgba(31,98,204,0.15);
+    --text: #0f1729;
+    --muted: #5a6a85;
   }
 
   body {
@@ -404,7 +414,7 @@
   #installBanner {
     display: none; position: fixed; bottom: 20px; left: 50%;
     transform: translateX(-50%); background: #252b3b;
-    border: 2px solid #5b9cf6; border-radius: 16px;
+    border: 2px solid var(--marca-azul-vivo); border-radius: 16px;
     padding: 14px 20px; z-index: 200; align-items: center;
     gap: 14px; box-shadow: 0 8px 32px rgba(0,0,0,.5);
     max-width: 320px; width: 90%;
@@ -414,7 +424,7 @@
   #installBanner .ib-text { flex:1; }
   #installBanner .ib-text strong { display:block; font-family:'Fredoka One',cursive; font-size:1rem; color:#e8eaf0; }
   #installBanner .ib-text span { font-size:.75rem; color:#7a82a0; }
-  #installBanner .ib-btn { background: #5b9cf6; color: #1a1f2e; border: none; border-radius: 10px; padding: 8px 14px; font-family:'Nunito',sans-serif; font-weight:700; font-size:.85rem; cursor:pointer; white-space:nowrap; flex-shrink:0; }
+  #installBanner .ib-btn { background: var(--marca-azul-vivo); color: var(--marca-azul); border: none; border-radius: 10px; padding: 8px 14px; font-family:'Nunito',sans-serif; font-weight:700; font-size:.85rem; cursor:pointer; white-space:nowrap; flex-shrink:0; }
   #installBanner .ib-close { background:none; border:none; color:#7a82a0; font-size:1.1rem; cursor:pointer; padding:0; flex-shrink:0; }
 
   /* ── Setup Panel ── */
@@ -638,6 +648,15 @@
   .corner-btn.bottom-right { right: 16px; }
   .corner-btn:hover { color: var(--text); border-color: var(--p1-color); }
 
+  .tagline {
+    text-align: center;
+    font-size: .78rem;
+    color: var(--muted);
+    letter-spacing: .5px;
+    margin: -6px 0 4px;
+  }
+  .info-lema { font-size: .8rem; color: var(--muted); margin-bottom: 12px; }
+
   /* ── Selector de modo y rivales ── */
   .mode-row { display: flex; gap: 10px; width: 100%; }
   .mode-btn {
@@ -751,7 +770,7 @@
 </style>
 
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#1a1f2e">
+  <meta name="theme-color" content="#0f1729">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Círculos">
@@ -763,6 +782,7 @@
 <body>
 
 <h1 id="tituloApp">● NEXTRI</h1>
+<p class="tagline" id="tagline">Une círculos, cierra triángulos</p>
 <div id="versionTag" style="font-size:.72rem;color:var(--muted);letter-spacing:1px;margin-top:-8px;"></div>
 
 <!-- Config de nombres -->
@@ -920,6 +940,7 @@
 <div class="info-overlay" id="infoOverlay" role="dialog" aria-modal="true" aria-labelledby="infoTitle" data-accion="cerrar-fondo" data-objetivo="infoOverlay">
   <div class="info-sheet">
     <h3 id="infoTitle">● NEXTRI</h3>
+    <p class="info-lema" id="infoLema">Une círculos, cierra triángulos</p>
     <dl class="info-rows">
       <div><dt>Versión</dt><dd id="infoVersion"></dd></div>
     </dl>
@@ -933,32 +954,35 @@
 // global — funcionaba, pero nada declaraba qué necesitaba cada uno, y una
 // mezcla de versiones en caché podía emparejar mitades incompatibles sin
 // que nada lo detectara.
-import { seedRng, rngNextFrom, rngIntFrom, getRngSeed, getRngState, restoreRngState } from './src/game/random.js?v=2.61';
-import { dist, distSq, segmentPassesOverCircle, pointInTriangle, segmentsIntersect } from './src/game/geometry.js?v=2.61';
+import { seedRng, rngNextFrom, rngIntFrom, getRngSeed, getRngState, restoreRngState } from './src/game/random.js?v=2.62';
+import { dist, distSq, segmentPassesOverCircle, pointInTriangle, segmentsIntersect } from './src/game/geometry.js?v=2.62';
 import { MOVE_REASON_TEXT, edgeKey, edgeExists, connectionCount, areAdjacent,
-         lineIntersectsAny, findNewTriangles, triangleTraps, checkMoveValidity } from './src/game/rules.js?v=2.61';
+         lineIntersectsAny, findNewTriangles, triangleTraps, checkMoveValidity } from './src/game/rules.js?v=2.62';
 import { ADJACENCY_TARGET, generateCirclePositions, buildCandidateGraph,
-         attemptBoardGeneration, chooseAdjacency, finalizeAdjacency } from './src/game/board.js?v=2.61';
+         attemptBoardGeneration, chooseAdjacency, finalizeAdjacency } from './src/game/board.js?v=2.62';
 import { createPlayer, playerById, nextPlayerId, applyAction, hasAnyLegalMove,
-         replayFromLog } from './src/game/engine.js?v=2.61';
+         replayFromLog } from './src/game/engine.js?v=2.62';
 import { STATE_SCHEMA_VERSION, RULES_VERSION, serializeGameState, restoreGameState,
-         migrateGameSnapshot, isValidGameSnapshot } from './src/game/state.js?v=2.61';
-import { AI_LEVELS, setDifficulty, getDifficulty, RIVALES, setRival, getRival } from './src/ai/levels.js?v=2.61';
-import { chooseAIMove, createsScoringReply } from './src/ai/ai.js?v=2.61';
-import { saveGame, loadSavedGame, clearSavedGame, hasSavedGame } from './src/platform/storage.js?v=2.61';
+         migrateGameSnapshot, isValidGameSnapshot } from './src/game/state.js?v=2.62';
+import { AI_LEVELS, setDifficulty, getDifficulty, RIVALES, setRival, getRival } from './src/ai/levels.js?v=2.62';
+import { chooseAIMove, createsScoringReply } from './src/ai/ai.js?v=2.62';
+import { saveGame, loadSavedGame, clearSavedGame, hasSavedGame } from './src/platform/storage.js?v=2.62';
 // ── Constantes ──────────────────────────────────────────────────────────────
 // Única fuente de la versión visible — antes se escribía a mano en tres
 // sitios (aquí, el panel de info, y el CACHE de sw.js) y se desincronizaban
 // entre sí. sw.js sigue siendo aparte por necesidad (un service worker no
 // puede leer esta constante, vive en otro archivo) — al subir de versión,
 // solo hace falta tocar ESTA línea y la de sw.js, no una tercera copia más.
-const APP_VERSION = 'v2.61';
+const APP_VERSION = 'v2.62';
 
 // Nombre del producto en un solo sitio. Si algún día cambia (NEXTRI u
 // otro), esto evita perseguirlo por cabecera, aviso de rotación, panel de
 // información y texto de compartir. El <title> y el manifest son HTML y
 // JSON: se ajustan aparte, pero son solo dos.
 const PRODUCTO = 'NEXTRI';
+// Lema de la marca: resume el juego en cuatro palabras y es lo que dice
+// la hoja de marca. Sale de aquí igual que el nombre.
+const LEMA = 'Une círculos, cierra triángulos';
 // Tres conceptos distintos, deliberadamente separados:
 //   APP_VERSION         — versión desplegada; sube aunque solo cambie un icono.
 //   RULES_VERSION       — reglas del juego; solo sube si cambia CÓMO se juega.
@@ -1266,7 +1290,7 @@ function getInitialTheme() {
 function applyTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
   const meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) meta.setAttribute('content', theme === 'light' ? '#f3f4f8' : '#1a1f2e');
+  if (meta) meta.setAttribute('content', theme === 'light' ? '#f4f6fa' : '#0f1729');
   const icon = document.getElementById('themeIcon');
   if (icon) {
     icon.innerHTML = theme === 'dark'
@@ -2300,7 +2324,7 @@ let lastResultText = '';
 function buildShareText(sorted, resultLine) {
   const scores = sorted.map(p => `${p.name}: ${p.score}`).join(' · ');
   const url = window.location.href.split('?')[0].split('#')[0];
-  return [`● ${PRODUCTO}`, scores, resultLine, '', '¿Te animas a jugar?', url].join('\n');
+  return [`● ${PRODUCTO} — ${LEMA}`, scores, resultLine, '', '¿Te animas a jugar?', url].join('\n');
 }
 
 async function shareResult() {
@@ -2449,7 +2473,7 @@ function draw() {
       ctx.save();
       ctx.shadowColor = lastAIEdgeColor || '#ffffff';
       ctx.shadowBlur = 10;
-      drawLine(circles[i], circles[j], lastAIEdgeColor || canvasColor('#ffffff', '#1a1f2e'), 4);
+      drawLine(circles[i], circles[j], lastAIEdgeColor || canvasColor('#ffffff', '#0f1729'), 4);
       ctx.restore();
     } else {
       drawLine(circles[i], circles[j], canvasColor('rgba(255,255,255,0.18)', 'rgba(26,31,46,0.22)'), 2);
@@ -2546,8 +2570,8 @@ function drawLine(a, b, color, width) {
 // que definió el umbral.
 
 // ── Colores para hasta 6 jugadores ──────────────────────────────────────────
-const PLAYER_COLORS = ["#f4844a", "#5b9cf6", "#6bcb77", "#f7c59f", "#d98cf0", "#ffd166"];
-const PLAYER_COLORS_LIGHT = ["rgba(244,132,74,0.22)", "rgba(91,156,246,0.22)", "rgba(107,203,119,0.22)", "rgba(247,197,159,0.22)", "rgba(217,140,240,0.22)", "rgba(255,209,102,0.22)"];
+const PLAYER_COLORS = ["#ff8c32", "#2f7ef0", "#6bcb77", "#f7c59f", "#d98cf0", "#ffd166"];
+const PLAYER_COLORS_LIGHT = ["rgba(255,140,50,0.22)", "rgba(47,126,240,0.22)", "rgba(107,203,119,0.22)", "rgba(247,197,159,0.22)", "rgba(217,140,240,0.22)", "rgba(255,209,102,0.22)"];
 
 // Recomendaciones de círculos según número de jugadores
 const CIRCLE_REC = {1:35, 2:35, 3:50, 4:65, 5:80, 6:100};
@@ -2761,6 +2785,8 @@ function iniciarApp() {
   document.getElementById('tituloApp').textContent = `● ${PRODUCTO}`;
   document.getElementById('infoTitle').textContent = `● ${PRODUCTO}`;
   document.getElementById('portraitMsg').textContent = `${PRODUCTO} se juega en vertical.`;
+  document.getElementById('tagline').textContent = LEMA;
+  document.getElementById('infoLema').textContent = LEMA;
   document.title = PRODUCTO;
   elegirRival('circuit');   // rival recomendado por defecto
   setGameMode('solo');      // el modo más probable al abrir en el móvil
