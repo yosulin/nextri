@@ -100,6 +100,33 @@ for (const rel of src.map(u => u.split('?')[0])) {
   }
 }
 
+// Cada data-accion del HTML debe tener manejador, y cada manejador debe
+// usarse. Sin esto, un botón puede quedarse mudo sin que nada avise: no
+// es un error de sintaxis, simplemente no pasa nada al pulsarlo.
+const accionesHtml = new Set([...html.matchAll(/data-accion="([^"]+)"/g)].map(m => m[1]));
+const iniAcc = html.indexOf('const ACCIONES = {');
+if (iniAcc === -1) {
+  console.error('ERR no se encontró el mapa ACCIONES'); fallos++;
+} else {
+  const bloque = html.slice(iniAcc, html.indexOf('};', iniAcc));
+  const manejadores = new Set([...bloque.matchAll(/^\s*'?([a-zA-Z-]+)'?:/gm)].map(m => m[1]));
+  manejadores.add('cerrar-fondo'); // se conecta aparte
+  for (const a of accionesHtml) {
+    if (!manejadores.has(a)) { console.error(`ERR data-accion="${a}" no tiene manejador`); fallos++; }
+  }
+  for (const h of manejadores) {
+    if (!accionesHtml.has(h)) { console.error(`ERR el manejador "${h}" no lo usa ningún elemento`); fallos++; }
+  }
+  if (fallos === 0) console.log(`OK  ${accionesHtml.size} acciones de interfaz conectadas`);
+}
+
+// Los botones de cerrar necesitan saber qué cerrar.
+for (const m of html.matchAll(/<[^>]*data-accion="cerrar"[^>]*>/g)) {
+  if (!m[0].includes('data-objetivo')) {
+    console.error('ERR un data-accion="cerrar" no indica data-objetivo'); fallos++;
+  }
+}
+
 // La versión de index.html y la caché de sw.js tienen que ir a la par: si
 // se desincronizan, el navegador sirve una versión vieja desde caché.
 const versión = html.match(/const APP_VERSION = '([^']+)'/);

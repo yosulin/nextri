@@ -720,12 +720,12 @@
     <div class="setup-section">
       <div class="setup-label">Número de jugadores</div>
       <div class="player-count-row" id="pcRow" role="radiogroup" aria-label="Número de jugadores">
-        <button type="button" class="pc-btn" data-n="1" role="radio" aria-checked="false" onclick="pcButtonClick(1)" style="font-size:.85rem;">Solo</button>
-        <button type="button" class="pc-btn" data-n="2" role="radio" aria-checked="false" onclick="pcButtonClick(2)">2</button>
-        <button type="button" class="pc-btn" data-n="3" role="radio" aria-checked="false" onclick="pcButtonClick(3)">3</button>
-        <button type="button" class="pc-btn" data-n="4" role="radio" aria-checked="false" onclick="pcButtonClick(4)">4</button>
-        <button type="button" class="pc-btn" data-n="5" role="radio" aria-checked="false" onclick="pcButtonClick(5)">5</button>
-        <button type="button" class="pc-btn" data-n="6" role="radio" aria-checked="false" onclick="pcButtonClick(6)">6</button>
+        <button type="button" class="pc-btn" data-n="1" role="radio" aria-checked="false" data-accion="jugadores" style="font-size:.85rem;">Solo</button>
+        <button type="button" class="pc-btn" data-n="2" role="radio" aria-checked="false" data-accion="jugadores">2</button>
+        <button type="button" class="pc-btn" data-n="3" role="radio" aria-checked="false" data-accion="jugadores">3</button>
+        <button type="button" class="pc-btn" data-n="4" role="radio" aria-checked="false" data-accion="jugadores">4</button>
+        <button type="button" class="pc-btn" data-n="5" role="radio" aria-checked="false" data-accion="jugadores">5</button>
+        <button type="button" class="pc-btn" data-n="6" role="radio" aria-checked="false" data-accion="jugadores">6</button>
       </div>
     </div>
 
@@ -734,9 +734,9 @@
       <div class="solo-banner">🤖 Jugarás contra Circuit</div>
       <div class="setup-label">Dificultad</div>
       <div class="player-count-row" id="difficultyRow" role="radiogroup" aria-label="Dificultad de la máquina">
-        <button type="button" class="pc-btn diff-btn" data-diff="easy" role="radio" aria-checked="false" onclick="setAIDifficulty('easy')">Fácil</button>
-        <button type="button" class="pc-btn diff-btn is-active" data-diff="medium" role="radio" aria-checked="true" onclick="setAIDifficulty('medium')">Medio</button>
-        <button type="button" class="pc-btn diff-btn" data-diff="hard" role="radio" aria-checked="false" onclick="setAIDifficulty('hard')">Difícil</button>
+        <button type="button" class="pc-btn diff-btn" data-diff="easy" role="radio" aria-checked="false" data-accion="dificultad" data-nivel="easy">Fácil</button>
+        <button type="button" class="pc-btn diff-btn is-active" data-diff="medium" role="radio" aria-checked="true" data-accion="dificultad" data-nivel="medium">Medio</button>
+        <button type="button" class="pc-btn diff-btn" data-diff="hard" role="radio" aria-checked="false" data-accion="dificultad" data-nivel="hard">Difícil</button>
       </div>
     </div>
 
@@ -772,8 +772,8 @@
     </div>
 
   </div>
-  <button class="btn-new" id="resumeBtn" onclick="onResumeClick()" style="display:none;width:100%;max-width:480px;padding:14px;font-size:1rem;border-color:var(--p1-color);color:var(--p1-color);">💾 Continuar partida</button>
-  <button class="btn-new" onclick="startGame()" style="width:100%;max-width:480px;padding:14px;font-size:1rem;">▶ Empezar</button>
+  <button class="btn-new" id="resumeBtn" data-accion="continuar" style="display:none;width:100%;max-width:480px;padding:14px;font-size:1rem;border-color:var(--p1-color);color:var(--p1-color);">💾 Continuar partida</button>
+  <button class="btn-new" data-accion="empezar" style="width:100%;max-width:480px;padding:14px;font-size:1rem;">▶ Empezar</button>
 </div>
 
 <div id="portraitGuard" class="portrait-guard" aria-live="polite">
@@ -789,7 +789,7 @@
   <!-- Tarjetas de jugadores: generadas dinámicamente por buildGameUI() -->
   <div class="top-panel" id="topPanel">
     <div class="dice-area">
-      <button type="button" class="dice" id="dice" onclick="rollDice()" aria-label="Tirar el dado">
+      <button type="button" class="dice" id="dice" data-accion="tirar" aria-label="Tirar el dado">
         <div class="dot" id="d1"></div>
         <div class="dot" id="d2"></div>
         <div class="dot" id="d3"></div>
@@ -807,8 +807,8 @@
   </div>
 
   <div class="game-actions-row">
-    <button class="btn-new" id="undoBtn" onclick="undoLastMove()" disabled>↩ Deshacer</button>
-    <button class="btn-new" onclick="confirmNewGame()">↺ Nuevo juego</button>
+    <button class="btn-new" id="undoBtn" data-accion="deshacer" disabled>↩ Deshacer</button>
+    <button class="btn-new" data-accion="nuevo">↺ Nuevo juego</button>
   </div>
 
   <div class="turn-info" id="turnInfo">–</div>
@@ -821,21 +821,21 @@
 <!-- Modal -->
 <div class="modal-overlay" id="modalOverlay" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
   <div class="modal">
-    <button class="dialog-close-x" onclick="closeDialog('modalOverlay')" aria-label="Cerrar">×</button>
+    <button class="dialog-close-x" data-accion="cerrar" data-objetivo="modalOverlay" aria-label="Cerrar">×</button>
     <h2 id="modalTitle">¡Fin del juego!</h2>
     <p id="modalBody"></p>
-    <button class="btn-new" onclick="startGame()">▶ Jugar de nuevo</button>
-    <button class="btn-new" id="shareBtn" onclick="shareResult()" style="margin-top:8px;background:transparent;border:2px solid var(--border);color:var(--text);">Compartir resultado</button>
+    <button class="btn-new" data-accion="empezar">▶ Jugar de nuevo</button>
+    <button class="btn-new" id="shareBtn" data-accion="compartir" style="margin-top:8px;background:transparent;border:2px solid var(--border);color:var(--text);">Compartir resultado</button>
   </div>
 </div>
 
 <!-- Tema y info (esquinas, como en elige-tu-pan-quiz) -->
-<button class="corner-btn bottom-left" id="themeToggleBtn" onclick="toggleTheme()" aria-label="Cambiar tema" title="Cambiar tema">
+<button class="corner-btn bottom-left" id="themeToggleBtn" data-accion="tema" aria-label="Cambiar tema" title="Cambiar tema">
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" id="themeIcon">
     <path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
   </svg>
 </button>
-<button class="corner-btn bottom-right" onclick="vibrate(HAPTIC.select); openDialog('infoOverlay')" aria-label="Información de la app" title="Información">
+<button class="corner-btn bottom-right" data-accion="abrir-info" aria-label="Información de la app" title="Información">
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
     <circle cx="12" cy="12" r="9.5" stroke="currentColor" stroke-width="2" />
     <path d="M12 11v6" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
@@ -843,25 +843,25 @@
   </svg>
 </button>
 
-<div class="info-overlay" id="infoOverlay" role="dialog" aria-modal="true" aria-labelledby="infoTitle" onclick="if (event.target === this) closeDialog('infoOverlay')">
+<div class="info-overlay" id="infoOverlay" role="dialog" aria-modal="true" aria-labelledby="infoTitle" data-accion="cerrar-fondo" data-objetivo="infoOverlay">
   <div class="info-sheet">
     <h3 id="infoTitle">● Juego de Círculos</h3>
     <dl class="info-rows">
       <div><dt>Versión</dt><dd id="infoVersion"></dd></div>
     </dl>
-    <button class="btn-new" onclick="closeDialog('infoOverlay')">Cerrar</button>
+    <button class="btn-new" data-accion="cerrar" data-objetivo="infoOverlay">Cerrar</button>
   </div>
 </div>
 
-<script src="src/game/random.js?v=2.53"></script>
-<script src="src/game/geometry.js?v=2.53"></script>
-<script src="src/game/rules.js?v=2.53"></script>
-<script src="src/game/board.js?v=2.53"></script>
-<script src="src/game/engine.js?v=2.53"></script>
-<script src="src/game/state.js?v=2.53"></script>
-<script src="src/ai/levels.js?v=2.53"></script>
-<script src="src/ai/ai.js?v=2.53"></script>
-<script src="src/platform/storage.js?v=2.53"></script>
+<script src="src/game/random.js?v=2.54"></script>
+<script src="src/game/geometry.js?v=2.54"></script>
+<script src="src/game/rules.js?v=2.54"></script>
+<script src="src/game/board.js?v=2.54"></script>
+<script src="src/game/engine.js?v=2.54"></script>
+<script src="src/game/state.js?v=2.54"></script>
+<script src="src/ai/levels.js?v=2.54"></script>
+<script src="src/ai/ai.js?v=2.54"></script>
+<script src="src/platform/storage.js?v=2.54"></script>
 <script>
 // ── Constantes ──────────────────────────────────────────────────────────────
 // Única fuente de la versión visible — antes se escribía a mano en tres
@@ -869,7 +869,7 @@
 // entre sí. sw.js sigue siendo aparte por necesidad (un service worker no
 // puede leer esta constante, vive en otro archivo) — al subir de versión,
 // solo hace falta tocar ESTA línea y la de sw.js, no una tercera copia más.
-const APP_VERSION = 'v2.53';
+const APP_VERSION = 'v2.54';
 // Tres conceptos distintos, deliberadamente separados:
 //   APP_VERSION         — versión desplegada; sube aunque solo cambie un icono.
 //   RULES_VERSION       — reglas del juego; solo sube si cambia CÓMO se juega.
@@ -2493,8 +2493,42 @@ function buildGameUI() {
   if (!panel.contains(diceArea)) panel.appendChild(diceArea);
 }
 
+// Conexión de todos los botones en un único sitio. Antes cada uno traía
+// su onclick="..." incrustado en el HTML, lo que obligaba a que todas esas
+// funciones vivieran en el ámbito global — justo lo que impedía pasar a
+// módulos ES de verdad, donde cada archivo tiene su propio ámbito.
+const ACCIONES = {
+  empezar:       () => startGame(),
+  continuar:     () => onResumeClick(),
+  nuevo:         () => confirmNewGame(),
+  deshacer:      () => undoLastMove(),
+  tirar:         () => rollDice(),
+  tema:          () => toggleTheme(),
+  compartir:     () => shareResult(),
+  'abrir-info':  () => { vibrate(HAPTIC.select); openDialog('infoOverlay'); },
+  cerrar:        (el) => closeDialog(el.dataset.objetivo),
+  jugadores:     (el) => pcButtonClick(Number(el.dataset.n)),
+  dificultad:    (el) => setAIDifficulty(el.dataset.nivel)
+};
+
+function conectarAcciones() {
+  document.querySelectorAll('[data-accion]').forEach(el => {
+    const nombre = el.dataset.accion;
+    if (nombre === 'cerrar-fondo') {
+      // Cerrar al tocar el fondo del diálogo, pero no su contenido.
+      el.addEventListener('click', (ev) => {
+        if (ev.target === el) closeDialog(el.dataset.objetivo);
+      });
+      return;
+    }
+    const fn = ACCIONES[nombre];
+    if (fn) el.addEventListener('click', () => fn(el));
+  });
+}
+
 // Inicializar setup al cargar
 window.addEventListener('DOMContentLoaded', () => {
+  conectarAcciones();
   document.getElementById('versionTag').textContent = APP_VERSION;
   document.getElementById('infoVersion').textContent = APP_VERSION;
   applyTheme(getInitialTheme());
