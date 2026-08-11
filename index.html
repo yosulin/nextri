@@ -950,6 +950,12 @@ import { saveGame, loadSavedGame, clearSavedGame, hasSavedGame } from './src/pla
 // puede leer esta constante, vive en otro archivo) — al subir de versión,
 // solo hace falta tocar ESTA línea y la de sw.js, no una tercera copia más.
 const APP_VERSION = 'v2.60';
+
+// Nombre del producto en un solo sitio. Si algún día cambia (NEXTRI u
+// otro), esto evita perseguirlo por cabecera, aviso de rotación, panel de
+// información y texto de compartir. El <title> y el manifest son HTML y
+// JSON: se ajustan aparte, pero son solo dos.
+const PRODUCTO = 'Juego de Círculos';
 // Tres conceptos distintos, deliberadamente separados:
 //   APP_VERSION         — versión desplegada; sube aunque solo cambie un icono.
 //   RULES_VERSION       — reglas del juego; solo sube si cambia CÓMO se juega.

@@ -32,7 +32,21 @@ function limpiar(src) {
     .replace(/\/\/.*/g, ' ')
     .replace(/'(?:[^'\\]|\\.)*'/g, "''")
     .replace(/"(?:[^"\\]|\\.)*"/g, '""')
-    .replace(/`(?:[^`\\]|\\.)*`/g, '``');
+    // En las plantillas se conserva lo que hay dentro de ${...}: ahí van
+    // referencias reales. Tirar la plantilla entera ocultaba usos como
+    // `● ${PRODUCTO}` — que es justo lo que se escapó en la v2.60.
+    .replace(/`(?:[^`\\]|\\.)*`/g, (lit) => {
+      const partes = [...lit.matchAll(/\$\{([^}]*)\}/g)].map(m => m[1]);
+      return partes.length ? ' ' + partes.join(' ') + ' ' : '``';
+    });
+}
+
+// Segunda opinión antes de acusar: buscar la declaración en el fuente SIN
+// limpiar. La limpieza de comillas puede desincronizarse con literales
+// complicados y tragarse una declaración real — pasó con PLAYER_COLORS.
+// Así solo se reporta lo que de verdad no está declarado en ningún sitio.
+function declaradoDeVerdad(nombre, fuenteOriginal) {
+  return new RegExp(`(?:const|let|var|function)\\s+${nombre}\\b`).test(fuenteOriginal);
 }
 
 const NATIVOS = new Set(['Math','Number','String','Array','Object','JSON','Set','Map','Boolean',
@@ -64,12 +78,44 @@ for (const rel of listar('src')) {
   const usadas = new Set();
   for (const m of código.matchAll(/(?<![.\w])([A-Z_][A-Z0-9_]{2,})(?![\w])/g)) usadas.add(m[1]);
 
-  const faltan = [...usadas].filter(n => !disponibles.has(n)).sort();
+  const faltan = [...usadas].filter(n => !disponibles.has(n) && !declaradoDeVerdad(n, src)).sort();
   if (faltan.length) {
     console.error(`ERR ${rel}: usa sin definir ni importar -> ${faltan.join(', ')}`);
     fallos++;
   } else {
     console.log(`OK  ${rel}`);
+  }
+}
+
+// El script principal de index.html también es un módulo con su propio
+// ámbito, y hasta ahora no se revisaba: una constante usada pero nunca
+// declarada ahí (PRODUCTO en la v2.60) pasaba desapercibida hasta abrir
+// el navegador.
+{
+  const htmlSrc = readFileSync(path.join(raiz, 'index.html'), 'utf-8');
+  const m = htmlSrc.match(/<script type="module">([\s\S]*?)<\/script>/);
+  if (m) {
+    const código = limpiar(m[1]);
+    const disponibles = new Set(NATIVOS);
+    for (const d of código.matchAll(/(?:export\s+)?(?:function|const|let|var)\s+(\w+)/g)) disponibles.add(d[1]);
+    for (const d of código.matchAll(/import\s*\{([^}]+)\}/g)) {
+      for (const n of d[1].split(',')) if (n.trim()) disponibles.add(n.trim().split(/\s+as\s+/).pop());
+    }
+    for (const d of código.matchAll(/function\s+\w*\s*\(([^)]*)\)/g)) for (const n of d[1].match(/\w+/g) || []) disponibles.add(n);
+    for (const d of código.matchAll(/\(([^)]*)\)\s*=>/g)) for (const n of d[1].match(/\w+/g) || []) disponibles.add(n);
+    for (const d of código.matchAll(/(?:const|let|var)\s*\{([^}]*)\}/g)) for (const n of d[1].match(/\w+/g) || []) disponibles.add(n);
+    for (const d of código.matchAll(/catch\s*\(\s*(\w+)/g)) disponibles.add(d[1]);
+    for (const d of código.matchAll(/for\s*\(\s*(?:const|let|var)\s*\{?([^;)]*)/g)) for (const n of d[1].match(/\w+/g) || []) disponibles.add(n);
+
+    const usadas = new Set();
+    for (const d of código.matchAll(/(?<![.\w])([A-Z_][A-Z0-9_]{2,})(?![\w])/g)) usadas.add(d[1]);
+    const faltan = [...usadas].filter(n => !disponibles.has(n) && !declaradoDeVerdad(n, m[1])).sort();
+    if (faltan.length) {
+      console.error(`ERR index.html <script type="module">: usa sin definir ni importar -> ${faltan.join(', ')}`);
+      fallos++;
+    } else {
+      console.log('OK  index.html <script type="module">');
+    }
   }
 }
 
