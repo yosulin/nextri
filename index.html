@@ -859,33 +859,32 @@
 // global — funcionaba, pero nada declaraba qué necesitaba cada uno, y una
 // mezcla de versiones en caché podía emparejar mitades incompatibles sin
 // que nada lo detectara.
-import { seedRng, rngNextFrom, rngIntFrom, getRngSeed, getRngState, restoreRngState } from './src/game/random.js?v=2.55';
-import { dist, distSq, segmentPassesOverCircle, pointInTriangle, segmentsIntersect } from './src/game/geometry.js?v=2.55';
+import { seedRng, rngNextFrom, rngIntFrom, getRngSeed, getRngState, restoreRngState } from './src/game/random.js?v=2.56';
+import { dist, distSq, segmentPassesOverCircle, pointInTriangle, segmentsIntersect } from './src/game/geometry.js?v=2.56';
 import { MOVE_REASON_TEXT, edgeKey, edgeExists, connectionCount, areAdjacent,
-         lineIntersectsAny, findNewTriangles, triangleTraps, checkMoveValidity } from './src/game/rules.js?v=2.55';
+         lineIntersectsAny, findNewTriangles, triangleTraps, checkMoveValidity } from './src/game/rules.js?v=2.56';
 import { ADJACENCY_TARGET, generateCirclePositions, buildCandidateGraph,
-         attemptBoardGeneration, chooseAdjacency, finalizeAdjacency } from './src/game/board.js?v=2.55';
+         attemptBoardGeneration, chooseAdjacency, finalizeAdjacency } from './src/game/board.js?v=2.56';
 import { createPlayer, playerById, nextPlayerId, applyAction, hasAnyLegalMove,
-         replayFromLog } from './src/game/engine.js?v=2.55';
-import { STATE_SCHEMA_VERSION, serializeGameState, restoreGameState,
-         migrateGameSnapshot, isValidGameSnapshot } from './src/game/state.js?v=2.55';
-import { AI_LEVELS, setDifficulty, getDifficulty } from './src/ai/levels.js?v=2.55';
-import { chooseAIMove, createsScoringReply } from './src/ai/ai.js?v=2.55';
-import { saveGame, loadSavedGame, clearSavedGame, hasSavedGame } from './src/platform/storage.js?v=2.55';
+         replayFromLog } from './src/game/engine.js?v=2.56';
+import { STATE_SCHEMA_VERSION, RULES_VERSION, serializeGameState, restoreGameState,
+         migrateGameSnapshot, isValidGameSnapshot } from './src/game/state.js?v=2.56';
+import { AI_LEVELS, setDifficulty, getDifficulty } from './src/ai/levels.js?v=2.56';
+import { chooseAIMove, createsScoringReply } from './src/ai/ai.js?v=2.56';
+import { saveGame, loadSavedGame, clearSavedGame, hasSavedGame } from './src/platform/storage.js?v=2.56';
 // ── Constantes ──────────────────────────────────────────────────────────────
 // Única fuente de la versión visible — antes se escribía a mano en tres
 // sitios (aquí, el panel de info, y el CACHE de sw.js) y se desincronizaban
 // entre sí. sw.js sigue siendo aparte por necesidad (un service worker no
 // puede leer esta constante, vive en otro archivo) — al subir de versión,
 // solo hace falta tocar ESTA línea y la de sw.js, no una tercera copia más.
-const APP_VERSION = 'v2.55';
+const APP_VERSION = 'v2.56';
 // Tres conceptos distintos, deliberadamente separados:
 //   APP_VERSION         — versión desplegada; sube aunque solo cambie un icono.
 //   RULES_VERSION       — reglas del juego; solo sube si cambia CÓMO se juega.
 //   STATE_SCHEMA_VERSION— formato del guardado (en state.js).
 // Antes el guardado registraba APP_VERSION como "versión de reglas", lo
 // que habría invalidado partidas por cambios puramente visuales.
-const RULES_VERSION = 1;
 // ?debug en la URL: números de índice en los círculos + tabla de métricas
 // del grafo de adyacencia en consola al generar el tablero.
 const DEBUG = new URLSearchParams(location.search).has('debug');
@@ -2108,7 +2107,7 @@ function advanceTurn() {
 
 // ── Modo 1 jugador: la máquina ────────────────────────────────────────────
 // AI_LEVELS/aiDifficulty ahora vienen de src/ai/levels.js, y
-// isAITurn()/chooseAIMove(ST)/createsScoringReply() y sus ayudantes de
+// isAITurn()/chooseAIMove(ST, DEBUG)/createsScoringReply() y sus ayudantes de
 // src/ai/ai.js. scheduleAITurnIfNeeded()/runAIMoves() se quedan aquí abajo
 // a propósito: son orquestación de turno (temporizadores, dado, aplicar la
 // jugada), no la decisión en sí.
@@ -2141,7 +2140,7 @@ function scheduleAITurnIfNeeded() {
 
 function runAIMoves(generation) {
   if (generation !== gameGeneration || gameStatus !== 'playing' || !isAITurn() || linesLeft <= 0) return; // partida distinta, terminada, o el turno ya se resolvió solo
-  const move = chooseAIMove(ST);
+  const move = chooseAIMove(ST, DEBUG);
   if (!move) return;
   attemptConnect(move[0], move[1]);
   setTimeout(() => {
@@ -2436,7 +2435,6 @@ function drawLine(a, b, color, width) {
 // Margen de tolerancia para comparaciones de coma flotante contra
 // MAX_DIST_SQ — evita que redondeos excluyan por error la pareja exacta
 // que definió el umbral.
-const DIST_EPS = 1e-6;
 
 // ── Colores para hasta 6 jugadores ──────────────────────────────────────────
 const PLAYER_COLORS = ["#f4844a", "#5b9cf6", "#6bcb77", "#f7c59f", "#d98cf0", "#ffd166"];

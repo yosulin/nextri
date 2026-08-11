@@ -67,6 +67,11 @@ export function pointInTriangle(px, py, ax, ay, bx, by, cx, cy) {
   return !(hasNeg && hasPos);
 }
 
+// Tolerancia para comparaciones de distancia en coma flotante. Vive aquí
+// porque es una constante geométrica y la usan varios módulos; antes
+// estaba en index.html, invisible para ellos una vez son módulos ES.
+export const DIST_EPS = 1e-6;
+
 export function dist(x1,y1,x2,y2) {
   return Math.sqrt((x2-x1)**2 + (y2-y1)**2);
 }

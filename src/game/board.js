@@ -16,7 +16,7 @@
 // buildCandidateGraph() DEVUELVE los vecinos en vez de escribir variables
 // globales: quien lo llama decide dónde guardarlos.
 
-import { dist, segmentPassesOverCircle } from './geometry.js?v=2.55';
+import { DIST_EPS, dist, segmentPassesOverCircle } from './geometry.js?v=2.55';
 import { rngNextFrom } from './random.js?v=2.55';
 
 export function generateCirclePositions(cfg, minDist) {

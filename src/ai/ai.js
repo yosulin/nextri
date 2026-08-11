@@ -89,7 +89,7 @@ export function createsScoringReply(st, i, j) {
   }
 }
 
-export function chooseAIMove(st) {
+export function chooseAIMove(st, debug) {
   const level = AI_LEVELS[st.aiDifficulty] || AI_LEVELS.medium;
 
   // Movimientos legales — checkMoveValidity() sigue siendo la única fuente
@@ -157,9 +157,9 @@ export function chooseAIMove(st) {
     move = pickUniform(visible);
   }
 
-  if (DEBUG) {
+  if (debug) {
     const gain = selectedType === 'scoring' ? findNewTriangles(st, move[0], move[1]).length : 0;
-    window.aiDebug = {
+    globalThis.aiDebug = {
       difficulty: st.aiDifficulty, linesLeft: st.linesLeft, legalMoves: legalMoves.length,
       consideredMoves: visible.length, scoringMoves: scoringMoves.length,
       buildingMoves: buildingMoves.length, safeMoves: safeMoves.length,

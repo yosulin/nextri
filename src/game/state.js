@@ -21,11 +21,16 @@
 // descartar en vez de restaurarse mal y a medias.
 // v1 (v2.45-v2.47): sin datos del generador aleatorio.
 // v2 (v2.49+): incluye rng con los tres flujos, y turnPhase.
-import { distSq, segmentPassesOverCircle } from './geometry.js?v=2.55';
+import { DIST_EPS, distSq, segmentPassesOverCircle } from './geometry.js?v=2.55';
 import { getRngState, restoreRngState, seedRng } from './random.js?v=2.55';
 import { buildCandidateGraph } from './board.js?v=2.55';
 
 export const STATE_SCHEMA_VERSION = 3; // v3: ownerId/playerId estables y registro de eventos
+
+// Versión de las REGLAS del juego, distinta de la versión de la app: solo
+// sube si cambia CÓMO se juega, no por cambios visuales. Vive aquí, junto
+// al formato de estado, porque es este módulo quien la escribe y valida.
+export const RULES_VERSION = 1;
 
 // Qué NO se guarda, a propósito:
 //   - canvas/ctx, audioCtx, referencias al DOM: se recrean al montar la UI.

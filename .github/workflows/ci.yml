@@ -23,6 +23,9 @@ jobs:
       - name: Sintaxis, precaché y versiones
         run: node scripts/check-syntax.cjs
 
+      - name: Referencias entre módulos
+        run: node scripts/check-modules.cjs
+
       - name: Estado serializable (ida y vuelta)
         run: node scripts/test-state.cjs
 
