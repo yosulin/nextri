@@ -869,7 +869,7 @@
 // entre sí. sw.js sigue siendo aparte por necesidad (un service worker no
 // puede leer esta constante, vive en otro archivo) — al subir de versión,
 // solo hace falta tocar ESTA línea y la de sw.js, no una tercera copia más.
-const APP_VERSION = 'v2.52';
+const APP_VERSION = 'v2.53';
 // Tres conceptos distintos, deliberadamente separados:
 //   APP_VERSION         — versión desplegada; sube aunque solo cambie un icono.
 //   RULES_VERSION       — reglas del juego; solo sube si cambia CÓMO se juega.
@@ -948,6 +948,19 @@ const ST = {
   get diceRolled() { return diceRolled; },
   get lastRolledValue() { return lastRolledValue; }
 };
+
+// Red de seguridad: una excepción sin capturar durante draw() dejaba el
+// tablero en blanco SIN decir nada — se pintaba el fondo, saltaba el
+// error, y los círculos no llegaban a dibujarse. Un fallo silencioso así
+// es muy difícil de diagnosticar desde un móvil, donde no hay consola a
+// mano. Ahora se muestra el mensaje en la barra de turno.
+window.addEventListener('error', (ev) => {
+  const el = document.getElementById('turnInfo');
+  if (!el) return;
+  const msg = ev.message || 'error desconocido';
+  const donde = ev.filename ? ` (${String(ev.filename).split('/').pop()}:${ev.lineno})` : '';
+  el.innerHTML = `<span style="color:var(--p1-color)">⚠ ${escapeHtml(msg + donde)}</span>`;
+});
 
 // Registro de eventos de la partida (Fase 5). Cada acción aceptada por el
 // motor genera uno o varios; aquí solo se acumulan. Sirve para depurar,
