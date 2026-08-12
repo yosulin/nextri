@@ -7,9 +7,9 @@
 // Nada de nombres de personas: para estudiar las partidas basta con
 // "human" y "ai", y la identidad no aporta nada.
 
-import { guardarPartida, obtenerPartida, listarPartidas, borrarTodo } from './repository.js?v=2.78';
-import { STATS_SCHEMA_VERSION } from './repository.js?v=2.78';
-import { analizarTimeline } from './aggregates.js?v=2.78';
+import { guardarPartida, obtenerPartida, listarPartidas, borrarTodo } from './repository.js?v=2.79';
+import { STATS_SCHEMA_VERSION } from './repository.js?v=2.79';
+import { analizarTimeline } from './aggregates.js?v=2.79';
 
 export function nuevoId() {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
@@ -85,6 +85,10 @@ export function iniciarPartida(datos) {
     aiVersion: datos.aiVersion,
     appVersion: datos.appVersion,
     rulesVersion: datos.rulesVersion,
+    boardGeneratorVersion: datos.boardGeneratorVersion ?? null,
+    boardQualityScore: datos.boardQualityScore ?? null,
+    boardMeanDegree: datos.boardMeanDegree ?? null,
+    boardP90Degree: datos.boardP90Degree ?? null,
     status: 'active',
     startReason: datos.startReason || 'new',
     rematchOfGameId: datos.rematchOfGameId || null,

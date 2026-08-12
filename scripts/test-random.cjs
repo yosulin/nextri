@@ -15,6 +15,7 @@ const fuentes = {
   geometry: readFileSync(path.join(raiz, 'src/game/geometry.js'), 'utf-8'),
   rules: readFileSync(path.join(raiz, 'src/game/rules.js'), 'utf-8'),
   board: readFileSync(path.join(raiz, 'src/game/board.js'), 'utf-8'),
+  boardQuality: readFileSync(path.join(raiz, 'src/game/board-quality.js'), 'utf-8'),
   state: readFileSync(path.join(raiz, 'src/game/state.js'), 'utf-8'),
   ai: readFileSync(path.join(raiz, 'src/ai/ai.js'), 'utf-8'),
   levels: readFileSync(path.join(raiz, 'src/ai/levels.js'), 'utf-8')
@@ -38,6 +39,10 @@ function extractConst(nombre) {
 }
 
 const DIST_EPS = 1e-6;
+const BOARD_GENERATOR_VERSION = 2;
+const BOARD_QUALITY_TARGET = eval('(' +
+  readFileSync(path.join(raiz, 'src/game/board-quality.js'), 'utf-8')
+    .match(/const BOARD_QUALITY_TARGET = (\{[\s\S]*?\n\});/)[1] + ')');
 const RNG_STREAMS = ['board','dice','ai'];
 const STREAM_OFFSET = { board: 0x9E3779B9, dice: 0x85EBCA6B, ai: 0xC2B2AE35 };
 const STATE_SCHEMA_VERSION = 3;
@@ -64,6 +69,8 @@ eval(extract('triangleTraps')); eval(extract('lineIntersectsAny'));
 eval(extract('checkMoveValidity')); eval(extract('findNewTriangles'));
 eval(extract('chooseAdjacency')); eval(extract('finalizeAdjacency'));
 eval(extract('generateCirclePositions')); eval(extract('buildCandidateGraph'));
+eval(extract('percentil')); eval(extract('resumen')); eval(extract('desviacion'));
+eval(extract('evaluateBoardQuality'));
 eval(extract('attemptBoardGeneration'));
 eval(extract('serializeGameState')); eval(extract('candidatePairsFor')); eval(extract('buildCandidateGraph'));
 eval(extract('restoreGameState')); eval(extract('esNumFinito')); eval(extract('esEnteroEnRango'));

@@ -41,6 +41,9 @@ jobs:
       - name: Agregaciones de estadísticas
         run: node scripts/test-stats.cjs
 
+      - name: Generación de tableros (invariantes y calidad)
+        run: node scripts/test-board-gen.cjs 40
+
   # Simulaciones estadísticas. En push/PR van reducidas para no eternizar
   # cada commit; enteras por la noche y cuando se lanzan a mano.
   simulaciones:

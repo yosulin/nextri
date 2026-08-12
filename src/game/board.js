@@ -16,8 +16,9 @@
 // buildCandidateGraph() DEVUELVE los vecinos en vez de escribir variables
 // globales: quien lo llama decide dónde guardarlos.
 
-import { DIST_EPS, dist, segmentPassesOverCircle } from './geometry.js?v=2.78';
-import { rngNextFrom } from './random.js?v=2.78';
+import { DIST_EPS, dist, segmentPassesOverCircle } from './geometry.js?v=2.79';
+import { evaluateBoardQuality, BOARD_QUALITY_TARGET } from './board-quality.js?v=2.79';
+import { rngNextFrom } from './random.js?v=2.79';
 
 export function generateCirclePositions(cfg, minDist) {
   const { count, width, height, circleRadius } = cfg;
@@ -51,23 +52,44 @@ export function buildCandidateGraph(pairs, circleCount) {
 // objetivo "bonito" (grado medio 8-11); si ninguno lo alcanza pero sí hay
 // alguno conectado con el mínimo aceptable, ese sirve de red de
 // seguridad. Nunca devuelve un tablero con menos círculos de los pedidos.
+// Genera VARIOS tableros candidatos, los puntúa y se queda con el mejor,
+// en vez de aceptar el primero que cumpla el grado del grafo. Ese era el
+// problema de fondo del generador anterior: la métrica de grado no dice
+// nada sobre cómo están repartidos los círculos por la pantalla, así que
+// un tablero con racimos y zonas muertas la cumplía igual que uno bien
+// distribuido, y salía el primero que tocara.
+//
+// El número de intentos es fijo: nada de "seguir buscando hasta que pasen
+// N milisegundos", que haría que dos dispositivos generaran tableros
+// distintos con la misma semilla.
 export function attemptBoardGeneration(cfg, minDist, maxAttempts) {
   let best = null;
+  let intentos = 0;
+
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    intentos++;
     const positions = generateCirclePositions(cfg, minDist);
     if (positions.length !== cfg.count) continue; // no cupieron todos: descartar, no aceptar de menos
 
     const adjacency = chooseAdjacency(positions, cfg.circleRadius);
     if (!adjacency) continue;
 
-    best = { positions, adjacency };
-    const m = adjacency.metrics;
-    if (m.p10Degree >= ADJACENCY_TARGET.p10Degree &&
-        m.meanDegree >= ADJACENCY_TARGET.meanMin &&
-        m.meanDegree <= ADJACENCY_TARGET.meanMax) {
-      return best; // el objetivo "bonito", no hace falta seguir intentando
+    const quality = evaluateBoardQuality(positions, adjacency, {
+      width: cfg.width, height: cfg.height,
+      padding: cfg.circleRadius + 20,
+      minDistRelaxation: cfg.minDistRelaxation || 0
+    });
+
+    if (!best || quality.score > best.quality.score) {
+      best = { positions, adjacency, quality, intentos };
     }
+    // Única salida temprana: un tablero ya excelente. No merece la pena
+    // seguir buscando, y sigue siendo determinista (depende del tablero,
+    // no del reloj).
+    if (quality.score >= BOARD_QUALITY_TARGET.excelente) break;
   }
+
+  if (best) best.intentos = intentos;
   return best; // null si ni uno solo salió completo+conectado+grado mínimo
 }
 

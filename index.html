@@ -941,7 +941,7 @@
        vez de una imagen recortada. Escala nítido a cualquier densidad de
        pantalla, se adapta solo a los dos temas (sin necesitar dos
        versiones) y lo leen los buscadores y lectores de pantalla. -->
-  <img class="marca-simbolo" src="logo-marca.svg?v=2.78" alt="" aria-hidden="true">
+  <img class="marca-simbolo" src="logo-marca.svg?v=2.79" alt="" aria-hidden="true">
   <h1 class="marca-texto">NEXTRI</h1>
 </div>
 <p class="marca-lema">cada línea cuenta</p>
@@ -1179,29 +1179,30 @@
 // global — funcionaba, pero nada declaraba qué necesitaba cada uno, y una
 // mezcla de versiones en caché podía emparejar mitades incompatibles sin
 // que nada lo detectara.
-import { seedRng, rngNextFrom, rngIntFrom, getRngSeed, getRngState, restoreRngState } from './src/game/random.js?v=2.78';
-import { dist, distSq, segmentPassesOverCircle, pointInTriangle, segmentsIntersect } from './src/game/geometry.js?v=2.78';
+import { seedRng, rngNextFrom, rngIntFrom, getRngSeed, getRngState, restoreRngState } from './src/game/random.js?v=2.79';
+import { dist, distSq, segmentPassesOverCircle, pointInTriangle, segmentsIntersect } from './src/game/geometry.js?v=2.79';
 import { MOVE_REASON_TEXT, edgeKey, edgeExists, connectionCount, areAdjacent,
-         lineIntersectsAny, findNewTriangles, triangleTraps, checkMoveValidity } from './src/game/rules.js?v=2.78';
+         lineIntersectsAny, findNewTriangles, triangleTraps, checkMoveValidity } from './src/game/rules.js?v=2.79';
+import { BOARD_GENERATOR_VERSION, BOARD_QUALITY_TARGET } from './src/game/board-quality.js?v=2.79';
 import { ADJACENCY_TARGET, generateCirclePositions, buildCandidateGraph,
-         attemptBoardGeneration, chooseAdjacency, finalizeAdjacency } from './src/game/board.js?v=2.78';
+         attemptBoardGeneration, chooseAdjacency, finalizeAdjacency } from './src/game/board.js?v=2.79';
 import { createPlayer, playerById, nextPlayerId, applyAction, hasAnyLegalMove,
-         replayFromLog } from './src/game/engine.js?v=2.78';
+         replayFromLog } from './src/game/engine.js?v=2.79';
 import { STATE_SCHEMA_VERSION, RULES_VERSION, serializeGameState, restoreGameState,
-         migrateGameSnapshot, isValidGameSnapshot } from './src/game/state.js?v=2.78';
-import { AI_VERSION, AI_LEVELS, setDifficulty, getDifficulty, RIVALES, setRival, getRival } from './src/ai/levels.js?v=2.78';
-import { chooseAIMove, createsScoringReply } from './src/ai/ai.js?v=2.78';
-import * as Stats from './src/stats/stats.js?v=2.78';
+         migrateGameSnapshot, isValidGameSnapshot } from './src/game/state.js?v=2.79';
+import { AI_VERSION, AI_LEVELS, setDifficulty, getDifficulty, RIVALES, setRival, getRival } from './src/ai/levels.js?v=2.79';
+import { chooseAIMove, createsScoringReply } from './src/ai/ai.js?v=2.79';
+import * as Stats from './src/stats/stats.js?v=2.79';
 import { aggregateStats, statsByOpponent, statsByCircleCount, ultimasPartidas,
-         formatearDuracion, porcentaje } from './src/stats/aggregates.js?v=2.78';
-import { saveGame, loadSavedGame, clearSavedGame, hasSavedGame } from './src/platform/storage.js?v=2.78';
+         formatearDuracion, porcentaje } from './src/stats/aggregates.js?v=2.79';
+import { saveGame, loadSavedGame, clearSavedGame, hasSavedGame } from './src/platform/storage.js?v=2.79';
 // ── Constantes ──────────────────────────────────────────────────────────────
 // Única fuente de la versión visible — antes se escribía a mano en tres
 // sitios (aquí, el panel de info, y el CACHE de sw.js) y se desincronizaban
 // entre sí. sw.js sigue siendo aparte por necesidad (un service worker no
 // puede leer esta constante, vive en otro archivo) — al subir de versión,
 // solo hace falta tocar ESTA línea y la de sw.js, no una tercera copia más.
-const APP_VERSION = 'v2.78';
+const APP_VERSION = 'v2.79';
 
 // Nombre del producto en un solo sitio. Si algún día cambia (NEXTRI u
 // otro), esto evita perseguirlo por cabecera, aviso de rotación, panel de
@@ -1264,6 +1265,8 @@ let gameMode = 'solo';
 let revanchaDe = null;
 let ultimaPartidaTerminada = null;
 let statsGameId = null;
+let calidadTablero = null;
+let minDistUsado = 0;
 let gameStatus = 'setup';
 // Fase dentro del turno. Sin esto, "esperando tirada" y "turno recién
 // terminado, en el margen para deshacer" son indistinguibles al reanudar
@@ -1774,7 +1777,13 @@ function startGame() {
     opponentId: maquina ? Object.keys(RIVALES).find(k => RIVALES[k].nombre === maquina.name) : null,
     circleCount: N_CIRCLES, aiVersion: AI_VERSION,
     appVersion: APP_VERSION, rulesVersion: RULES_VERSION,
-    startReason: revanchaDe ? 'rematch' : 'new', rematchOfGameId: revanchaDe
+    startReason: revanchaDe ? 'rematch' : 'new', rematchOfGameId: revanchaDe,
+    // Resumen del tablero, no el tablero entero: sirve para comparar
+    // generadores sin inflar cada registro con 40 posiciones y su grafo.
+    boardGeneratorVersion: BOARD_GENERATOR_VERSION,
+    boardQualityScore: calidadTablero ? +calidadTablero.score.toFixed(1) : null,
+    boardMeanDegree: calidadTablero ? +calidadTablero.degree.mean.toFixed(2) : null,
+    boardP90Degree: calidadTablero ? calidadTablero.degree.p90 : null
   });
   revanchaDe = null;
   updateDiceDisplay(0);
@@ -1950,10 +1959,13 @@ function generateCircles() {
   // menos círculos de los pedidos — eso sería silencioso e imposible de
   // notar hasta que alguien contara los círculos.
   const cfgTablero = { count: N_CIRCLES, width: W, height: H, circleRadius: CIRCLE_R };
-  let best = attemptBoardGeneration(cfgTablero, MIN_DIST, 20);
+  let best = attemptBoardGeneration({ ...cfgTablero, minDistRelaxation: 0 }, MIN_DIST, 20);
+  let relajacionUsada = 0;
   for (const relax of [0.97, 0.94, 0.91, 0.88]) {
     if (best) break;
-    best = attemptBoardGeneration(cfgTablero, MIN_DIST * relax, 10);
+    relajacionUsada = 1 - relax;
+    best = attemptBoardGeneration({ ...cfgTablero, minDistRelaxation: relajacionUsada },
+                                  MIN_DIST * relax, 10);
   }
 
   if (!best) {
@@ -1975,8 +1987,30 @@ function generateCircles() {
   candidatePairs = best.adjacency.pairs;
   candidateNeighbors = buildCandidateGraph(candidatePairs, circles.length);
 
-  if (DEBUG && best.adjacency.metrics) {
-    console.table({ N_CIRCLES, MAX_DIST: Math.round(MAX_DIST), ...best.adjacency.metrics });
+  calidadTablero = best.quality || null;
+  minDistUsado = MIN_DIST * (1 - relajacionUsada);
+
+  if (DEBUG) {
+    const q = best.quality;
+    console.group(`BOARD GENERATION · v${BOARD_GENERATOR_VERSION} · calidad ${q ? q.score.toFixed(1) : '—'}`);
+    console.log('semilla de la partida:', getRngSeed(), '(reproducir con ?seed=' + getRngSeed() + ')');
+    console.table({
+      circulos: N_CIRCLES, intentos: best.intentos,
+      MIN_DIST_pedida: Math.round(MIN_DIST),
+      MIN_DIST_usada: Math.round(minDistUsado),
+      MAX_DIST: Math.round(MAX_DIST)
+    });
+    if (q) {
+      console.table({ vecinoMasCercano: q.nearest, grado: q.degree });
+      console.table({ cobertura: { x: +q.spatial.coverageX.toFixed(2), y: +q.spatial.coverageY.toFixed(2) },
+                      ocupacion: { variacion: +q.spatial.occupancyVariation.toFixed(2),
+                                   celdasVacias: q.spatial.emptyCells, maxCelda: q.spatial.maxCellOccupancy },
+                      aristas: { mediana: Math.round(q.edges.medianLength),
+                                 p90: Math.round(q.edges.p90Length),
+                                 ratio: +q.edges.p90MedianRatio.toFixed(2) } });
+      console.table(q.penalties);
+    }
+    console.groupEnd();
   }
   return true;
 }
@@ -3057,7 +3091,7 @@ function pintarAvataresRivales() {
     if (!r) return;
     b.style.setProperty('--rival-color', r.color);
     const hueco = b.querySelector('.rival-avatar');
-    if (hueco) hueco.innerHTML = `<img src="${r.retrato}?v=2.78" alt="" loading="lazy">`;
+    if (hueco) hueco.innerHTML = `<img src="${r.retrato}?v=2.79" alt="" loading="lazy">`;
   });
 }
 
@@ -3074,7 +3108,7 @@ function elegirRival(id) {
   const ficha = document.getElementById('rivalDesc');
   ficha.style.setProperty('--rival-color', r.color);
   ficha.innerHTML =
-    `<span class="rd-avatar"><img src="${r.retrato}?v=2.78" alt=""></span>` +
+    `<span class="rd-avatar"><img src="${r.retrato}?v=2.79" alt=""></span>` +
     `<span><strong>${escapeHtml(r.nombre)} · ${escapeHtml(r.apodo)}</strong>${escapeHtml(r.descripcion)}</span>`;
   actualizarTextoJugar();
 }
@@ -3141,7 +3175,7 @@ function updateRecHint(n, val) {
 // contra quién juegas sin leer el nombre.
 function avatarDeRival(nombre) {
   const r = Object.values(RIVALES).find(x => x.nombre === nombre);
-  return r ? `<span class="card-avatar"><img src="${r.retrato}?v=2.78" alt=""></span>` : '🤖';
+  return r ? `<span class="card-avatar"><img src="${r.retrato}?v=2.79" alt=""></span>` : '🤖';
 }
 
 function buildGameUI() {
