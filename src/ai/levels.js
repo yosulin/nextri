@@ -56,7 +56,7 @@ export const RIVALES = {
     retrato: 'rivales/circuit.png'
   },
   vector: {
-    nivel: 'hard', nombre: 'Vector', apodo: 'Analista', color: '#ff8c32',
+    nivel: 'hard', nombre: 'Vector', apodo: 'Analista', color: '#a855f7',
     descripcion: 'Ve casi todo el tablero y castiga cualquier descuido.',
     retrato: 'rivales/vector.png'
   }

@@ -883,7 +883,7 @@
        vez de una imagen recortada. Escala nítido a cualquier densidad de
        pantalla, se adapta solo a los dos temas (sin necesitar dos
        versiones) y lo leen los buscadores y lectores de pantalla. -->
-  <img class="marca-simbolo" src="logo-marca.svg?v=2.73" alt="" aria-hidden="true">
+  <img class="marca-simbolo" src="logo-marca.svg?v=2.74" alt="" aria-hidden="true">
   <h1 class="marca-texto">NEXTRI</h1>
 </div>
 <p class="marca-lema">cada línea cuenta</p>
@@ -1076,26 +1076,26 @@
 // global — funcionaba, pero nada declaraba qué necesitaba cada uno, y una
 // mezcla de versiones en caché podía emparejar mitades incompatibles sin
 // que nada lo detectara.
-import { seedRng, rngNextFrom, rngIntFrom, getRngSeed, getRngState, restoreRngState } from './src/game/random.js?v=2.73';
-import { dist, distSq, segmentPassesOverCircle, pointInTriangle, segmentsIntersect } from './src/game/geometry.js?v=2.73';
+import { seedRng, rngNextFrom, rngIntFrom, getRngSeed, getRngState, restoreRngState } from './src/game/random.js?v=2.74';
+import { dist, distSq, segmentPassesOverCircle, pointInTriangle, segmentsIntersect } from './src/game/geometry.js?v=2.74';
 import { MOVE_REASON_TEXT, edgeKey, edgeExists, connectionCount, areAdjacent,
-         lineIntersectsAny, findNewTriangles, triangleTraps, checkMoveValidity } from './src/game/rules.js?v=2.73';
+         lineIntersectsAny, findNewTriangles, triangleTraps, checkMoveValidity } from './src/game/rules.js?v=2.74';
 import { ADJACENCY_TARGET, generateCirclePositions, buildCandidateGraph,
-         attemptBoardGeneration, chooseAdjacency, finalizeAdjacency } from './src/game/board.js?v=2.73';
+         attemptBoardGeneration, chooseAdjacency, finalizeAdjacency } from './src/game/board.js?v=2.74';
 import { createPlayer, playerById, nextPlayerId, applyAction, hasAnyLegalMove,
-         replayFromLog } from './src/game/engine.js?v=2.73';
+         replayFromLog } from './src/game/engine.js?v=2.74';
 import { STATE_SCHEMA_VERSION, RULES_VERSION, serializeGameState, restoreGameState,
-         migrateGameSnapshot, isValidGameSnapshot } from './src/game/state.js?v=2.73';
-import { AI_LEVELS, setDifficulty, getDifficulty, RIVALES, setRival, getRival } from './src/ai/levels.js?v=2.73';
-import { chooseAIMove, createsScoringReply } from './src/ai/ai.js?v=2.73';
-import { saveGame, loadSavedGame, clearSavedGame, hasSavedGame } from './src/platform/storage.js?v=2.73';
+         migrateGameSnapshot, isValidGameSnapshot } from './src/game/state.js?v=2.74';
+import { AI_LEVELS, setDifficulty, getDifficulty, RIVALES, setRival, getRival } from './src/ai/levels.js?v=2.74';
+import { chooseAIMove, createsScoringReply } from './src/ai/ai.js?v=2.74';
+import { saveGame, loadSavedGame, clearSavedGame, hasSavedGame } from './src/platform/storage.js?v=2.74';
 // ── Constantes ──────────────────────────────────────────────────────────────
 // Única fuente de la versión visible — antes se escribía a mano en tres
 // sitios (aquí, el panel de info, y el CACHE de sw.js) y se desincronizaban
 // entre sí. sw.js sigue siendo aparte por necesidad (un service worker no
 // puede leer esta constante, vive en otro archivo) — al subir de versión,
 // solo hace falta tocar ESTA línea y la de sw.js, no una tercera copia más.
-const APP_VERSION = 'v2.73';
+const APP_VERSION = 'v2.74';
 
 // Nombre del producto en un solo sitio. Si algún día cambia (NEXTRI u
 // otro), esto evita perseguirlo por cabecera, aviso de rotación, panel de
@@ -1316,16 +1316,29 @@ function playerLightColorById(id) {
   return i >= 0 ? playerLightColor(i) : null;
 }
 
+// Un jugador puede traer color propio (los rivales lo hacen, para que sus
+// triángulos se pinten con el color con el que se les elige en el menú);
+// si no, se usa la paleta por posición.
 function playerColor(turnIdx) {
   const p = players[turnIdx];
-  return p ? PLAYER_COLORS[p.colorIndex] : undefined;
+  if (!p) return undefined;
+  return p.color || PLAYER_COLORS[p.colorIndex];
+}
+
+// Versión translúcida del color, para el relleno de los triángulos.
+function colorTranslucido(hex, alfa) {
+  const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  if (!m) return `rgba(255,255,255,${alfa})`;
+  const [r, g, b] = [1, 2, 3].map(i => parseInt(m[i], 16));
+  return `rgba(${r},${g},${b},${alfa})`;
 }
 
 // Se me había colado esta variante (PLAYER_COLORS_LIGHT) en el arreglo
 // anterior de identidad de color — mismo problema, mismo porqué.
 function playerLightColor(turnIdx) {
   const p = players[turnIdx];
-  return p ? PLAYER_COLORS_LIGHT[p.colorIndex] : 'rgba(255,255,255,0.1)';
+  if (!p) return 'rgba(255,255,255,0.1)';
+  return p.color ? colorTranslucido(p.color, 0.22) : PLAYER_COLORS_LIGHT[p.colorIndex];
 }
 let currentPlayer = 0;
 let linesLeft = 0;     // líneas que puede trazar este turno (tras tirar dado)
@@ -1584,7 +1597,10 @@ function startGame() {
   }
   // Modo "1 jugador": la máquina ocupa el segundo puesto automáticamente
   if (numPlayers === 1) {
-    players.push(createPlayer(1, { name: 'Circuit', isAI: true }));
+    const rival = getRival();
+    const maquina = createPlayer(1, { name: rival.nombre, isAI: true });
+    maquina.color = rival.color; // sus triángulos van de su color
+    players.push(maquina);
   }
   // Leer número de círculos del slider
   N_CIRCLES = parseInt(document.getElementById('circleSlider').value) || 35;
@@ -2773,7 +2789,7 @@ function pintarAvataresRivales() {
     if (!r) return;
     b.style.setProperty('--rival-color', r.color);
     const hueco = b.querySelector('.rival-avatar');
-    if (hueco) hueco.innerHTML = `<img src="${r.retrato}?v=2.73" alt="" loading="lazy">`;
+    if (hueco) hueco.innerHTML = `<img src="${r.retrato}?v=2.74" alt="" loading="lazy">`;
   });
 }
 
@@ -2790,7 +2806,7 @@ function elegirRival(id) {
   const ficha = document.getElementById('rivalDesc');
   ficha.style.setProperty('--rival-color', r.color);
   ficha.innerHTML =
-    `<span class="rd-avatar"><img src="${r.retrato}?v=2.73" alt=""></span>` +
+    `<span class="rd-avatar"><img src="${r.retrato}?v=2.74" alt=""></span>` +
     `<span><strong>${escapeHtml(r.nombre)} · ${escapeHtml(r.apodo)}</strong>${escapeHtml(r.descripcion)}</span>`;
   actualizarTextoJugar();
 }
@@ -2857,7 +2873,7 @@ function updateRecHint(n, val) {
 // contra quién juegas sin leer el nombre.
 function avatarDeRival(nombre) {
   const r = Object.values(RIVALES).find(x => x.nombre === nombre);
-  return r ? `<span class="card-avatar"><img src="${r.retrato}?v=2.73" alt=""></span>` : '🤖';
+  return r ? `<span class="card-avatar"><img src="${r.retrato}?v=2.74" alt=""></span>` : '🤖';
 }
 
 function buildGameUI() {

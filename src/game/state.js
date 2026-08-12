@@ -21,9 +21,9 @@
 // descartar en vez de restaurarse mal y a medias.
 // v1 (v2.45-v2.47): sin datos del generador aleatorio.
 // v2 (v2.49+): incluye rng con los tres flujos, y turnPhase.
-import { DIST_EPS, distSq, segmentPassesOverCircle } from './geometry.js?v=2.73';
-import { getRngState, restoreRngState, seedRng } from './random.js?v=2.73';
-import { buildCandidateGraph } from './board.js?v=2.73';
+import { DIST_EPS, distSq, segmentPassesOverCircle } from './geometry.js?v=2.74';
+import { getRngState, restoreRngState, seedRng } from './random.js?v=2.74';
+import { buildCandidateGraph } from './board.js?v=2.74';
 
 export const STATE_SCHEMA_VERSION = 3; // v3: ownerId/playerId estables y registro de eventos
 
@@ -89,6 +89,9 @@ export function serializeGameState(g) {
       initial: p.initial,
       score: p.score,
       colorIndex: p.colorIndex,
+      // Color propio del rival: sin esto, al reanudar una partida sus
+      // triángulos volvían al color por índice y cambiaban de aspecto.
+      ...(p.color ? { color: p.color } : {}),
       isAI: !!p.isAI
     })),
 
@@ -242,6 +245,7 @@ export function isValidGameSnapshot(s) {
     if (typeof p.id !== 'string' || !p.id) return false;
     if (!esEnteroEnRango(p.colorIndex, 0, 5)) return false;
     if (!Number.isInteger(p.score) || p.score < 0) return false;
+    if (p.color !== undefined && !/^#[0-9a-f]{6}$/i.test(p.color)) return false;
   }
 
   if (!Array.isArray(s.triangles)) return false;

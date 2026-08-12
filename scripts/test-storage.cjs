@@ -250,6 +250,24 @@ for (const [nombre, caso] of Object.entries(casosInvalidos)) {
 }
 check('Guardados con valores imposibles se rechazan', colados.length === 0, colados.join('; '));
 
+// El color propio del rival debe sobrevivir a guardar y reanudar: si no,
+// sus triángulos cambian de color al continuar una partida.
+store.clear(); failMode = null;
+buildScenario(800000, 6); gameStatus = 'playing';
+players[1].color = '#a855f7';
+saveGame(estadoVivo());
+players[1].color = null;
+const recuperadoColor = loadSavedGame();
+check('El color propio del rival sobrevive a guardar y reanudar',
+  recuperadoColor && recuperadoColor.players[1].color === '#a855f7',
+  recuperadoColor ? String(recuperadoColor.players[1].color) : 'no se recuperó');
+
+// Y un color inventado no debe colarse.
+const conColorMalo = JSON.parse(JSON.stringify(recuperadoColor));
+conColorMalo.players[1].color = 'javascript:alert(1)';
+store.set(SAVE_KEY, JSON.stringify(conColorMalo));
+check('Un color con formato inválido se rechaza', loadSavedGame() === null);
+
 console.log('');
 if (failures > 0) { console.error(`${failures} comprobación(es) fallaron`); process.exit(1); }
 console.log('Todas las comprobaciones pasaron.');
