@@ -166,11 +166,14 @@
     min-width: 0;        /* permite shrink */
     transition: border-color .3s, box-shadow .3s;
   }
-  .player-card.active { box-shadow: 0 0 0 3px currentColor; }
-  .player-card.p1 { color: var(--p1-color); }
-  .player-card.p1.active { border-color: var(--p1-color); }
-  .player-card.p2 { color: var(--p2-color); }
-  .player-card.p2.active { border-color: var(--p2-color); }
+  /* El resalte sale de currentColor, que es el color propio del jugador
+     puesto inline al construir la tarjeta. Antes había reglas fijas para
+     los dos primeros (p1/p2) que pisaban ese color: un rival morado se
+     resaltaba en azul por estar en la segunda posición. */
+  .player-card.active {
+    box-shadow: 0 0 0 3px currentColor;
+    border-color: currentColor !important;
+  }
 
   .player-name {
     font-weight: 700; font-size: .72rem; text-transform: uppercase;
@@ -883,7 +886,7 @@
        vez de una imagen recortada. Escala nítido a cualquier densidad de
        pantalla, se adapta solo a los dos temas (sin necesitar dos
        versiones) y lo leen los buscadores y lectores de pantalla. -->
-  <img class="marca-simbolo" src="logo-marca.svg?v=2.74" alt="" aria-hidden="true">
+  <img class="marca-simbolo" src="logo-marca.svg?v=2.75" alt="" aria-hidden="true">
   <h1 class="marca-texto">NEXTRI</h1>
 </div>
 <p class="marca-lema">cada línea cuenta</p>
@@ -1076,26 +1079,26 @@
 // global — funcionaba, pero nada declaraba qué necesitaba cada uno, y una
 // mezcla de versiones en caché podía emparejar mitades incompatibles sin
 // que nada lo detectara.
-import { seedRng, rngNextFrom, rngIntFrom, getRngSeed, getRngState, restoreRngState } from './src/game/random.js?v=2.74';
-import { dist, distSq, segmentPassesOverCircle, pointInTriangle, segmentsIntersect } from './src/game/geometry.js?v=2.74';
+import { seedRng, rngNextFrom, rngIntFrom, getRngSeed, getRngState, restoreRngState } from './src/game/random.js?v=2.75';
+import { dist, distSq, segmentPassesOverCircle, pointInTriangle, segmentsIntersect } from './src/game/geometry.js?v=2.75';
 import { MOVE_REASON_TEXT, edgeKey, edgeExists, connectionCount, areAdjacent,
-         lineIntersectsAny, findNewTriangles, triangleTraps, checkMoveValidity } from './src/game/rules.js?v=2.74';
+         lineIntersectsAny, findNewTriangles, triangleTraps, checkMoveValidity } from './src/game/rules.js?v=2.75';
 import { ADJACENCY_TARGET, generateCirclePositions, buildCandidateGraph,
-         attemptBoardGeneration, chooseAdjacency, finalizeAdjacency } from './src/game/board.js?v=2.74';
+         attemptBoardGeneration, chooseAdjacency, finalizeAdjacency } from './src/game/board.js?v=2.75';
 import { createPlayer, playerById, nextPlayerId, applyAction, hasAnyLegalMove,
-         replayFromLog } from './src/game/engine.js?v=2.74';
+         replayFromLog } from './src/game/engine.js?v=2.75';
 import { STATE_SCHEMA_VERSION, RULES_VERSION, serializeGameState, restoreGameState,
-         migrateGameSnapshot, isValidGameSnapshot } from './src/game/state.js?v=2.74';
-import { AI_LEVELS, setDifficulty, getDifficulty, RIVALES, setRival, getRival } from './src/ai/levels.js?v=2.74';
-import { chooseAIMove, createsScoringReply } from './src/ai/ai.js?v=2.74';
-import { saveGame, loadSavedGame, clearSavedGame, hasSavedGame } from './src/platform/storage.js?v=2.74';
+         migrateGameSnapshot, isValidGameSnapshot } from './src/game/state.js?v=2.75';
+import { AI_LEVELS, setDifficulty, getDifficulty, RIVALES, setRival, getRival } from './src/ai/levels.js?v=2.75';
+import { chooseAIMove, createsScoringReply } from './src/ai/ai.js?v=2.75';
+import { saveGame, loadSavedGame, clearSavedGame, hasSavedGame } from './src/platform/storage.js?v=2.75';
 // ── Constantes ──────────────────────────────────────────────────────────────
 // Única fuente de la versión visible — antes se escribía a mano en tres
 // sitios (aquí, el panel de info, y el CACHE de sw.js) y se desincronizaban
 // entre sí. sw.js sigue siendo aparte por necesidad (un service worker no
 // puede leer esta constante, vive en otro archivo) — al subir de versión,
 // solo hace falta tocar ESTA línea y la de sw.js, no una tercera copia más.
-const APP_VERSION = 'v2.74';
+const APP_VERSION = 'v2.75';
 
 // Nombre del producto en un solo sitio. Si algún día cambia (NEXTRI u
 // otro), esto evita perseguirlo por cabecera, aviso de rotación, panel de
@@ -2789,7 +2792,7 @@ function pintarAvataresRivales() {
     if (!r) return;
     b.style.setProperty('--rival-color', r.color);
     const hueco = b.querySelector('.rival-avatar');
-    if (hueco) hueco.innerHTML = `<img src="${r.retrato}?v=2.74" alt="" loading="lazy">`;
+    if (hueco) hueco.innerHTML = `<img src="${r.retrato}?v=2.75" alt="" loading="lazy">`;
   });
 }
 
@@ -2806,7 +2809,7 @@ function elegirRival(id) {
   const ficha = document.getElementById('rivalDesc');
   ficha.style.setProperty('--rival-color', r.color);
   ficha.innerHTML =
-    `<span class="rd-avatar"><img src="${r.retrato}?v=2.74" alt=""></span>` +
+    `<span class="rd-avatar"><img src="${r.retrato}?v=2.75" alt=""></span>` +
     `<span><strong>${escapeHtml(r.nombre)} · ${escapeHtml(r.apodo)}</strong>${escapeHtml(r.descripcion)}</span>`;
   actualizarTextoJugar();
 }
@@ -2873,7 +2876,7 @@ function updateRecHint(n, val) {
 // contra quién juegas sin leer el nombre.
 function avatarDeRival(nombre) {
   const r = Object.values(RIVALES).find(x => x.nombre === nombre);
-  return r ? `<span class="card-avatar"><img src="${r.retrato}?v=2.74" alt=""></span>` : '🤖';
+  return r ? `<span class="card-avatar"><img src="${r.retrato}?v=2.75" alt=""></span>` : '🤖';
 }
 
 function buildGameUI() {
@@ -2889,11 +2892,15 @@ function buildGameUI() {
   // Insertar tarjetas: mitad antes del dado, mitad después (o todas antes si 1-3)
   const half = Math.ceil(players.length / 2);
   players.forEach((p, i) => {
-    const color = PLAYER_COLORS[p.colorIndex];
-    const pClass = p.colorIndex === 0 ? 'p1' : p.colorIndex === 1 ? 'p2' : '';
+    // playerColor(), no PLAYER_COLORS directo: así el rival lleva a la
+    // partida el mismo color con el que se le elige en el menú, en vez del
+    // de su posición en la mesa. Cada jugador trae el suyo.
+    const color = playerColor(i);
     const card = document.createElement('div');
     card.className = `player-card`;
     card.id = `card${i+1}`;
+    // El color va inline y el borde activo se toma de currentColor, así que
+    // vale para cualquier color, no solo para los dos primeros de la paleta.
     card.style.cssText = `color:${color};border-color:var(--border);`;
     card.innerHTML = `
       <span class="player-name" id="label${i+1}">${escapeHtml(p.name.toUpperCase())}</span>
