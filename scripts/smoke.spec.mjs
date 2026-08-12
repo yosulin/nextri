@@ -41,6 +41,9 @@ test('la aplicación arranca y se puede jugar', async ({ page }) => {
   await expect(page.locator('#localPlayersSection')).toBeVisible();
 
   // 2. Controles que antes eran atributos on* incrustados
+  // Las opciones vuelven a estar plegadas (v2.67): hay que abrirlas para
+  // llegar al deslizador y a la casilla.
+  await page.locator('#opcionesPartida summary').click();
   const slider = page.locator('#circleSlider');
   await slider.evaluate(el => { el.value = '50'; el.dispatchEvent(new Event('input', { bubbles: true })); });
   await expect(page.locator('#sliderVal')).toHaveText('50');
