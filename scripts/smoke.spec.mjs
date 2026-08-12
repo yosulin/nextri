@@ -80,9 +80,16 @@ test('la aplicación arranca y se puede jugar', async ({ page }) => {
   await expect(page.locator('#linesLeftLabel')).toContainText(/línea/, { timeout: 5000 });
 
   // 5. Nuevo juego deja el tablero jugable otra vez
-  page.on('dialog', d => d.accept());
+  // "Nuevo juego" ya no es un confirm de sí/no: ofrece las dos salidas.
   await page.locator('[data-accion="nuevo"]').click();
+  await expect(page.locator('#salirOverlay')).toHaveClass(/show/);
+  await page.locator('[data-accion="otra-igual"]').click();
   await expect(page.locator('#gameUI')).toHaveClass(/is-active/);
+
+  // Y la salida que faltaba: volver al menú a cambiar de rival o tablero.
+  await page.locator('#ajustesBtn').click();
+  await expect(page.locator('#gameUI')).not.toHaveClass(/is-active/);
+  await expect(page.locator('.marca-lema, .marca-texto').first()).toBeVisible();
 
   expect(errores, 'la página no debe lanzar ninguna excepción').toEqual([]);
 });
