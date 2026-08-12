@@ -654,6 +654,9 @@
   .corner-btn.bottom-left { left: 16px; }
 
   .corner-btn.bottom-right { right: 16px; }
+  .icono-info { display: none; }
+  body.in-game .icono-engranaje { display: none; }
+  body.in-game .icono-info { display: block; }
   .corner-btn:hover { color: var(--text); border-color: var(--p1-color); }
 
   /* ── Logotipo ── */
@@ -717,6 +720,55 @@
        encogen, así que hace falta menos hueco. */
     body { padding: 8px 8px 56px; gap: 8px; }
     .corner-btn { width: 40px; height: 40px; }
+  }
+
+  /* ── Ajustes y estadísticas ── */
+  .menu-ajustes { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+  .fila-ajuste {
+    display: flex; align-items: center; gap: 12px; width: 100%;
+    background: transparent; border: 2px solid var(--border); border-radius: 12px;
+    padding: 12px 14px; color: var(--text); cursor: pointer;
+    font-family: 'Nunito', sans-serif; font-weight: 700; font-size: .92rem;
+  }
+  .fila-ajuste span { flex: 1; text-align: left; }
+  .fila-ajuste i { color: var(--muted); font-style: normal; font-size: 1.1rem; }
+  .fila-ajuste:hover { border-color: var(--p2-color); }
+  .datos-nota { font-size: .78rem; color: var(--muted); margin-bottom: 14px; line-height: 1.4; }
+
+  /* La pantalla de estadísticas puede ser larga: se desplaza por dentro,
+     no la página entera. */
+  .panel-alto { max-height: 80vh; display: flex; flex-direction: column; }
+  .stats-contenido { overflow-y: auto; -webkit-overflow-scrolling: touch; text-align: left; }
+  .stats-contenido h4 {
+    font-size: .72rem; text-transform: uppercase; letter-spacing: 1px;
+    color: var(--muted); margin: 16px 0 6px;
+  }
+  .stats-contenido h4:first-child { margin-top: 4px; }
+  .stats-bloque {
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 12px; padding: 10px 12px; margin-bottom: 8px;
+  }
+  .stats-rival { border-left: 4px solid var(--rival-color, var(--border)); }
+  .stats-rival-tit {
+    font-weight: 800; font-size: .85rem; margin-bottom: 6px;
+    color: var(--rival-color, var(--text));
+  }
+  .stat-fila {
+    display: flex; justify-content: space-between; gap: 10px;
+    font-size: .8rem; color: var(--muted); padding: 3px 0;
+  }
+  .stat-fila strong { color: var(--text); font-weight: 700; }
+  .stat-partida {
+    display: grid; grid-template-columns: 1fr auto auto auto; gap: 8px;
+    align-items: center; font-size: .76rem; color: var(--muted);
+    padding: 5px 0; border-bottom: 1px solid var(--border);
+  }
+  .stat-partida:last-child { border-bottom: none; }
+  .sp-marcador { font-weight: 800; color: var(--text); }
+  .sp-res { font-size: .7rem; }
+  .stats-vacio {
+    text-align: center; color: var(--muted); font-size: .86rem;
+    line-height: 1.5; padding: 24px 8px;
   }
 
   /* ── Selector de modo y rivales ── */
@@ -886,7 +938,7 @@
        vez de una imagen recortada. Escala nítido a cualquier densidad de
        pantalla, se adapta solo a los dos temas (sin necesitar dos
        versiones) y lo leen los buscadores y lectores de pantalla. -->
-  <img class="marca-simbolo" src="logo-marca.svg?v=2.75" alt="" aria-hidden="true">
+  <img class="marca-simbolo" src="logo-marca.svg?v=2.76" alt="" aria-hidden="true">
   <h1 class="marca-texto">NEXTRI</h1>
 </div>
 <p class="marca-lema">cada línea cuenta</p>
@@ -1054,13 +1106,54 @@
     <path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
   </svg>
 </button>
-<button class="corner-btn bottom-right" data-accion="abrir-info" aria-label="Información de la app" title="Información">
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+<button class="corner-btn bottom-right" data-accion="abrir-ajustes" aria-label="Ajustes e información" title="Ajustes">
+  <!-- En el menú es un engranaje (ajustes, estadísticas, datos); durante
+       la partida se queda como información, para no meter controles
+       nuevos que quiten espacio al tablero. -->
+  <svg class="icono-engranaje" width="18" height="18" viewBox="0 0 24 24" fill="none">
+    <circle cx="12" cy="12" r="3.2" stroke="currentColor" stroke-width="2"/>
+    <path d="M19.4 13.5a7.6 7.6 0 0 0 0-3l1.8-1.4-1.9-3.3-2.2.9a7.6 7.6 0 0 0-2.6-1.5L14.2 3H9.8l-.3 2.2a7.6 7.6 0 0 0-2.6 1.5l-2.2-.9-1.9 3.3 1.8 1.4a7.6 7.6 0 0 0 0 3l-1.8 1.4 1.9 3.3 2.2-.9a7.6 7.6 0 0 0 2.6 1.5l.3 2.2h4.4l.3-2.2a7.6 7.6 0 0 0 2.6-1.5l2.2.9 1.9-3.3-1.8-1.4Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+  </svg>
+  <svg class="icono-info" width="16" height="16" viewBox="0 0 24 24" fill="none">
     <circle cx="12" cy="12" r="9.5" stroke="currentColor" stroke-width="2" />
     <path d="M12 11v6" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
     <circle cx="12" cy="7.5" r="1.2" fill="currentColor" />
   </svg>
 </button>
+
+<!-- Panel de ajustes (solo en el menú): agrupa estadísticas, información
+     y gestión de datos en un sitio, en vez de repartirlos por la pantalla -->
+<div class="info-overlay" id="ajustesOverlay" role="dialog" aria-modal="true" aria-labelledby="ajustesTitulo" data-accion="cerrar-fondo" data-objetivo="ajustesOverlay">
+  <div class="info-panel">
+    <button class="dialog-close-x" data-accion="cerrar" data-objetivo="ajustesOverlay" aria-label="Cerrar">×</button>
+    <h3 id="ajustesTitulo">NEXTRI</h3>
+    <div class="menu-ajustes">
+      <button class="fila-ajuste" data-accion="abrir-stats">📊 <span>Estadísticas</span><i>›</i></button>
+      <button class="fila-ajuste" data-accion="abrir-info">ⓘ <span>Información</span><i>›</i></button>
+      <button class="fila-ajuste" data-accion="abrir-datos">💾 <span>Datos</span><i>›</i></button>
+    </div>
+  </div>
+</div>
+
+<!-- Estadísticas -->
+<div class="info-overlay" id="statsOverlay" role="dialog" aria-modal="true" aria-labelledby="statsTitulo" data-accion="cerrar-fondo" data-objetivo="statsOverlay">
+  <div class="info-panel panel-alto">
+    <button class="dialog-close-x" data-accion="cerrar" data-objetivo="statsOverlay" aria-label="Cerrar">×</button>
+    <h3 id="statsTitulo">Estadísticas</h3>
+    <div id="statsContenido" class="stats-contenido"></div>
+  </div>
+</div>
+
+<!-- Datos: exportar y borrar -->
+<div class="info-overlay" id="datosOverlay" role="dialog" aria-modal="true" aria-labelledby="datosTitulo" data-accion="cerrar-fondo" data-objetivo="datosOverlay">
+  <div class="info-panel">
+    <button class="dialog-close-x" data-accion="cerrar" data-objetivo="datosOverlay" aria-label="Cerrar">×</button>
+    <h3 id="datosTitulo">Datos</h3>
+    <p class="datos-nota">Todo se guarda solo en este dispositivo. No se envía nada a ningún servidor y no se guardan nombres.</p>
+    <button class="btn-new" data-accion="exportar-stats" style="width:100%;">Exportar estadísticas</button>
+    <button class="btn-new" data-accion="borrar-stats" style="width:100%;margin-top:8px;background:transparent;border:2px solid var(--p1-color);color:var(--p1-color);">Borrar todas las estadísticas</button>
+  </div>
+</div>
 
 <div class="info-overlay" id="infoOverlay" role="dialog" aria-modal="true" aria-labelledby="infoTitle" data-accion="cerrar-fondo" data-objetivo="infoOverlay">
   <div class="info-sheet">
@@ -1079,26 +1172,29 @@
 // global — funcionaba, pero nada declaraba qué necesitaba cada uno, y una
 // mezcla de versiones en caché podía emparejar mitades incompatibles sin
 // que nada lo detectara.
-import { seedRng, rngNextFrom, rngIntFrom, getRngSeed, getRngState, restoreRngState } from './src/game/random.js?v=2.75';
-import { dist, distSq, segmentPassesOverCircle, pointInTriangle, segmentsIntersect } from './src/game/geometry.js?v=2.75';
+import { seedRng, rngNextFrom, rngIntFrom, getRngSeed, getRngState, restoreRngState } from './src/game/random.js?v=2.76';
+import { dist, distSq, segmentPassesOverCircle, pointInTriangle, segmentsIntersect } from './src/game/geometry.js?v=2.76';
 import { MOVE_REASON_TEXT, edgeKey, edgeExists, connectionCount, areAdjacent,
-         lineIntersectsAny, findNewTriangles, triangleTraps, checkMoveValidity } from './src/game/rules.js?v=2.75';
+         lineIntersectsAny, findNewTriangles, triangleTraps, checkMoveValidity } from './src/game/rules.js?v=2.76';
 import { ADJACENCY_TARGET, generateCirclePositions, buildCandidateGraph,
-         attemptBoardGeneration, chooseAdjacency, finalizeAdjacency } from './src/game/board.js?v=2.75';
+         attemptBoardGeneration, chooseAdjacency, finalizeAdjacency } from './src/game/board.js?v=2.76';
 import { createPlayer, playerById, nextPlayerId, applyAction, hasAnyLegalMove,
-         replayFromLog } from './src/game/engine.js?v=2.75';
+         replayFromLog } from './src/game/engine.js?v=2.76';
 import { STATE_SCHEMA_VERSION, RULES_VERSION, serializeGameState, restoreGameState,
-         migrateGameSnapshot, isValidGameSnapshot } from './src/game/state.js?v=2.75';
-import { AI_LEVELS, setDifficulty, getDifficulty, RIVALES, setRival, getRival } from './src/ai/levels.js?v=2.75';
-import { chooseAIMove, createsScoringReply } from './src/ai/ai.js?v=2.75';
-import { saveGame, loadSavedGame, clearSavedGame, hasSavedGame } from './src/platform/storage.js?v=2.75';
+         migrateGameSnapshot, isValidGameSnapshot } from './src/game/state.js?v=2.76';
+import { AI_VERSION, AI_LEVELS, setDifficulty, getDifficulty, RIVALES, setRival, getRival } from './src/ai/levels.js?v=2.76';
+import { chooseAIMove, createsScoringReply } from './src/ai/ai.js?v=2.76';
+import * as Stats from './src/stats/stats.js?v=2.76';
+import { aggregateStats, statsByOpponent, statsByCircleCount, ultimasPartidas,
+         formatearDuracion, porcentaje } from './src/stats/aggregates.js?v=2.76';
+import { saveGame, loadSavedGame, clearSavedGame, hasSavedGame } from './src/platform/storage.js?v=2.76';
 // ── Constantes ──────────────────────────────────────────────────────────────
 // Única fuente de la versión visible — antes se escribía a mano en tres
 // sitios (aquí, el panel de info, y el CACHE de sw.js) y se desincronizaban
 // entre sí. sw.js sigue siendo aparte por necesidad (un service worker no
 // puede leer esta constante, vive en otro archivo) — al subir de versión,
 // solo hace falta tocar ESTA línea y la de sw.js, no una tercera copia más.
-const APP_VERSION = 'v2.75';
+const APP_VERSION = 'v2.76';
 
 // Nombre del producto en un solo sitio. Si algún día cambia (NEXTRI u
 // otro), esto evita perseguirlo por cabecera, aviso de rotación, panel de
@@ -1155,6 +1251,12 @@ let gameGeneration = 0;
 let aiDifficulty = getDifficulty();
 // 'solo' | 'local'. Queda sitio para 'online' sin tocar el resto.
 let gameMode = 'solo';
+// Revancha: se apunta la partida anterior para poder medir el porcentaje
+// de revancha de forma exacta, por identificador, y no adivinándolo por
+// cercanía en el tiempo.
+let revanchaDe = null;
+let ultimaPartidaTerminada = null;
+let statsGameId = null;
 let gameStatus = 'setup';
 // Fase dentro del turno. Sin esto, "esperando tirada" y "turno recién
 // terminado, en el margen para deshacer" son indistinguibles al reanudar
@@ -1218,7 +1320,8 @@ function estadoGuardable() {
     minDist: MIN_DIST, maxDist: MAX_DIST, maxDistSq: MAX_DIST_SQ,
     circles, edges, triangles, players,
     currentPlayer, linesLeft, diceRolled, lastRolledValue,
-    turnPhase, status: gameStatus, events: eventLog
+    turnPhase, status: gameStatus, events: eventLog,
+    statsGameId: Stats.partidaEnCurso() || statsGameId
   };
 }
 
@@ -1234,6 +1337,7 @@ function aplicarEstadoRestaurado(n) {
   currentPlayer = n.currentPlayer; linesLeft = n.linesLeft;
   diceRolled = n.diceRolled; lastRolledValue = n.lastRolledValue;
   turnPhase = n.turnPhase; gameStatus = n.status; eventLog = n.events;
+  statsGameId = n.statsGameId || null;
   lastMoveSnapshot = null; selectedCircle = null;
   invalidateActiveCirclesCache(); selectedTargetsCache = null;
 }
@@ -1266,6 +1370,17 @@ function dispatch(action) {
   if (idx >= 0) currentPlayer = idx;
 
   registrarEventos(resultado.events);
+  if (action.type === 'CONNECT') {
+    const humano = players.find(p => !p.isAI);
+    const maquina = players.find(p => p.isAI);
+    Stats.registrarMovimiento({
+      humanScore: humano ? humano.score : 0,
+      aiScore: maquina ? maquina.score : (players[1] ? players[1].score : 0),
+      triangulosHumano: humano ? humano.score : 0,
+      triangulosIA: maquina ? maquina.score : 0
+    });
+  }
+  if (action.type === 'ADVANCE_TURN') Stats.registrarTurno();
   invalidateActiveCirclesCache();
 
   // El fin de partida lo decide el MOTOR y llega como evento. La interfaz
@@ -1644,6 +1759,17 @@ function startGame() {
   if (!generateCircles()) return; // aviso ya mostrado, vuelta al menú ya hecha
   gameStatus = 'playing';
   turnPhase = 'awaiting-roll';
+  // El registro nace aquí y no al pulsar Jugar: si la generación del
+  // tablero falla, no debe quedar una partida fantasma en las estadísticas.
+  const maquina = players.find(p => p.isAI);
+  Stats.iniciarPartida({
+    mode: gameMode, playerCount: players.length,
+    opponentId: maquina ? Object.keys(RIVALES).find(k => RIVALES[k].nombre === maquina.name) : null,
+    circleCount: N_CIRCLES, aiVersion: AI_VERSION,
+    appVersion: APP_VERSION, rulesVersion: RULES_VERSION,
+    startReason: revanchaDe ? 'rematch' : 'new', rematchOfGameId: revanchaDe
+  });
+  revanchaDe = null;
   updateDiceDisplay(0);
   updateActiveCards();
   updateTurnInfo();
@@ -1687,6 +1813,8 @@ function resumeGame() {
   const restaurado = restoreGameState(snapshot);
   if (!restaurado) return false;
   aplicarEstadoRestaurado(restaurado);
+  // Reanudar retoma el registro existente: mismo gameId, resumedCount++.
+  if (restaurado.statsGameId) Stats.reanudarPartida(restaurado.statsGameId);
 
   // numPlayers se usa al volver al menú; mantenerlo coherente con lo
   // restaurado (en modo Solo son 2 jugadores pero numPlayers vale 1).
@@ -1757,6 +1885,10 @@ function confirmNewGame() {
 // Otra partida con la misma configuración: el camino rápido de siempre.
 function otraPartidaIgual() {
   closeDialog('salirOverlay');
+  // Si la partida anterior había terminado, esta es su revancha; si estaba
+  // a medias, se descarta a propósito y eso sí cuenta como abandono.
+  if (gameStatus === 'finished') revanchaDe = ultimaPartidaTerminada;
+  else Stats.abandonarPartida();
   clearSavedGame();
   startGame();
 }
@@ -1766,6 +1898,7 @@ function otraPartidaIgual() {
 // tablero sin recargar la página a mano.
 function volverAlMenu() {
   vibrate(HAPTIC.tap);
+  Stats.abandonarPartida(); // descarte voluntario: esto SÍ es abandono
   gameGeneration++;          // corta cualquier turno de Circuit en curso
   resetRollState();
   stopUndoCountdown();
@@ -1902,6 +2035,7 @@ function rollDice(isAICall) {
     if (!r.ok) { updateTurnInfo(); return; }
     const val = lastRolledValue;
     vibrate(HAPTIC.select);
+    Stats.registrarTirada();
     updateDiceDisplay(val);
     syncDiceEnabled();
     // Comprobar si hay movimientos disponibles tras tirar
@@ -2062,7 +2196,8 @@ function handleCanvasPointerCancel(e) {
 
 let lastInvalidReasonTimer = null;
 
-function showInvalidMoveReason(message) {
+function showInvalidMoveReason(message, motivo) {
+  Stats.registrarMovimientoInvalido(motivo);
   const el = document.getElementById('turnInfo');
   el.innerHTML = `<span style="color:var(--p1-color)">⚠ ${escapeHtml(message)}</span>`;
   clearTimeout(lastInvalidReasonTimer);
@@ -2099,7 +2234,7 @@ function attemptConnect(fromIdx, toIdx) {
     // Destino inválido: se deja seleccionado y se explica por qué, igual
     // que siempre — pero ahora el motivo lo da el motor, no un camino aparte.
     vibrate(HAPTIC.dismiss);
-    showInvalidMoveReason(MOVE_REASON_TEXT[r.reason] || 'Movimiento no válido');
+    showInvalidMoveReason(MOVE_REASON_TEXT[r.reason] || 'Movimiento no válido', r.reason);
     setSelectedCircle(toIdx);
     draw();
     return;
@@ -2359,6 +2494,7 @@ function undoLastMove() {
   updateTurnInfo();
   syncUndoEnabled();
   vibrate(HAPTIC.dismiss);
+  Stats.registrarDeshacer();
   draw();
   saveGame(estadoGuardable()); // el guardado debe reflejar la jugada deshecha
 }
@@ -2455,6 +2591,18 @@ function showBlockedMessage(remaining) {
 // GAME_FINISHED; aquí solo se refleja en pantalla.
 function mostrarFinDePartida() {
   gameStatus = 'finished';
+  const humano = players.find(p => !p.isAI);
+  const maquina = players.find(p => p.isAI);
+  if (humano) {
+    const rival = maquina || players.slice(1).sort((a,b) => b.score - a.score)[0];
+    const suyo = humano.score, otro = rival ? rival.score : 0;
+    // Se guarda el id aquí: terminarPartida() cierra el registro, así que
+    // después ya no habría partida en curso de la que tirar para la revancha.
+    ultimaPartidaTerminada = Stats.terminarPartida({
+      humanScore: suyo, aiScore: otro,
+      result: suyo > otro ? 'human-win' : suyo < otro ? 'ai-win' : 'draw'
+    });
+  }
   clearSavedGame(); // una partida terminada no debe ofrecer "continuar"
   vibrate(HAPTIC.celebrate);
   document.getElementById('modalTitle').textContent = '¡Fin del juego!';
@@ -2768,6 +2916,116 @@ function setPlayerCount(n) {
   actualizarTextoJugar();
 }
 
+// ── Pantalla de estadísticas ───────────────────────────────────────────
+// La interfaz solo REPRESENTA lo que devuelven las funciones puras de
+// aggregates.js; aquí no se calcula ningún porcentaje.
+function pct(v) { return v === null || v === undefined ? '—' : `${Math.round(v)}%`; }
+function num(v) { return v === null || v === undefined ? '—' : String(v); }
+
+function filaStat(etiqueta, valor) {
+  return `<div class="stat-fila"><span>${escapeHtml(etiqueta)}</span><strong>${escapeHtml(String(valor))}</strong></div>`;
+}
+
+async function mostrarEstadisticas() {
+  const cont = document.getElementById('statsContenido');
+  cont.innerHTML = '<p class="stats-vacio">Cargando…</p>';
+  openDialog('statsOverlay');
+
+  const partidas = await Stats.todasLasPartidas();
+  if (partidas.length === 0) {
+    // Ni un muro de ceros ni una pantalla en blanco: se dice qué falta.
+    cont.innerHTML = '<p class="stats-vacio">Todavía no hay estadísticas.<br>Juega unas partidas y aquí aparecerá tu historial.</p>';
+    return;
+  }
+
+  const r = aggregateStats(partidas);
+  const porRival = statsByOpponent(partidas);
+  const porTablero = statsByCircleCount(partidas);
+  const ultimas = ultimasPartidas(partidas, 15);
+
+  let html = `<h4>Resumen</h4><div class="stats-bloque">
+    ${filaStat('Partidas iniciadas', r.iniciadas)}
+    ${filaStat('Terminadas', r.terminadas)}
+    ${filaStat('Abandonadas', r.abandonadas)}
+    ${filaStat('Abandono', pct(r.porcentajeAbandono))}
+    ${filaStat('Continuadas', r.continuadas)}
+    ${filaStat('Tiempo jugado', formatearDuracion(r.tiempoTotalMs))}
+    ${filaStat('Duración mediana', formatearDuracion(r.duracionMedianaMs))}
+    ${filaStat('Partidas por sesión', r.partidasPorSesion ? r.partidasPorSesion.toFixed(1) : '—')}
+    ${filaStat('Revancha', pct(r.porcentajeRevancha))}
+  </div>`;
+
+  html += '<h4>Rivales</h4>';
+  for (const [id, d] of Object.entries(porRival)) {
+    if (d.partidas === 0) continue;
+    const rival = RIVALES[id];
+    html += `<div class="stats-bloque stats-rival" style="--rival-color:${rival.color}">
+      <div class="stats-rival-tit">${escapeHtml(rival.nombre.toUpperCase())}</div>
+      ${filaStat('Partidas', d.partidas)}
+      ${filaStat('Selección', pct(d.porcentajeSeleccion))}
+      ${filaStat('Victorias / Derrotas / Empates', `${d.victorias} / ${d.derrotas} / ${d.empates}`)}
+      ${filaStat('Victoria humana', pct(d.porcentajeVictoriaHumana))}
+      ${filaStat('Duración mediana', formatearDuracion(d.duracionMedianaMs))}
+      ${filaStat('Margen final mediano', num(d.margenFinalMediano))}
+      ${filaStat('Revancha tras derrota', pct(d.revanchaTrasDerrota))}
+      ${id === 'circuit' ? filaStat('Remontadas', `${d.remontadas} (${pct(d.porcentajeRemontadas)})`) : ''}
+      ${id === 'circuit' ? filaStat('Revancha tras remontada', pct(d.revanchaTrasRemontada)) : ''}
+      ${id === 'vector' ? filaStat('Derrotas por 1-2 puntos', d.derrotasPor1 + d.derrotasPor2) : ''}
+    </div>`;
+  }
+
+  html += '<h4>Tableros</h4>';
+  for (const t of porTablero) {
+    html += `<div class="stats-bloque">
+      <div class="stats-rival-tit">${t.circleCount} círculos</div>
+      ${filaStat('Partidas', t.partidas)}
+      ${filaStat('Duración mediana', formatearDuracion(t.duracionMedianaMs))}
+      ${filaStat('Abandono', pct(t.porcentajeAbandono))}
+      ${filaStat('Victoria humana', pct(t.porcentajeVictoriaHumana))}
+      ${filaStat('Revancha', pct(t.porcentajeRevancha))}
+    </div>`;
+  }
+
+  if (ultimas.length) {
+    html += '<h4>Últimas partidas</h4><div class="stats-bloque">';
+    for (const u of ultimas) {
+      const rival = RIVALES[u.rival];
+      const etiqueta = rival ? rival.nombre : u.rival;
+      const res = u.result === 'human-win' ? 'Victoria' : u.result === 'ai-win' ? 'Derrota' : 'Empate';
+      html += `<div class="stat-partida">
+        <span>${escapeHtml(etiqueta)} · ${u.circleCount} círculos</span>
+        <span class="sp-marcador">${u.humanScore}–${u.aiScore}</span>
+        <span class="sp-res">${res}</span>
+        <span class="sp-dur">${formatearDuracion(u.duracionMs)}</span>
+      </div>`;
+    }
+    html += '</div>';
+  }
+  cont.innerHTML = html;
+}
+
+async function exportarEstadisticas() {
+  vibrate(HAPTIC.tap);
+  const datos = await Stats.exportarEstadisticas({ appVersion: APP_VERSION });
+  const hoy = new Date().toISOString().slice(0, 10);
+  const blob = new Blob([JSON.stringify(datos, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `nextri-stats-${hoy}.json`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+async function borrarEstadisticas() {
+  vibrate(HAPTIC.dismiss);
+  // Borra SOLO las estadísticas: la partida guardada, el tema y los
+  // ajustes viven en localStorage y no se tocan.
+  if (!confirm('¿Borrar todas las estadísticas? Esto no borra tu partida guardada ni tus ajustes, y no se puede deshacer.')) return;
+  await Stats.borrarEstadisticas();
+  closeDialog('datosOverlay');
+  alert('Estadísticas borradas.');
+}
+
 function setGameMode(modo) {
   vibrate(HAPTIC.tap);
   gameMode = modo;
@@ -2792,7 +3050,7 @@ function pintarAvataresRivales() {
     if (!r) return;
     b.style.setProperty('--rival-color', r.color);
     const hueco = b.querySelector('.rival-avatar');
-    if (hueco) hueco.innerHTML = `<img src="${r.retrato}?v=2.75" alt="" loading="lazy">`;
+    if (hueco) hueco.innerHTML = `<img src="${r.retrato}?v=2.76" alt="" loading="lazy">`;
   });
 }
 
@@ -2809,7 +3067,7 @@ function elegirRival(id) {
   const ficha = document.getElementById('rivalDesc');
   ficha.style.setProperty('--rival-color', r.color);
   ficha.innerHTML =
-    `<span class="rd-avatar"><img src="${r.retrato}?v=2.75" alt=""></span>` +
+    `<span class="rd-avatar"><img src="${r.retrato}?v=2.76" alt=""></span>` +
     `<span><strong>${escapeHtml(r.nombre)} · ${escapeHtml(r.apodo)}</strong>${escapeHtml(r.descripcion)}</span>`;
   actualizarTextoJugar();
 }
@@ -2876,7 +3134,7 @@ function updateRecHint(n, val) {
 // contra quién juegas sin leer el nombre.
 function avatarDeRival(nombre) {
   const r = Object.values(RIVALES).find(x => x.nombre === nombre);
-  return r ? `<span class="card-avatar"><img src="${r.retrato}?v=2.75" alt=""></span>` : '🤖';
+  return r ? `<span class="card-avatar"><img src="${r.retrato}?v=2.76" alt=""></span>` : '🤖';
 }
 
 function buildGameUI() {
@@ -2917,14 +3175,19 @@ function buildGameUI() {
 // funciones vivieran en el ámbito global — justo lo que impedía pasar a
 // módulos ES de verdad, donde cada archivo tiene su propio ámbito.
 const ACCIONES = {
-  empezar:       () => startGame(),
+  empezar:       () => { if (gameStatus === 'finished') revanchaDe = ultimaPartidaTerminada; startGame(); },
   continuar:     () => onResumeClick(),
   nuevo:         () => confirmNewGame(),
   deshacer:      () => undoLastMove(),
   tirar:         () => rollDice(),
   tema:          () => toggleTheme(),
   compartir:     () => shareResult(),
-  'abrir-info':  () => { vibrate(HAPTIC.select); openDialog('infoOverlay'); },
+  'abrir-ajustes': () => { vibrate(HAPTIC.select); openDialog(document.body.classList.contains('in-game') ? 'infoOverlay' : 'ajustesOverlay'); },
+  'abrir-info':  () => { vibrate(HAPTIC.select); closeDialog('ajustesOverlay'); openDialog('infoOverlay'); },
+  'abrir-stats': () => { vibrate(HAPTIC.select); closeDialog('ajustesOverlay'); mostrarEstadisticas(); },
+  'abrir-datos': () => { vibrate(HAPTIC.select); closeDialog('ajustesOverlay'); openDialog('datosOverlay'); },
+  'exportar-stats': () => exportarEstadisticas(),
+  'borrar-stats': () => borrarEstadisticas(),
   cerrar:        (el) => closeDialog(el.dataset.objetivo),
   jugadores:     (el) => pcButtonClick(Number(el.dataset.n)),
   modo:          (el) => setGameMode(el.dataset.modo),
@@ -2981,6 +3244,11 @@ function iniciarApp() {
   setGameMode('solo');      // el modo más probable al abrir en el móvil
   actualizarResumenOpciones();
   syncResumeButton(); // ofrecer "continuar" solo si hay partida a medias
+  // Cinco horas con la app cerrada no son cinco horas jugando: solo se
+  // acumula el tiempo con la partida en marcha y el documento visible.
+  document.addEventListener('visibilitychange', () => {
+    Stats.alCambiarVisibilidad(document.visibilityState === 'visible');
+  });
 }
 
 if (document.readyState === 'loading') {

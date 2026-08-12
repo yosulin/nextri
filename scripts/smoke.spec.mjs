@@ -148,3 +148,62 @@ for (const p of PANTALLAS) {
       .toBeLessThanOrEqual(desborde.visible + 4);
   });
 }
+
+// Ciclo completo de estadísticas en un navegador real: jugar, comprobar
+// que queda registro, RECARGAR y comprobar que sigue ahí (IndexedDB), y
+// que la pantalla se abre desde el engranaje.
+test('las estadísticas se registran y sobreviven a recargar', async ({ page }) => {
+  const errores = vigilarErrores(page);
+  await page.goto('/index.html');
+
+  // Partida contra Circuit
+  await page.locator('#setupPanel [data-accion="empezar"]').click();
+  await expect(page.locator('#gameUI')).toHaveClass(/is-active/);
+  await page.locator('#dice').click({ force: true });
+  await page.waitForTimeout(1500);
+
+  // Debe existir un registro con estado 'active' (jugando, no abandonada)
+  const trasJugar = await page.evaluate(async () => {
+    const abrir = () => new Promise((res, rej) => {
+      const r = indexedDB.open('nextri-stats');
+      r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+    });
+    const db = await abrir();
+    return new Promise(res => {
+      const req = db.transaction('games', 'readonly').objectStore('games').getAll();
+      req.onsuccess = () => res(req.result.map(g => ({ status: g.status, mode: g.mode,
+        opponentId: g.opponentId, aiVersion: g.aiVersion, tieneNombre: JSON.stringify(g).includes('Jugador 1') })));
+    });
+  });
+  expect(trasJugar.length, 'debe haberse registrado la partida').toBeGreaterThan(0);
+  expect(trasJugar[0].status).toBe('active');
+  expect(trasJugar[0].mode).toBe('solo');
+  expect(trasJugar[0].opponentId).toBe('circuit');
+  expect(trasJugar[0].aiVersion, 'la partida se etiqueta con la versión de IA').toBe(1);
+  expect(trasJugar[0].tieneNombre, 'las estadísticas NO deben guardar nombres').toBe(false);
+
+  // Recargar: IndexedDB debe conservarlo
+  await page.reload();
+  await expect(page.locator('.marca-texto')).toBeVisible();
+  const trasRecargar = await page.evaluate(async () => {
+    const abrir = () => new Promise((res, rej) => {
+      const r = indexedDB.open('nextri-stats');
+      r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+    });
+    const db = await abrir();
+    return new Promise(res => {
+      const req = db.transaction('games', 'readonly').objectStore('games').getAll();
+      req.onsuccess = () => res(req.result.length);
+    });
+  });
+  expect(trasRecargar, 'la estadística debe sobrevivir a recargar').toBeGreaterThan(0);
+
+  // Y la pantalla se abre desde el engranaje
+  await page.locator('[data-accion="abrir-ajustes"]').click();
+  await expect(page.locator('#ajustesOverlay')).toHaveClass(/show/);
+  await page.locator('[data-accion="abrir-stats"]').click();
+  await expect(page.locator('#statsOverlay')).toHaveClass(/show/);
+  await expect(page.locator('#statsContenido')).toContainText('Resumen');
+
+  expect(errores).toEqual([]);
+});

@@ -38,6 +38,9 @@ jobs:
       - name: Motor puro (applyAction)
         run: node scripts/test-engine.cjs
 
+      - name: Agregaciones de estadísticas
+        run: node scripts/test-stats.cjs
+
   # Simulaciones estadísticas. En push/PR van reducidas para no eternizar
   # cada commit; enteras por la noche y cuando se lanzan a mano.
   simulaciones:

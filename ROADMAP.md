@@ -15,6 +15,23 @@ carga la app real en un navegador y juega una partida).
 - Módulos ES reales, rutas relativas, PWA instalable sin conexión.
 - Identidad de marca: nombre, icono, paleta y lenguaje.
 
+## Estadísticas (hecho, v2.76)
+
+Instrumentación local completa, sin backend ni analítica de terceros: todo
+queda en el dispositivo, en IndexedDB, y sin guardar nombres de personas.
+Cada partida se etiqueta con `aiVersion`, para poder comparar el
+comportamiento de los rivales antes y después de cambiarlos.
+
+El repositorio está detrás de una interfaz mínima, de modo que en el futuro
+se pueda añadir uno contra Supabase sin tocar el motor ni la interfaz.
+
+## IA 2.0 (pendiente, en espera de datos)
+
+Delta, Circuit y Vector con evaluación por fases de partida y búsqueda con
+profundidad, manteniendo un solo algoritmo parametrizado. En espera a
+propósito: primero hay que jugar partidas con la IA actual para tener una
+línea base con la que comparar.
+
 ## Antes del online
 
 - **RNG por partida.** Hoy el generador es un singleton del módulo. En el

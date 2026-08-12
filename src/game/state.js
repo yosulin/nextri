@@ -21,9 +21,9 @@
 // descartar en vez de restaurarse mal y a medias.
 // v1 (v2.45-v2.47): sin datos del generador aleatorio.
 // v2 (v2.49+): incluye rng con los tres flujos, y turnPhase.
-import { DIST_EPS, distSq, segmentPassesOverCircle } from './geometry.js?v=2.75';
-import { getRngState, restoreRngState, seedRng } from './random.js?v=2.75';
-import { buildCandidateGraph } from './board.js?v=2.75';
+import { DIST_EPS, distSq, segmentPassesOverCircle } from './geometry.js?v=2.76';
+import { getRngState, restoreRngState, seedRng } from './random.js?v=2.76';
+import { buildCandidateGraph } from './board.js?v=2.76';
 
 export const STATE_SCHEMA_VERSION = 3; // v3: ownerId/playerId estables y registro de eventos
 
@@ -110,7 +110,11 @@ export function serializeGameState(g) {
       phase: g.turnPhase
     },
 
-    status: g.status
+    status: g.status,
+    // Identificador de la partida en estadísticas: al reanudar se retoma
+    // ESE registro en vez de crear uno nuevo, para que cerrar la app a
+    // medias no cuente como dos partidas ni como un abandono.
+    statsGameId: g.statsGameId || null
   };
 }
 
@@ -166,7 +170,8 @@ export function restoreGameState(snapshot) {
     lastRolledValue: snapshot.turn.lastRolledValue,
     turnPhase: snapshot.turn.phase || 'awaiting-roll',
     status: snapshot.status,
-    events: Array.isArray(snapshot.events) ? snapshot.events.slice() : []
+    events: Array.isArray(snapshot.events) ? snapshot.events.slice() : [],
+    statsGameId: snapshot.statsGameId || null
   };
 }
 

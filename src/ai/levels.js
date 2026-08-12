@@ -44,6 +44,12 @@ export const AI_LEVELS = {
 // Cada rival tiene retrato propio (rivales/<id>.png, recortados de la
 // hoja de marca con fondo transparente para que funcionen igual en tema
 // claro y oscuro) y un color que lo acompaña en bordes y distintivos.
+// Versión del comportamiento de la IA, independiente de la versión de la
+// app. Cada partida guarda la suya, para poder comparar estadísticamente
+// "Circuit v1" contra "Circuit v2" aunque NEXTRI haya cambiado por medio
+// por motivos que no tienen nada que ver con cómo juega.
+export const AI_VERSION = 1;
+
 export const RIVALES = {
   delta: {
     nivel: 'easy', nombre: 'Delta', apodo: 'Espontáneo', color: '#6bcb77',
