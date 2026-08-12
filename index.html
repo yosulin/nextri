@@ -649,9 +649,7 @@
     box-shadow: 0 8px 20px -10px rgba(0,0,0,.35);
   }
   .corner-btn.bottom-left { left: 16px; }
-  /* Vuelta a ajustes: solo tiene sentido con una partida en marcha */
-  .corner-btn.top-left { top: 12px; left: 12px; bottom: auto; display: none; }
-  body.in-game .corner-btn.top-left { display: flex; }
+
   .corner-btn.bottom-right { right: 16px; }
   .corner-btn:hover { color: var(--text); border-color: var(--p1-color); }
 
@@ -885,7 +883,7 @@
        vez de una imagen recortada. Escala nítido a cualquier densidad de
        pantalla, se adapta solo a los dos temas (sin necesitar dos
        versiones) y lo leen los buscadores y lectores de pantalla. -->
-  <img class="marca-simbolo" src="logo-marca.svg?v=2.72" alt="" aria-hidden="true">
+  <img class="marca-simbolo" src="logo-marca.svg?v=2.73" alt="" aria-hidden="true">
   <h1 class="marca-texto">NEXTRI</h1>
 </div>
 <p class="marca-lema">cada línea cuenta</p>
@@ -1048,13 +1046,6 @@
 </div>
 
 <!-- Tema y info (esquinas, como en elige-tu-pan-quiz) -->
-<button class="corner-btn top-left" id="ajustesBtn" data-accion="menu" aria-label="Volver a ajustes" title="Cambiar ajustes">
-  <svg viewBox="0 0 24 24" width="22" height="22" fill="none">
-    <circle cx="12" cy="12" r="3.2" stroke="currentColor" stroke-width="2"/>
-    <path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.2 5.2l2.1 2.1M16.7 16.7l2.1 2.1M18.8 5.2l-2.1 2.1M7.3 16.7l-2.1 2.1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-  </svg>
-</button>
-
 <button class="corner-btn bottom-left" id="themeToggleBtn" data-accion="tema" aria-label="Cambiar tema" title="Cambiar tema">
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" id="themeIcon">
     <path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
@@ -1085,26 +1076,26 @@
 // global — funcionaba, pero nada declaraba qué necesitaba cada uno, y una
 // mezcla de versiones en caché podía emparejar mitades incompatibles sin
 // que nada lo detectara.
-import { seedRng, rngNextFrom, rngIntFrom, getRngSeed, getRngState, restoreRngState } from './src/game/random.js?v=2.72';
-import { dist, distSq, segmentPassesOverCircle, pointInTriangle, segmentsIntersect } from './src/game/geometry.js?v=2.72';
+import { seedRng, rngNextFrom, rngIntFrom, getRngSeed, getRngState, restoreRngState } from './src/game/random.js?v=2.73';
+import { dist, distSq, segmentPassesOverCircle, pointInTriangle, segmentsIntersect } from './src/game/geometry.js?v=2.73';
 import { MOVE_REASON_TEXT, edgeKey, edgeExists, connectionCount, areAdjacent,
-         lineIntersectsAny, findNewTriangles, triangleTraps, checkMoveValidity } from './src/game/rules.js?v=2.72';
+         lineIntersectsAny, findNewTriangles, triangleTraps, checkMoveValidity } from './src/game/rules.js?v=2.73';
 import { ADJACENCY_TARGET, generateCirclePositions, buildCandidateGraph,
-         attemptBoardGeneration, chooseAdjacency, finalizeAdjacency } from './src/game/board.js?v=2.72';
+         attemptBoardGeneration, chooseAdjacency, finalizeAdjacency } from './src/game/board.js?v=2.73';
 import { createPlayer, playerById, nextPlayerId, applyAction, hasAnyLegalMove,
-         replayFromLog } from './src/game/engine.js?v=2.72';
+         replayFromLog } from './src/game/engine.js?v=2.73';
 import { STATE_SCHEMA_VERSION, RULES_VERSION, serializeGameState, restoreGameState,
-         migrateGameSnapshot, isValidGameSnapshot } from './src/game/state.js?v=2.72';
-import { AI_LEVELS, setDifficulty, getDifficulty, RIVALES, setRival, getRival } from './src/ai/levels.js?v=2.72';
-import { chooseAIMove, createsScoringReply } from './src/ai/ai.js?v=2.72';
-import { saveGame, loadSavedGame, clearSavedGame, hasSavedGame } from './src/platform/storage.js?v=2.72';
+         migrateGameSnapshot, isValidGameSnapshot } from './src/game/state.js?v=2.73';
+import { AI_LEVELS, setDifficulty, getDifficulty, RIVALES, setRival, getRival } from './src/ai/levels.js?v=2.73';
+import { chooseAIMove, createsScoringReply } from './src/ai/ai.js?v=2.73';
+import { saveGame, loadSavedGame, clearSavedGame, hasSavedGame } from './src/platform/storage.js?v=2.73';
 // ── Constantes ──────────────────────────────────────────────────────────────
 // Única fuente de la versión visible — antes se escribía a mano en tres
 // sitios (aquí, el panel de info, y el CACHE de sw.js) y se desincronizaban
 // entre sí. sw.js sigue siendo aparte por necesidad (un service worker no
 // puede leer esta constante, vive en otro archivo) — al subir de versión,
 // solo hace falta tocar ESTA línea y la de sw.js, no una tercera copia más.
-const APP_VERSION = 'v2.72';
+const APP_VERSION = 'v2.73';
 
 // Nombre del producto en un solo sitio. Si algún día cambia (NEXTRI u
 // otro), esto evita perseguirlo por cabecera, aviso de rotación, panel de
@@ -2782,7 +2773,7 @@ function pintarAvataresRivales() {
     if (!r) return;
     b.style.setProperty('--rival-color', r.color);
     const hueco = b.querySelector('.rival-avatar');
-    if (hueco) hueco.innerHTML = `<img src="${r.retrato}?v=2.72" alt="" loading="lazy">`;
+    if (hueco) hueco.innerHTML = `<img src="${r.retrato}?v=2.73" alt="" loading="lazy">`;
   });
 }
 
@@ -2799,7 +2790,7 @@ function elegirRival(id) {
   const ficha = document.getElementById('rivalDesc');
   ficha.style.setProperty('--rival-color', r.color);
   ficha.innerHTML =
-    `<span class="rd-avatar"><img src="${r.retrato}?v=2.72" alt=""></span>` +
+    `<span class="rd-avatar"><img src="${r.retrato}?v=2.73" alt=""></span>` +
     `<span><strong>${escapeHtml(r.nombre)} · ${escapeHtml(r.apodo)}</strong>${escapeHtml(r.descripcion)}</span>`;
   actualizarTextoJugar();
 }
@@ -2866,7 +2857,7 @@ function updateRecHint(n, val) {
 // contra quién juegas sin leer el nombre.
 function avatarDeRival(nombre) {
   const r = Object.values(RIVALES).find(x => x.nombre === nombre);
-  return r ? `<span class="card-avatar"><img src="${r.retrato}?v=2.72" alt=""></span>` : '🤖';
+  return r ? `<span class="card-avatar"><img src="${r.retrato}?v=2.73" alt=""></span>` : '🤖';
 }
 
 function buildGameUI() {

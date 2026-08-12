@@ -87,9 +87,10 @@ test('la aplicación arranca y se puede jugar', async ({ page }) => {
   await expect(page.locator('#gameUI')).toHaveClass(/is-active/);
 
   // Y la salida que faltaba: volver al menú a cambiar de rival o tablero.
-  await page.locator('#ajustesBtn').click();
+  await page.locator('[data-accion="nuevo"]').click();
+  await page.locator('[data-accion="menu"]').first().click();
   await expect(page.locator('#gameUI')).not.toHaveClass(/is-active/);
-  await expect(page.locator('.marca-lema, .marca-texto').first()).toBeVisible();
+  await expect(page.locator('.marca-texto')).toBeVisible();
 
   expect(errores, 'la página no debe lanzar ninguna excepción').toEqual([]);
 });
