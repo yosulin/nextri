@@ -183,7 +183,7 @@
   .player-score { font-family: 'Fredoka One', cursive; font-size: 1.8rem; line-height: 1; }
   .player-initial { font-size: .8rem; font-weight: 600; }
   .card-avatar { display: inline-block; width: 22px; height: 22px; vertical-align: middle; }
-  .card-avatar svg { width: 100%; height: 100%; }
+  .card-avatar img { width: 100%; height: 100%; object-fit: contain; }
 
   /* Con 4-6 jugadores el tamaño cómodo de 2 no cabe en un móvil: se
      encoge lo justo (tipografía, relleno y huecos) en vez de dejar que la
@@ -682,8 +682,8 @@
   .rival-btn:active { transform: scale(.97); }
   /* Cada rival lleva su propio color de marca; el avatar lo hereda con
      currentColor, así que el SVG no necesita saber nada de temas. */
-  .rival-avatar { display: block; width: 46px; height: 46px; color: var(--rival-color, var(--muted)); }
-  .rival-avatar svg { width: 100%; height: 100%; }
+  .rival-avatar { display: block; width: 56px; height: 56px; }
+  .rival-avatar img { width: 100%; height: 100%; object-fit: contain; }
   .rival-btn .rival-name { font-weight: 800; font-size: .92rem; color: var(--text); }
   .rival-btn .rival-tag { font-size: .66rem; color: var(--muted); }
   .rival-btn.is-active { border-color: var(--rival-color, var(--p2-color)); }
@@ -710,7 +710,7 @@
     margin-top: 12px; font-size: .82rem; color: var(--muted); line-height: 1.35;
   }
   .rival-desc .rd-avatar { flex-shrink: 0; width: 38px; height: 38px; color: var(--rival-color); }
-  .rival-desc .rd-avatar svg { width: 100%; height: 100%; }
+  .rival-desc .rd-avatar img { width: 100%; height: 100%; object-fit: contain; }
   .rival-desc strong { display: block; color: var(--text); font-size: .92rem; }
   .rival-rec {
     display: inline-block; font-size: .68rem; font-weight: 700;
@@ -883,7 +883,7 @@
     </div>
 
     <!-- Opciones secundarias: no estorban la decisión principal -->
-    <details class="setup-options" id="opcionesPartida" open>
+    <details class="setup-options" id="opcionesPartida">
       <summary>Opciones de partida <span class="options-summary" id="optionsSummary"></span></summary>
     <div class="setup-section">
       <div class="setup-label">Círculos en el tablero</div>
@@ -999,26 +999,26 @@
 // global — funcionaba, pero nada declaraba qué necesitaba cada uno, y una
 // mezcla de versiones en caché podía emparejar mitades incompatibles sin
 // que nada lo detectara.
-import { seedRng, rngNextFrom, rngIntFrom, getRngSeed, getRngState, restoreRngState } from './src/game/random.js?v=2.66';
-import { dist, distSq, segmentPassesOverCircle, pointInTriangle, segmentsIntersect } from './src/game/geometry.js?v=2.66';
+import { seedRng, rngNextFrom, rngIntFrom, getRngSeed, getRngState, restoreRngState } from './src/game/random.js?v=2.67';
+import { dist, distSq, segmentPassesOverCircle, pointInTriangle, segmentsIntersect } from './src/game/geometry.js?v=2.67';
 import { MOVE_REASON_TEXT, edgeKey, edgeExists, connectionCount, areAdjacent,
-         lineIntersectsAny, findNewTriangles, triangleTraps, checkMoveValidity } from './src/game/rules.js?v=2.66';
+         lineIntersectsAny, findNewTriangles, triangleTraps, checkMoveValidity } from './src/game/rules.js?v=2.67';
 import { ADJACENCY_TARGET, generateCirclePositions, buildCandidateGraph,
-         attemptBoardGeneration, chooseAdjacency, finalizeAdjacency } from './src/game/board.js?v=2.66';
+         attemptBoardGeneration, chooseAdjacency, finalizeAdjacency } from './src/game/board.js?v=2.67';
 import { createPlayer, playerById, nextPlayerId, applyAction, hasAnyLegalMove,
-         replayFromLog } from './src/game/engine.js?v=2.66';
+         replayFromLog } from './src/game/engine.js?v=2.67';
 import { STATE_SCHEMA_VERSION, RULES_VERSION, serializeGameState, restoreGameState,
-         migrateGameSnapshot, isValidGameSnapshot } from './src/game/state.js?v=2.66';
-import { AI_LEVELS, setDifficulty, getDifficulty, RIVALES, setRival, getRival } from './src/ai/levels.js?v=2.66';
-import { chooseAIMove, createsScoringReply } from './src/ai/ai.js?v=2.66';
-import { saveGame, loadSavedGame, clearSavedGame, hasSavedGame } from './src/platform/storage.js?v=2.66';
+         migrateGameSnapshot, isValidGameSnapshot } from './src/game/state.js?v=2.67';
+import { AI_LEVELS, setDifficulty, getDifficulty, RIVALES, setRival, getRival } from './src/ai/levels.js?v=2.67';
+import { chooseAIMove, createsScoringReply } from './src/ai/ai.js?v=2.67';
+import { saveGame, loadSavedGame, clearSavedGame, hasSavedGame } from './src/platform/storage.js?v=2.67';
 // ── Constantes ──────────────────────────────────────────────────────────────
 // Única fuente de la versión visible — antes se escribía a mano en tres
 // sitios (aquí, el panel de info, y el CACHE de sw.js) y se desincronizaban
 // entre sí. sw.js sigue siendo aparte por necesidad (un service worker no
 // puede leer esta constante, vive en otro archivo) — al subir de versión,
 // solo hace falta tocar ESTA línea y la de sw.js, no una tercera copia más.
-const APP_VERSION = 'v2.66';
+const APP_VERSION = 'v2.67';
 
 // Nombre del producto en un solo sitio. Si algún día cambia (NEXTRI u
 // otro), esto evita perseguirlo por cabecera, aviso de rotación, panel de
@@ -2675,7 +2675,7 @@ function pintarAvataresRivales() {
     if (!r) return;
     b.style.setProperty('--rival-color', r.color);
     const hueco = b.querySelector('.rival-avatar');
-    if (hueco) hueco.innerHTML = r.avatar;
+    if (hueco) hueco.innerHTML = `<img src="${r.retrato}?v=2.67" alt="" loading="lazy">`;
   });
 }
 
@@ -2692,7 +2692,7 @@ function elegirRival(id) {
   const ficha = document.getElementById('rivalDesc');
   ficha.style.setProperty('--rival-color', r.color);
   ficha.innerHTML =
-    `<span class="rd-avatar">${r.avatar}</span>` +
+    `<span class="rd-avatar"><img src="${r.retrato}?v=2.67" alt=""></span>` +
     `<span><strong>${escapeHtml(r.nombre)} · ${escapeHtml(r.apodo)}</strong>${escapeHtml(r.descripcion)}</span>`;
   actualizarTextoJugar();
 }
@@ -2759,7 +2759,7 @@ function updateRecHint(n, val) {
 // contra quién juegas sin leer el nombre.
 function avatarDeRival(nombre) {
   const r = Object.values(RIVALES).find(x => x.nombre === nombre);
-  return r ? `<span class="card-avatar" style="color:${r.color}">${r.avatar}</span>` : '🤖';
+  return r ? `<span class="card-avatar"><img src="${r.retrato}?v=2.67" alt=""></span>` : '🤖';
 }
 
 function buildGameUI() {
