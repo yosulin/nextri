@@ -22,9 +22,9 @@
 // petaría al cargar — por eso el registro de window.circlesAI() se quedó
 // allí. Dentro de las funciones no hay problema: se leen al llamarlas.
 
-import { AI_LEVELS } from './levels.js?v=2.68';
-import { checkMoveValidity, findNewTriangles, edgeExists, edgeKey } from '../game/rules.js?v=2.68';
-import { rngNextFrom, rngIntFrom } from '../game/random.js?v=2.68';
+import { AI_LEVELS } from './levels.js?v=2.69';
+import { checkMoveValidity, findNewTriangles, edgeExists, edgeKey } from '../game/rules.js?v=2.69';
+import { rngNextFrom, rngIntFrom } from '../game/random.js?v=2.69';
 
 // isAITurn() vive ahora en index.html: depende del turno actual de la
 // interfaz, no del motor.

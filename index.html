@@ -431,16 +431,21 @@
     background: var(--surface);
     border: 2px solid var(--border);
     border-radius: 20px;
-    padding: 24px 20px;
+    padding: clamp(14px, 3.5vw, 24px) clamp(12px, 3.5vw, 20px);
     width: 100%;
     max-width: 480px;
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: clamp(12px, 2.5vh, 20px);
   }
-  .setup-section { display: flex; flex-direction: column; gap: 10px; }
+  #setupPanel {
+    display: flex; flex-direction: column; align-items: center;
+    gap: clamp(10px, 2.5vh, 16px);
+    width: 100%; max-width: 480px;
+  }
+  .setup-section { display: flex; flex-direction: column; gap: clamp(6px, 1.6vh, 10px); }
   .setup-label {
-    font-size: .75rem;
+    font-size: clamp(.68rem, 3vw, .75rem);
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 1px;
@@ -647,14 +652,37 @@
   .corner-btn.bottom-right { right: 16px; }
   .corner-btn:hover { color: var(--text); border-color: var(--p1-color); }
 
-  h1 { line-height: 0; }
-  h1 img { width: min(72vw, 300px); height: auto; }
-  /* Una u otra según el tema, sin JavaScript de por medio */
-  .logo-oscuro { display: block; margin: 0 auto; }
-  .logo-claro { display: none; }
-  [data-theme='light'] .logo-oscuro { display: none; }
-  [data-theme='light'] .logo-claro { display: block; margin: 0 auto; }
-  body.in-game h1 img { width: min(46vw, 190px); }
+  /* ── Logotipo ── */
+  .marca {
+    display: flex; align-items: center; justify-content: center;
+    gap: clamp(6px, 2vw, 12px);
+  }
+  .marca-simbolo {
+    width: clamp(34px, 11vw, 54px);
+    height: clamp(34px, 11vw, 54px);
+    flex-shrink: 0;
+  }
+  .marca-texto {
+    font-family: 'Nunito', sans-serif;
+    font-weight: 900;
+    font-size: clamp(1.7rem, 8.5vw, 2.6rem);
+    letter-spacing: clamp(1px, .6vw, 3px);
+    line-height: 1;
+    color: var(--text);
+  }
+  .marca-lema {
+    text-align: center;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 600;
+    font-size: clamp(.72rem, 3.4vw, .95rem);
+    letter-spacing: .4px;
+    color: var(--p2-color);
+    margin-top: 2px;
+  }
+  /* En partida el logotipo cede sitio al tablero */
+  body.in-game .marca-simbolo { width: 26px; height: 26px; }
+  body.in-game .marca-texto { font-size: 1.15rem; letter-spacing: 1px; }
+  body.in-game .marca-lema { display: none; }
 
   .info-lema { font-size: .8rem; color: var(--muted); margin-bottom: 12px; }
 
@@ -663,28 +691,28 @@
   .mode-btn {
     flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;
     background: var(--surface); border: 2px solid var(--border); border-radius: 14px;
-    padding: 12px 8px; color: var(--muted); cursor: pointer;
-    font-family: 'Nunito', sans-serif; font-weight: 700; font-size: .9rem;
+    padding: clamp(8px,2.5vw,12px) 8px; color: var(--muted); cursor: pointer;
+    font-family: 'Nunito', sans-serif; font-weight: 700; font-size: clamp(.8rem,3.5vw,.9rem);
     transition: border-color .2s, color .2s;
   }
-  .mode-btn .mode-icon { font-size: 1.4rem; }
+  .mode-btn .mode-icon { font-size: clamp(1.1rem, 5vw, 1.4rem); }
   .mode-btn.is-active { border-color: var(--p1-color); color: var(--p1-color); }
 
   .rival-row { display: flex; gap: 8px; width: 100%; align-items: stretch; }
   .rival-btn {
     position: relative;
-    flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 3px;
-    background: var(--surface); border: 2px solid var(--border); border-radius: 16px;
-    padding: 14px 6px 12px; cursor: pointer; font-family: 'Nunito', sans-serif;
+    flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 2px;
+    background: var(--surface); border: 2px solid var(--border); border-radius: 14px;
+    padding: clamp(8px, 2.5vw, 14px) 4px clamp(8px, 2vw, 12px); cursor: pointer; font-family: 'Nunito', sans-serif;
     transition: border-color .2s, transform .15s;
   }
   .rival-btn:active { transform: scale(.97); }
   /* Cada rival lleva su propio color de marca; el avatar lo hereda con
      currentColor, así que el SVG no necesita saber nada de temas. */
-  .rival-avatar { display: block; width: 56px; height: 56px; }
+  .rival-avatar { display: block; width: clamp(38px, 13vw, 56px); height: clamp(38px, 13vw, 56px); }
   .rival-avatar img { width: 100%; height: 100%; object-fit: contain; }
-  .rival-btn .rival-name { font-weight: 800; font-size: .92rem; color: var(--text); }
-  .rival-btn .rival-tag { font-size: .66rem; color: var(--muted); }
+  .rival-btn .rival-name { font-weight: 800; font-size: clamp(.78rem, 3.4vw, .92rem); color: var(--text); }
+  .rival-btn .rival-tag { font-size: clamp(.58rem, 2.6vw, .66rem); color: var(--muted); }
   .rival-btn.is-active { border-color: var(--rival-color, var(--p2-color)); }
   .rival-btn.is-active .rival-name { color: var(--rival-color, var(--p2-color)); }
   .rival-check {
@@ -705,8 +733,8 @@
   /* Ficha del rival elegido: explica la elección sin obligar a probarlos */
   .rival-desc {
     display: flex; align-items: center; gap: 12px; text-align: left;
-    background: var(--p2-light); border-radius: 14px; padding: 12px 14px;
-    margin-top: 12px; font-size: .82rem; color: var(--muted); line-height: 1.35;
+    background: var(--p2-light); border-radius: 14px; padding: clamp(8px,2.5vw,12px) 12px;
+    margin-top: 10px; font-size: clamp(.74rem, 3.2vw, .82rem); color: var(--muted); line-height: 1.35;
   }
   .rival-desc .rd-avatar { flex-shrink: 0; width: 38px; height: 38px; color: var(--rival-color); }
   .rival-desc .rd-avatar img { width: 100%; height: 100%; object-fit: contain; }
@@ -820,16 +848,18 @@
 </head>
 <body>
 
-<h1 id="tituloApp">
-  <!-- El logotipo lleva ya el nombre y el lema. Dos versiones porque el
-       texto de la marca es azul casi negro y sobre el tema oscuro no se
-       leería; el alt mantiene el nombre para lectores de pantalla. -->
-  <img src="logo.png?v=2.68" alt="NEXTRI · cada línea cuenta" class="logo-claro">
-  <img src="logo-oscuro.png?v=2.68" alt="NEXTRI · cada línea cuenta" class="logo-oscuro">
-</h1>
+<div class="marca">
+  <!-- Logotipo compuesto: la marca en SVG + el nombre como TEXTO REAL, en
+       vez de una imagen recortada. Escala nítido a cualquier densidad de
+       pantalla, se adapta solo a los dos temas (sin necesitar dos
+       versiones) y lo leen los buscadores y lectores de pantalla. -->
+  <img class="marca-simbolo" src="logo-marca.svg?v=2.69" alt="" aria-hidden="true">
+  <h1 class="marca-texto">NEXTRI</h1>
+</div>
+<p class="marca-lema">cada línea cuenta</p>
 
 <!-- Config de nombres -->
-<div id="setupPanel" style="display:flex;flex-direction:column;align-items:center;gap:16px;width:100%;max-width:480px;">
+<div id="setupPanel">
   <div class="setup-box">
 
     <!-- Cómo jugar: Solo o Local (queda sitio para 'online') -->
@@ -1002,26 +1032,26 @@
 // global — funcionaba, pero nada declaraba qué necesitaba cada uno, y una
 // mezcla de versiones en caché podía emparejar mitades incompatibles sin
 // que nada lo detectara.
-import { seedRng, rngNextFrom, rngIntFrom, getRngSeed, getRngState, restoreRngState } from './src/game/random.js?v=2.68';
-import { dist, distSq, segmentPassesOverCircle, pointInTriangle, segmentsIntersect } from './src/game/geometry.js?v=2.68';
+import { seedRng, rngNextFrom, rngIntFrom, getRngSeed, getRngState, restoreRngState } from './src/game/random.js?v=2.69';
+import { dist, distSq, segmentPassesOverCircle, pointInTriangle, segmentsIntersect } from './src/game/geometry.js?v=2.69';
 import { MOVE_REASON_TEXT, edgeKey, edgeExists, connectionCount, areAdjacent,
-         lineIntersectsAny, findNewTriangles, triangleTraps, checkMoveValidity } from './src/game/rules.js?v=2.68';
+         lineIntersectsAny, findNewTriangles, triangleTraps, checkMoveValidity } from './src/game/rules.js?v=2.69';
 import { ADJACENCY_TARGET, generateCirclePositions, buildCandidateGraph,
-         attemptBoardGeneration, chooseAdjacency, finalizeAdjacency } from './src/game/board.js?v=2.68';
+         attemptBoardGeneration, chooseAdjacency, finalizeAdjacency } from './src/game/board.js?v=2.69';
 import { createPlayer, playerById, nextPlayerId, applyAction, hasAnyLegalMove,
-         replayFromLog } from './src/game/engine.js?v=2.68';
+         replayFromLog } from './src/game/engine.js?v=2.69';
 import { STATE_SCHEMA_VERSION, RULES_VERSION, serializeGameState, restoreGameState,
-         migrateGameSnapshot, isValidGameSnapshot } from './src/game/state.js?v=2.68';
-import { AI_LEVELS, setDifficulty, getDifficulty, RIVALES, setRival, getRival } from './src/ai/levels.js?v=2.68';
-import { chooseAIMove, createsScoringReply } from './src/ai/ai.js?v=2.68';
-import { saveGame, loadSavedGame, clearSavedGame, hasSavedGame } from './src/platform/storage.js?v=2.68';
+         migrateGameSnapshot, isValidGameSnapshot } from './src/game/state.js?v=2.69';
+import { AI_LEVELS, setDifficulty, getDifficulty, RIVALES, setRival, getRival } from './src/ai/levels.js?v=2.69';
+import { chooseAIMove, createsScoringReply } from './src/ai/ai.js?v=2.69';
+import { saveGame, loadSavedGame, clearSavedGame, hasSavedGame } from './src/platform/storage.js?v=2.69';
 // ── Constantes ──────────────────────────────────────────────────────────────
 // Única fuente de la versión visible — antes se escribía a mano en tres
 // sitios (aquí, el panel de info, y el CACHE de sw.js) y se desincronizaban
 // entre sí. sw.js sigue siendo aparte por necesidad (un service worker no
 // puede leer esta constante, vive en otro archivo) — al subir de versión,
 // solo hace falta tocar ESTA línea y la de sw.js, no una tercera copia más.
-const APP_VERSION = 'v2.68';
+const APP_VERSION = 'v2.69';
 
 // Nombre del producto en un solo sitio. Si algún día cambia (NEXTRI u
 // otro), esto evita perseguirlo por cabecera, aviso de rotación, panel de
@@ -2678,7 +2708,7 @@ function pintarAvataresRivales() {
     if (!r) return;
     b.style.setProperty('--rival-color', r.color);
     const hueco = b.querySelector('.rival-avatar');
-    if (hueco) hueco.innerHTML = `<img src="${r.retrato}?v=2.68" alt="" loading="lazy">`;
+    if (hueco) hueco.innerHTML = `<img src="${r.retrato}?v=2.69" alt="" loading="lazy">`;
   });
 }
 
@@ -2695,7 +2725,7 @@ function elegirRival(id) {
   const ficha = document.getElementById('rivalDesc');
   ficha.style.setProperty('--rival-color', r.color);
   ficha.innerHTML =
-    `<span class="rd-avatar"><img src="${r.retrato}?v=2.68" alt=""></span>` +
+    `<span class="rd-avatar"><img src="${r.retrato}?v=2.69" alt=""></span>` +
     `<span><strong>${escapeHtml(r.nombre)} · ${escapeHtml(r.apodo)}</strong>${escapeHtml(r.descripcion)}</span>`;
   actualizarTextoJugar();
 }
@@ -2762,7 +2792,7 @@ function updateRecHint(n, val) {
 // contra quién juegas sin leer el nombre.
 function avatarDeRival(nombre) {
   const r = Object.values(RIVALES).find(x => x.nombre === nombre);
-  return r ? `<span class="card-avatar"><img src="${r.retrato}?v=2.68" alt=""></span>` : '🤖';
+  return r ? `<span class="card-avatar"><img src="${r.retrato}?v=2.69" alt=""></span>` : '🤖';
 }
 
 function buildGameUI() {

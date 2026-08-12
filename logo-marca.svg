@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300" width="300" height="300">
+  <!-- La N de la marca, sin el recuadro oscuro del icono de la app: aquí
+       va sobre el fondo de la página, sea el tema que sea. -->
+  <g stroke-linecap="round" fill="none" stroke-width="30">
+    <line x1="60" y1="55" x2="60" y2="245" stroke="#2f7ef0"/>
+    <line x1="60" y1="55" x2="240" y2="245" stroke="#2f7ef0"/>
+    <line x1="240" y1="55" x2="240" y2="245" stroke="#ff8c32"/>
+  </g>
+  <circle cx="60" cy="55" r="30" fill="#5b9df8"/>
+  <circle cx="60" cy="245" r="26" fill="#2f7ef0"/>
+  <circle cx="240" cy="55" r="30" fill="#ff8c32"/>
+  <circle cx="240" cy="245" r="26" fill="#2f7ef0"/>
+  <circle cx="150" cy="150" r="22" fill="#5b9df8"/>
+</svg>

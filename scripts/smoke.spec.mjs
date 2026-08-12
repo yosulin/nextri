@@ -34,7 +34,7 @@ test('la aplicación arranca y se puede jugar', async ({ page }) => {
   // información: se comprueba ahí, que sigue siendo señal de que la
   // inicialización llegó a ejecutarse.
   await expect(page.locator('#infoVersion')).not.toBeEmpty();
-  await expect(page.locator('h1 img')).toHaveCount(2); // logotipo en sus dos versiones
+  await expect(page.locator('.marca-texto')).toHaveText('NEXTRI');
   await expect(page.locator('#nameInput0')).toHaveCount(1); // la inicialización corrió
   // Los avatares se pintan desde levels.js al arrancar: si no aparecen,
   // algo falló en esa parte sin lanzar excepción.
@@ -112,3 +112,31 @@ test('cambiar el tema no rompe nada', async ({ page }) => {
   await expect(page.locator('html')).toHaveAttribute('data-theme', /light|dark/);
   expect(errores).toEqual([]);
 });
+
+// El menú debe caber sin desplazamiento en pantallas pequeñas. Josu solo
+// puede probar en su propio móvil, así que esto cubre los tamaños que él
+// no tiene delante: un móvil pequeño, uno normal y uno grande.
+const PANTALLAS = [
+  { nombre: 'móvil pequeño', width: 360, height: 640 },
+  { nombre: 'móvil normal',  width: 390, height: 844 },
+  { nombre: 'móvil grande',  width: 430, height: 932 }
+];
+
+for (const p of PANTALLAS) {
+  test(`el menú cabe sin scroll en ${p.nombre} (${p.width}×${p.height})`, async ({ page }) => {
+    await page.setViewportSize({ width: p.width, height: p.height });
+    await page.goto('/index.html');
+    await expect(page.locator('.marca-texto')).toHaveText('NEXTRI');
+
+    const desborde = await page.evaluate(() => ({
+      alto: document.documentElement.scrollHeight,
+      visible: window.innerHeight,
+      ancho: document.documentElement.scrollWidth,
+      anchoVisible: window.innerWidth
+    }));
+    // Margen de 4px para redondeos de sub-píxel.
+    expect(desborde.ancho, 'no debe haber desplazamiento horizontal').toBeLessThanOrEqual(desborde.anchoVisible + 4);
+    expect(desborde.alto, `el menú se sale ${desborde.alto - desborde.visible}px por abajo`)
+      .toBeLessThanOrEqual(desborde.visible + 4);
+  });
+}
