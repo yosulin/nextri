@@ -30,7 +30,11 @@ test('la aplicación arranca y se puede jugar', async ({ page }) => {
 
   // 1. Arranca y la inicialización ha corrido de verdad (esto es lo que
   //    fallaba en v2.57: la página se veía bien pero no respondía).
-  await expect(page.locator('#versionTag')).not.toBeEmpty();
+  // La versión ya no está en la cabecera (v2.68), solo en el panel de
+  // información: se comprueba ahí, que sigue siendo señal de que la
+  // inicialización llegó a ejecutarse.
+  await expect(page.locator('#infoVersion')).not.toBeEmpty();
+  await expect(page.locator('h1 img')).toHaveCount(2); // logotipo en sus dos versiones
   await expect(page.locator('#nameInput0')).toHaveCount(1); // la inicialización corrió
   // Los avatares se pintan desde levels.js al arrancar: si no aparecen,
   // algo falló en esa parte sin lanzar excepción.

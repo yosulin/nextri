@@ -73,9 +73,6 @@
     font-size: 1.05rem;
     letter-spacing: .5px;
   }
-  body.in-game #versionTag {
-    display: none;
-  }
   body.in-game {
     padding-top: 10px;
   }
@@ -650,13 +647,15 @@
   .corner-btn.bottom-right { right: 16px; }
   .corner-btn:hover { color: var(--text); border-color: var(--p1-color); }
 
-  .tagline {
-    text-align: center;
-    font-size: .78rem;
-    color: var(--muted);
-    letter-spacing: .5px;
-    margin: -6px 0 4px;
-  }
+  h1 { line-height: 0; }
+  h1 img { width: min(72vw, 300px); height: auto; }
+  /* Una u otra según el tema, sin JavaScript de por medio */
+  .logo-oscuro { display: block; margin: 0 auto; }
+  .logo-claro { display: none; }
+  [data-theme='light'] .logo-oscuro { display: none; }
+  [data-theme='light'] .logo-claro { display: block; margin: 0 auto; }
+  body.in-game h1 img { width: min(46vw, 190px); }
+
   .info-lema { font-size: .8rem; color: var(--muted); margin-bottom: 12px; }
 
   /* ── Selector de modo y rivales ── */
@@ -821,9 +820,13 @@
 </head>
 <body>
 
-<h1 id="tituloApp">● NEXTRI</h1>
-<p class="tagline" id="tagline">cada línea cuenta</p>
-<div id="versionTag" style="font-size:.72rem;color:var(--muted);letter-spacing:1px;margin-top:-8px;"></div>
+<h1 id="tituloApp">
+  <!-- El logotipo lleva ya el nombre y el lema. Dos versiones porque el
+       texto de la marca es azul casi negro y sobre el tema oscuro no se
+       leería; el alt mantiene el nombre para lectores de pantalla. -->
+  <img src="logo.png?v=2.68" alt="NEXTRI · cada línea cuenta" class="logo-claro">
+  <img src="logo-oscuro.png?v=2.68" alt="NEXTRI · cada línea cuenta" class="logo-oscuro">
+</h1>
 
 <!-- Config de nombres -->
 <div id="setupPanel" style="display:flex;flex-direction:column;align-items:center;gap:16px;width:100%;max-width:480px;">
@@ -999,26 +1002,26 @@
 // global — funcionaba, pero nada declaraba qué necesitaba cada uno, y una
 // mezcla de versiones en caché podía emparejar mitades incompatibles sin
 // que nada lo detectara.
-import { seedRng, rngNextFrom, rngIntFrom, getRngSeed, getRngState, restoreRngState } from './src/game/random.js?v=2.67';
-import { dist, distSq, segmentPassesOverCircle, pointInTriangle, segmentsIntersect } from './src/game/geometry.js?v=2.67';
+import { seedRng, rngNextFrom, rngIntFrom, getRngSeed, getRngState, restoreRngState } from './src/game/random.js?v=2.68';
+import { dist, distSq, segmentPassesOverCircle, pointInTriangle, segmentsIntersect } from './src/game/geometry.js?v=2.68';
 import { MOVE_REASON_TEXT, edgeKey, edgeExists, connectionCount, areAdjacent,
-         lineIntersectsAny, findNewTriangles, triangleTraps, checkMoveValidity } from './src/game/rules.js?v=2.67';
+         lineIntersectsAny, findNewTriangles, triangleTraps, checkMoveValidity } from './src/game/rules.js?v=2.68';
 import { ADJACENCY_TARGET, generateCirclePositions, buildCandidateGraph,
-         attemptBoardGeneration, chooseAdjacency, finalizeAdjacency } from './src/game/board.js?v=2.67';
+         attemptBoardGeneration, chooseAdjacency, finalizeAdjacency } from './src/game/board.js?v=2.68';
 import { createPlayer, playerById, nextPlayerId, applyAction, hasAnyLegalMove,
-         replayFromLog } from './src/game/engine.js?v=2.67';
+         replayFromLog } from './src/game/engine.js?v=2.68';
 import { STATE_SCHEMA_VERSION, RULES_VERSION, serializeGameState, restoreGameState,
-         migrateGameSnapshot, isValidGameSnapshot } from './src/game/state.js?v=2.67';
-import { AI_LEVELS, setDifficulty, getDifficulty, RIVALES, setRival, getRival } from './src/ai/levels.js?v=2.67';
-import { chooseAIMove, createsScoringReply } from './src/ai/ai.js?v=2.67';
-import { saveGame, loadSavedGame, clearSavedGame, hasSavedGame } from './src/platform/storage.js?v=2.67';
+         migrateGameSnapshot, isValidGameSnapshot } from './src/game/state.js?v=2.68';
+import { AI_LEVELS, setDifficulty, getDifficulty, RIVALES, setRival, getRival } from './src/ai/levels.js?v=2.68';
+import { chooseAIMove, createsScoringReply } from './src/ai/ai.js?v=2.68';
+import { saveGame, loadSavedGame, clearSavedGame, hasSavedGame } from './src/platform/storage.js?v=2.68';
 // ── Constantes ──────────────────────────────────────────────────────────────
 // Única fuente de la versión visible — antes se escribía a mano en tres
 // sitios (aquí, el panel de info, y el CACHE de sw.js) y se desincronizaban
 // entre sí. sw.js sigue siendo aparte por necesidad (un service worker no
 // puede leer esta constante, vive en otro archivo) — al subir de versión,
 // solo hace falta tocar ESTA línea y la de sw.js, no una tercera copia más.
-const APP_VERSION = 'v2.67';
+const APP_VERSION = 'v2.68';
 
 // Nombre del producto en un solo sitio. Si algún día cambia (NEXTRI u
 // otro), esto evita perseguirlo por cabecera, aviso de rotación, panel de
@@ -2675,7 +2678,7 @@ function pintarAvataresRivales() {
     if (!r) return;
     b.style.setProperty('--rival-color', r.color);
     const hueco = b.querySelector('.rival-avatar');
-    if (hueco) hueco.innerHTML = `<img src="${r.retrato}?v=2.67" alt="" loading="lazy">`;
+    if (hueco) hueco.innerHTML = `<img src="${r.retrato}?v=2.68" alt="" loading="lazy">`;
   });
 }
 
@@ -2692,7 +2695,7 @@ function elegirRival(id) {
   const ficha = document.getElementById('rivalDesc');
   ficha.style.setProperty('--rival-color', r.color);
   ficha.innerHTML =
-    `<span class="rd-avatar"><img src="${r.retrato}?v=2.67" alt=""></span>` +
+    `<span class="rd-avatar"><img src="${r.retrato}?v=2.68" alt=""></span>` +
     `<span><strong>${escapeHtml(r.nombre)} · ${escapeHtml(r.apodo)}</strong>${escapeHtml(r.descripcion)}</span>`;
   actualizarTextoJugar();
 }
@@ -2759,7 +2762,7 @@ function updateRecHint(n, val) {
 // contra quién juegas sin leer el nombre.
 function avatarDeRival(nombre) {
   const r = Object.values(RIVALES).find(x => x.nombre === nombre);
-  return r ? `<span class="card-avatar"><img src="${r.retrato}?v=2.67" alt=""></span>` : '🤖';
+  return r ? `<span class="card-avatar"><img src="${r.retrato}?v=2.68" alt=""></span>` : '🤖';
 }
 
 function buildGameUI() {
@@ -2845,15 +2848,12 @@ function conectarAcciones() {
 // como script clásico.
 function iniciarApp() {
   conectarAcciones();
-  document.getElementById('versionTag').textContent = APP_VERSION;
   document.getElementById('infoVersion').textContent = APP_VERSION;
   applyTheme(getInitialTheme());
   initPlayerCountSelector();
   setPlayerCount(2); // mínimo y default: 2 jugadores
-  document.getElementById('tituloApp').textContent = `● ${PRODUCTO}`;
   document.getElementById('infoTitle').textContent = `● ${PRODUCTO}`;
   document.getElementById('portraitMsg').textContent = `${PRODUCTO} se juega en vertical.`;
-  document.getElementById('tagline').textContent = LEMA;
   document.getElementById('infoLema').textContent = LEMA;
   document.title = PRODUCTO;
   pintarAvataresRivales();
