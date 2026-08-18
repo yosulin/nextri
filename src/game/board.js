@@ -16,9 +16,9 @@
 // buildCandidateGraph() DEVUELVE los vecinos en vez de escribir variables
 // globales: quien lo llama decide dónde guardarlos.
 
-import { DIST_EPS, dist, segmentPassesOverCircle } from './geometry.js?v=2.79';
-import { evaluateBoardQuality, BOARD_QUALITY_TARGET } from './board-quality.js?v=2.79';
-import { rngNextFrom } from './random.js?v=2.79';
+import { DIST_EPS, dist, segmentPassesOverCircle } from './geometry.js?v=2.80';
+import { evaluateBoardQuality, BOARD_QUALITY_TARGET } from './board-quality.js?v=2.80';
+import { rngNextFrom } from './random.js?v=2.80';
 
 export function generateCirclePositions(cfg, minDist) {
   const { count, width, height, circleRadius } = cfg;
