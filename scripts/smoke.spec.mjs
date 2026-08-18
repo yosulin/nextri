@@ -58,7 +58,7 @@ test('la aplicación arranca y se puede jugar', async ({ page }) => {
   await expect(page.locator('#randomToggleInput')).toBeChecked();
 
   // 3. Empezar partida
-  await page.locator('#setupPanel [data-accion="empezar"]').click();
+  await page.locator('#startBtn').click();
   await expect(page.locator('#gameUI')).toHaveClass(/is-active/);
 
   // El tablero debe tener círculos pintados: si draw() revienta a medias,
@@ -103,7 +103,7 @@ test('el modo Solo contra la máquina arranca sin errores', async ({ page }) => 
   await expect(page.locator('#soloModeInfo')).toBeVisible();
   await page.locator('[data-accion="rival"][data-rival="vector"]').click();
   await expect(page.locator('#startBtn')).toContainText('Vector');
-  await page.locator('#setupPanel [data-accion="empezar"]').click();
+  await page.locator('#startBtn').click();
   await expect(page.locator('#gameUI')).toHaveClass(/is-active/);
 
   // Dejar que la máquina juegue su turno entero sin reventar
@@ -175,7 +175,7 @@ test('las estadísticas se registran y sobreviven a recargar', async ({ page }) 
   await page.goto('/index.html');
 
   // Partida contra Circuit
-  await page.locator('#setupPanel [data-accion="empezar"]').click();
+  await page.locator('#startBtn').click();
   await expect(page.locator('#gameUI')).toHaveClass(/is-active/);
   await page.locator('#dice').click({ force: true });
   await page.waitForTimeout(1500);
