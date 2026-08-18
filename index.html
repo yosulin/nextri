@@ -448,7 +448,7 @@
   }
   .setup-section { display: flex; flex-direction: column; gap: clamp(6px, 1.6vh, 10px); }
   .setup-label {
-    font-size: clamp(.68rem, 3vw, .75rem);
+    font-size: clamp(.72rem, 3vw, .78rem);
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 1px;
@@ -681,7 +681,7 @@
     text-align: center;
     font-family: 'Nunito', sans-serif;
     font-weight: 600;
-    font-size: clamp(.72rem, 3.4vw, .95rem);
+    font-size: clamp(.8rem, 3.4vw, .95rem);
     letter-spacing: .4px;
     color: var(--p2-color);
     margin-top: 2px;
@@ -697,31 +697,7 @@
      Se recorta lo prescindible antes que dejar que aparezca scroll: el
      lema, los apodos de los rivales y parte de los espacios. La ficha del
      rival elegido se conserva, porque es lo que justifica la elección. */
-  @media (max-height: 700px) {
-    /* El relleno inferior reserva sitio para los botones flotantes; en
-       pantallas bajitas eran los 38px que faltaban para que el menú
-       cupiera. Se recorta junto con el hueco superior. */
-    body { padding: 6px 8px 52px; gap: 6px; }
-    .marca-lema { display: none; }
-    .marca-simbolo { width: 32px; height: 32px; }
-    .marca-texto { font-size: 1.5rem; }
-    .rival-btn .rival-tag { display: none; }
-    .rival-avatar { width: 40px; height: 40px; }
-    .rival-desc { padding: 8px 10px; font-size: .72rem; margin-top: 8px; }
-    .rd-ejes { display: none; }
-    .rival-desc .rd-radar svg { width: 76px; height: 76px; }
-    .setup-box { gap: 9px; padding: 11px; }
-    #setupPanel { gap: 8px; }
-    .mode-btn { padding: 7px 6px; }
-    .mode-btn .mode-icon { font-size: 1rem; }
-    #startBtn { padding: 11px !important; }
-    .rival-rec-badge { font-size: .55rem; padding: 2px 7px; margin-top: 4px; }
-    /* El relleno inferior reserva sitio para los botones flotantes de
-       tema e información. En pantallas bajitas esos botones también
-       encogen, así que hace falta menos hueco. */
-    body { padding: 8px 8px 56px; gap: 8px; }
-    .corner-btn { width: 40px; height: 40px; }
-  }
+
 
   /* ── Ajustes y estadísticas ── */
   .menu-ajustes { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; width: 100%; }
@@ -772,6 +748,30 @@
     line-height: 1.5; padding: 24px 8px;
   }
 
+  /* Barra de acción fija en el menú: el botón principal no debe depender
+     de que el usuario se desplace hasta abajo. El menú puede crecer todo
+     lo que necesite (más rivales, radar, opciones) sin que eso deje el
+     botón de jugar fuera de alcance. */
+  .barra-accion {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    z-index: 20;
+    display: flex; flex-direction: column; gap: 8px;
+    align-items: center;
+    padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
+    background: linear-gradient(to top, var(--bg) 72%, transparent);
+  }
+  body.in-game .barra-accion { display: none; }
+  .barra-accion .btn-new {
+    width: 100%; max-width: 480px;
+    padding: 14px; font-size: 1rem;
+  }
+  #resumeBtn { border-color: var(--p1-color); color: var(--p1-color); }
+  /* Hueco para que el último contenido del menú no quede bajo la barra */
+  body:not(.in-game) { padding-bottom: 150px; }
+  /* Los botones flotantes de tema y ajustes suben por encima de la barra */
+  body:not(.in-game) .corner-btn { bottom: 84px; }
+
   /* ── Selector de modo y rivales ── */
   .mode-row { display: flex; gap: 10px; width: 100%; }
   .mode-btn {
@@ -797,8 +797,8 @@
      currentColor, así que el SVG no necesita saber nada de temas. */
   .rival-avatar { display: block; width: clamp(38px, 13vw, 56px); height: clamp(38px, 13vw, 56px); }
   .rival-avatar img { width: 100%; height: 100%; object-fit: contain; }
-  .rival-btn .rival-name { font-weight: 800; font-size: clamp(.78rem, 3.4vw, .92rem); color: var(--text); }
-  .rival-btn .rival-tag { font-size: clamp(.58rem, 2.6vw, .66rem); color: var(--muted); }
+  .rival-btn .rival-name { font-weight: 800; font-size: clamp(.84rem, 3.4vw, .96rem); color: var(--text); }
+  .rival-btn .rival-tag { font-size: clamp(.7rem, 2.8vw, .78rem); color: var(--muted); }
   .rival-btn.is-active { border-color: var(--rival-color, var(--p2-color)); }
   .rival-btn.is-active .rival-name { color: var(--rival-color, var(--p2-color)); }
   .rival-check {
@@ -809,18 +809,12 @@
     display: none;
   }
   .rival-btn.is-active .rival-check { display: block; }
-  .rival-rec-badge {
-    display: none; margin-top: 6px; font-size: .6rem; font-weight: 700;
-    background: var(--rival-color, var(--p2-color)); color: #fff;
-    border-radius: 999px; padding: 3px 10px; white-space: nowrap;
-  }
-  .rival-btn.is-active .rival-rec-badge { display: inline-block; }
 
   /* Ficha del rival elegido: explica la elección sin obligar a probarlos */
   .rival-desc {
     display: flex; align-items: center; gap: 12px; text-align: left;
     background: var(--p2-light); border-radius: 14px; padding: clamp(8px,2.5vw,12px) 12px;
-    margin-top: 10px; font-size: clamp(.74rem, 3.2vw, .82rem); color: var(--muted); line-height: 1.35;
+    margin-top: 10px; font-size: clamp(.78rem, 3.2vw, .86rem); color: var(--muted); line-height: 1.35;
   }
   .rival-desc .rd-radar { flex-shrink: 0; line-height: 0; }
   .rival-desc .rd-texto { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
@@ -828,9 +822,9 @@
 
   /* Los ejes en texto acompañan al radar: el gráfico se lee de un vistazo
      y aquí queda el detalle para quien lo quiera. */
-  .rd-ejes { display: flex; flex-direction: column; gap: 2px; margin-top: 4px; }
+  .rd-ejes { display: flex; flex-direction: column; gap: 3px; margin-top: 6px; }
   .rd-ejes .eje { display: grid; grid-template-columns: 58px 1fr; align-items: center; gap: 6px; }
-  .rd-ejes .eje i { font-style: normal; font-size: .62rem; color: var(--muted); }
+  .rd-ejes .eje i { font-style: normal; font-size: .72rem; color: var(--muted); }
   .rd-ejes .eje b {
     display: block; height: 4px; border-radius: 999px;
     background: linear-gradient(to right,
@@ -954,7 +948,7 @@
        vez de una imagen recortada. Escala nítido a cualquier densidad de
        pantalla, se adapta solo a los dos temas (sin necesitar dos
        versiones) y lo leen los buscadores y lectores de pantalla. -->
-  <img class="marca-simbolo" src="logo-marca.svg?v=2.80" alt="" aria-hidden="true">
+  <img class="marca-simbolo" src="logo-marca.svg?v=2.81" alt="" aria-hidden="true">
   <h1 class="marca-texto">NEXTRI</h1>
 </div>
 <p class="marca-lema">cada línea cuenta</p>
@@ -988,7 +982,6 @@
           <span class="rival-check" aria-hidden="true">✓</span>
           <span class="rival-avatar"></span>
           <span class="rival-name">Circuit</span><span class="rival-tag">Estratega</span>
-          <span class="rival-rec-badge">★ Recomendado</span>
         </button>
         <button type="button" class="rival-btn" data-accion="rival" data-rival="vector" role="radio" aria-checked="false">
           <span class="rival-avatar"></span>
@@ -1045,8 +1038,14 @@
     </details>
 
   </div>
-  <button class="btn-new" id="resumeBtn" data-accion="continuar" style="display:none;width:100%;max-width:480px;padding:14px;font-size:1rem;border-color:var(--p1-color);color:var(--p1-color);">💾 Continuar partida</button>
-  <button class="btn-new" data-accion="empezar" id="startBtn" style="width:100%;max-width:480px;padding:14px;font-size:1rem;">▶ Empezar</button>
+  </div>
+
+<!-- Barra de acción fija: el botón de jugar SIEMPRE se ve, aunque el menú
+     se desplace. Antes se encogía todo hasta que cupiera sin scroll, lo
+     que dejaba el texto ilegible en pantallas pequeñas. -->
+<div class="barra-accion">
+  <button class="btn-new" id="resumeBtn" data-accion="continuar">💾 Continuar partida</button>
+  <button class="btn-new" data-accion="empezar" id="startBtn">▶ Empezar</button>
 </div>
 
 <div id="portraitGuard" class="portrait-guard" aria-live="polite">
@@ -1192,31 +1191,31 @@
 // global — funcionaba, pero nada declaraba qué necesitaba cada uno, y una
 // mezcla de versiones en caché podía emparejar mitades incompatibles sin
 // que nada lo detectara.
-import { seedRng, rngNextFrom, rngIntFrom, getRngSeed, getRngState, restoreRngState } from './src/game/random.js?v=2.80';
-import { dist, distSq, segmentPassesOverCircle, pointInTriangle, segmentsIntersect } from './src/game/geometry.js?v=2.80';
+import { seedRng, rngNextFrom, rngIntFrom, getRngSeed, getRngState, restoreRngState } from './src/game/random.js?v=2.81';
+import { dist, distSq, segmentPassesOverCircle, pointInTriangle, segmentsIntersect } from './src/game/geometry.js?v=2.81';
 import { MOVE_REASON_TEXT, edgeKey, edgeExists, connectionCount, areAdjacent,
-         lineIntersectsAny, findNewTriangles, triangleTraps, checkMoveValidity } from './src/game/rules.js?v=2.80';
-import { BOARD_GENERATOR_VERSION, BOARD_QUALITY_TARGET } from './src/game/board-quality.js?v=2.80';
+         lineIntersectsAny, findNewTriangles, triangleTraps, checkMoveValidity } from './src/game/rules.js?v=2.81';
+import { BOARD_GENERATOR_VERSION, BOARD_QUALITY_TARGET } from './src/game/board-quality.js?v=2.81';
 import { ADJACENCY_TARGET, generateCirclePositions, buildCandidateGraph,
-         attemptBoardGeneration, chooseAdjacency, finalizeAdjacency } from './src/game/board.js?v=2.80';
+         attemptBoardGeneration, chooseAdjacency, finalizeAdjacency } from './src/game/board.js?v=2.81';
 import { createPlayer, playerById, nextPlayerId, applyAction, hasAnyLegalMove,
-         replayFromLog } from './src/game/engine.js?v=2.80';
+         replayFromLog } from './src/game/engine.js?v=2.81';
 import { STATE_SCHEMA_VERSION, RULES_VERSION, serializeGameState, restoreGameState,
-         migrateGameSnapshot, isValidGameSnapshot } from './src/game/state.js?v=2.80';
-import { svgRadar, perfilDesdeNivel, listaEjes } from './src/ui/radar.js?v=2.80';
-import { AI_VERSION, AI_LEVELS, setDifficulty, getDifficulty, RIVALES, setRival, getRival } from './src/ai/levels.js?v=2.80';
-import { chooseAIMove, createsScoringReply } from './src/ai/ai.js?v=2.80';
-import * as Stats from './src/stats/stats.js?v=2.80';
+         migrateGameSnapshot, isValidGameSnapshot } from './src/game/state.js?v=2.81';
+import { svgRadar, perfilDesdeNivel, listaEjes } from './src/ui/radar.js?v=2.81';
+import { AI_VERSION, AI_LEVELS, setDifficulty, getDifficulty, RIVALES, setRival, getRival } from './src/ai/levels.js?v=2.81';
+import { chooseAIMove, createsScoringReply } from './src/ai/ai.js?v=2.81';
+import * as Stats from './src/stats/stats.js?v=2.81';
 import { aggregateStats, statsByOpponent, statsByCircleCount, ultimasPartidas,
-         formatearDuracion, porcentaje } from './src/stats/aggregates.js?v=2.80';
-import { saveGame, loadSavedGame, clearSavedGame, hasSavedGame } from './src/platform/storage.js?v=2.80';
+         formatearDuracion, porcentaje } from './src/stats/aggregates.js?v=2.81';
+import { saveGame, loadSavedGame, clearSavedGame, hasSavedGame } from './src/platform/storage.js?v=2.81';
 // ── Constantes ──────────────────────────────────────────────────────────────
 // Única fuente de la versión visible — antes se escribía a mano en tres
 // sitios (aquí, el panel de info, y el CACHE de sw.js) y se desincronizaban
 // entre sí. sw.js sigue siendo aparte por necesidad (un service worker no
 // puede leer esta constante, vive en otro archivo) — al subir de versión,
 // solo hace falta tocar ESTA línea y la de sw.js, no una tercera copia más.
-const APP_VERSION = 'v2.80';
+const APP_VERSION = 'v2.81';
 
 // Nombre del producto en un solo sitio. Si algún día cambia (NEXTRI u
 // otro), esto evita perseguirlo por cabecera, aviso de rotación, panel de
@@ -3108,7 +3107,7 @@ function pintarAvataresRivales() {
     if (!r) return;
     b.style.setProperty('--rival-color', r.color);
     const hueco = b.querySelector('.rival-avatar');
-    if (hueco) hueco.innerHTML = `<img src="${r.retrato}?v=2.80" alt="" loading="lazy">`;
+    if (hueco) hueco.innerHTML = `<img src="${r.retrato}?v=2.81" alt="" loading="lazy">`;
   });
 }
 
@@ -3130,7 +3129,7 @@ function elegirRival(id) {
   const ejes = listaEjes(perfil).map(e =>
     `<span class="eje"><i>${escapeHtml(e.etiqueta)}</i><b style="--v:${e.valor}%"></b></span>`).join('');
   ficha.innerHTML =
-    `<span class="rd-radar">${svgRadar(perfil, r.color, 104)}</span>` +
+    `<span class="rd-radar">${svgRadar(perfil, r.color, 108)}</span>` +
     `<span class="rd-texto">` +
       `<strong>${escapeHtml(r.nombre)} · ${escapeHtml(r.apodo)}</strong>` +
       `<span class="rd-desc">${escapeHtml(r.descripcion)}</span>` +
@@ -3201,7 +3200,7 @@ function updateRecHint(n, val) {
 // contra quién juegas sin leer el nombre.
 function avatarDeRival(nombre) {
   const r = Object.values(RIVALES).find(x => x.nombre === nombre);
-  return r ? `<span class="card-avatar"><img src="${r.retrato}?v=2.80" alt=""></span>` : '🤖';
+  return r ? `<span class="card-avatar"><img src="${r.retrato}?v=2.81" alt=""></span>` : '🤖';
 }
 
 function buildGameUI() {

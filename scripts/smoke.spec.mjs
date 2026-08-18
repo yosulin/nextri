@@ -121,9 +121,10 @@ test('cambiar el tema no rompe nada', async ({ page }) => {
   expect(errores).toEqual([]);
 });
 
-// El menú debe caber sin desplazamiento en pantallas pequeñas. Josu solo
-// puede probar en su propio móvil, así que esto cubre los tamaños que él
-// no tiene delante: un móvil pequeño, uno normal y uno grande.
+// Lo que de verdad importa en pantallas pequeñas no es que quepa TODO sin
+// desplazarse — perseguir eso llevaba a encoger el texto hasta dejarlo
+// ilegible — sino que el botón de jugar esté SIEMPRE visible y que nada se
+// salga por los lados. El contenido puede desplazarse en vertical.
 const PANTALLAS = [
   { nombre: 'móvil pequeño', width: 360, height: 640 },
   { nombre: 'móvil normal',  width: 390, height: 844 },
@@ -131,21 +132,38 @@ const PANTALLAS = [
 ];
 
 for (const p of PANTALLAS) {
-  test(`el menú cabe sin scroll en ${p.nombre} (${p.width}×${p.height})`, async ({ page }) => {
+  test(`el menú se usa bien en ${p.nombre} (${p.width}×${p.height})`, async ({ page }) => {
     await page.setViewportSize({ width: p.width, height: p.height });
     await page.goto('/index.html');
     await expect(page.locator('.marca-texto')).toHaveText('NEXTRI');
 
-    const desborde = await page.evaluate(() => ({
-      alto: document.documentElement.scrollHeight,
-      visible: window.innerHeight,
-      ancho: document.documentElement.scrollWidth,
-      anchoVisible: window.innerWidth
+    // El botón principal, visible sin tocar nada
+    const jugar = page.locator('#startBtn');
+    await expect(jugar).toBeInViewport();
+
+    // Y utilizable de verdad: dentro de la pantalla y con altura de sobra
+    // para el dedo (mínimo recomendado en móvil: 44px).
+    const caja = await jugar.boundingBox();
+    expect(caja.y + caja.height, 'el botón no debe quedar cortado por abajo')
+      .toBeLessThanOrEqual(p.height + 1);
+    expect(caja.height, 'el botón debe ser cómodo de pulsar').toBeGreaterThanOrEqual(44);
+
+    // Nada se sale por los lados
+    const ancho = await page.evaluate(() => ({
+      total: document.documentElement.scrollWidth, visible: window.innerWidth
     }));
-    // Margen de 4px para redondeos de sub-píxel.
-    expect(desborde.ancho, 'no debe haber desplazamiento horizontal').toBeLessThanOrEqual(desborde.anchoVisible + 4);
-    expect(desborde.alto, `el menú se sale ${desborde.alto - desborde.visible}px por abajo`)
-      .toBeLessThanOrEqual(desborde.visible + 4);
+    expect(ancho.total, 'no debe haber desplazamiento horizontal')
+      .toBeLessThanOrEqual(ancho.visible + 4);
+
+    // El texto debe ser legible: nada por debajo de 11px
+    const demasiadoPequeño = await page.evaluate(() => {
+      const sel = ['.rival-name', '.rival-tag', '.setup-label', '#startBtn', '.marca-lema'];
+      return sel.flatMap(s => [...document.querySelectorAll(s)])
+        .filter(el => el.offsetParent !== null)
+        .map(el => ({ sel: el.className || el.id, px: parseFloat(getComputedStyle(el).fontSize) }))
+        .filter(x => x.px < 11);
+    });
+    expect(demasiadoPequeño, 'ningún texto por debajo de 11px').toEqual([]);
   });
 }
 
