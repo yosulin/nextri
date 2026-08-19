@@ -635,6 +635,7 @@
   }
 
   /* ── Botones flotantes de esquina (tema, info) ── */
+  body:not(.in-game) > .corner-btn { display: none; }
   .corner-btn {
     position: fixed;
     bottom: 16px;
@@ -677,19 +678,9 @@
     line-height: 1;
     color: var(--text);
   }
-  .marca-lema {
-    text-align: center;
-    font-family: 'Nunito', sans-serif;
-    font-weight: 600;
-    font-size: clamp(.8rem, 3.4vw, .95rem);
-    letter-spacing: .4px;
-    color: var(--p2-color);
-    margin-top: 2px;
-  }
   /* En partida el logotipo cede sitio al tablero */
   body.in-game .marca-simbolo { width: 26px; height: 26px; }
   body.in-game .marca-texto { font-size: 1.15rem; letter-spacing: 1px; }
-  body.in-game .marca-lema { display: none; }
 
   .info-lema { font-size: .8rem; color: var(--muted); margin-bottom: 12px; }
 
@@ -762,15 +753,19 @@
     background: linear-gradient(to top, var(--bg) 72%, transparent);
   }
   body.in-game .barra-accion { display: none; }
-  .barra-accion .btn-new {
+  .fila-accion {
+    display: flex; align-items: center; gap: 10px;
     width: 100%; max-width: 480px;
-    padding: 14px; font-size: 1rem;
   }
+  .fila-accion .btn-new { flex: 1; }
+  .corner-btn.en-barra { position: static; flex-shrink: 0; }
+  .barra-accion .btn-new { padding: 14px; font-size: 1rem; }
+  #resumeBtn { width: 100%; max-width: 480px; }
   #resumeBtn { border-color: var(--p1-color); color: var(--p1-color); }
   /* Hueco para que el último contenido del menú no quede bajo la barra */
-  body:not(.in-game) { padding-bottom: 150px; }
+  body:not(.in-game) { padding-bottom: 132px; }
   /* Los botones flotantes de tema y ajustes suben por encima de la barra */
-  body:not(.in-game) .corner-btn { bottom: 84px; }
+
 
   /* ── Selector de modo y rivales ── */
   .mode-row { display: flex; gap: 10px; width: 100%; }
@@ -948,10 +943,9 @@
        vez de una imagen recortada. Escala nítido a cualquier densidad de
        pantalla, se adapta solo a los dos temas (sin necesitar dos
        versiones) y lo leen los buscadores y lectores de pantalla. -->
-  <img class="marca-simbolo" src="logo-marca.svg?v=2.81" alt="" aria-hidden="true">
+  <img class="marca-simbolo" src="logo-marca.svg?v=2.82" alt="" aria-hidden="true">
   <h1 class="marca-texto">NEXTRI</h1>
 </div>
-<p class="marca-lema">cada línea cuenta</p>
 
 <!-- Config de nombres -->
 <div id="setupPanel">
@@ -1045,7 +1039,21 @@
      que dejaba el texto ilegible en pantallas pequeñas. -->
 <div class="barra-accion">
   <button class="btn-new" id="resumeBtn" data-accion="continuar">💾 Continuar partida</button>
-  <button class="btn-new" data-accion="empezar" id="startBtn">▶ Empezar</button>
+  <div class="fila-accion">
+    <!-- Tema y ajustes viajan DENTRO de la barra: sueltos y flotando
+         acababan pisando el contenido del menú al desplazarse. Aquí su
+         sitio queda reservado y no se solapan con nada. -->
+    <button class="corner-btn en-barra" data-accion="tema" aria-label="Cambiar tema" title="Cambiar tema">
+      <svg id="themeIconMenu" width="18" height="18" viewBox="0 0 24 24" fill="none"></svg>
+    </button>
+    <button class="btn-new" data-accion="empezar" id="startBtn">▶ Empezar</button>
+    <button class="corner-btn en-barra" data-accion="abrir-ajustes" aria-label="Ajustes e información" title="Ajustes">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="3.2" stroke="currentColor" stroke-width="2"/>
+        <path d="M19.4 13.5a7.6 7.6 0 0 0 0-3l1.8-1.4-1.9-3.3-2.2.9a7.6 7.6 0 0 0-2.6-1.5L14.2 3H9.8l-.3 2.2a7.6 7.6 0 0 0-2.6 1.5l-2.2-.9-1.9 3.3 1.8 1.4a7.6 7.6 0 0 0 0 3l-1.8 1.4 1.9 3.3 2.2-.9a7.6 7.6 0 0 0 2.6 1.5l.3 2.2h4.4l.3-2.2a7.6 7.6 0 0 0 2.6-1.5l2.2.9 1.9-3.3-1.8-1.4Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+      </svg>
+    </button>
+  </div>
 </div>
 
 <div id="portraitGuard" class="portrait-guard" aria-live="polite">
@@ -1191,31 +1199,31 @@
 // global — funcionaba, pero nada declaraba qué necesitaba cada uno, y una
 // mezcla de versiones en caché podía emparejar mitades incompatibles sin
 // que nada lo detectara.
-import { seedRng, rngNextFrom, rngIntFrom, getRngSeed, getRngState, restoreRngState } from './src/game/random.js?v=2.81';
-import { dist, distSq, segmentPassesOverCircle, pointInTriangle, segmentsIntersect } from './src/game/geometry.js?v=2.81';
+import { seedRng, rngNextFrom, rngIntFrom, getRngSeed, getRngState, restoreRngState } from './src/game/random.js?v=2.82';
+import { dist, distSq, segmentPassesOverCircle, pointInTriangle, segmentsIntersect } from './src/game/geometry.js?v=2.82';
 import { MOVE_REASON_TEXT, edgeKey, edgeExists, connectionCount, areAdjacent,
-         lineIntersectsAny, findNewTriangles, triangleTraps, checkMoveValidity } from './src/game/rules.js?v=2.81';
-import { BOARD_GENERATOR_VERSION, BOARD_QUALITY_TARGET } from './src/game/board-quality.js?v=2.81';
+         lineIntersectsAny, findNewTriangles, triangleTraps, checkMoveValidity } from './src/game/rules.js?v=2.82';
+import { BOARD_GENERATOR_VERSION, BOARD_QUALITY_TARGET } from './src/game/board-quality.js?v=2.82';
 import { ADJACENCY_TARGET, generateCirclePositions, buildCandidateGraph,
-         attemptBoardGeneration, chooseAdjacency, finalizeAdjacency } from './src/game/board.js?v=2.81';
+         attemptBoardGeneration, chooseAdjacency, finalizeAdjacency } from './src/game/board.js?v=2.82';
 import { createPlayer, playerById, nextPlayerId, applyAction, hasAnyLegalMove,
-         replayFromLog } from './src/game/engine.js?v=2.81';
+         replayFromLog } from './src/game/engine.js?v=2.82';
 import { STATE_SCHEMA_VERSION, RULES_VERSION, serializeGameState, restoreGameState,
-         migrateGameSnapshot, isValidGameSnapshot } from './src/game/state.js?v=2.81';
-import { svgRadar, perfilDesdeNivel, listaEjes } from './src/ui/radar.js?v=2.81';
-import { AI_VERSION, AI_LEVELS, setDifficulty, getDifficulty, RIVALES, setRival, getRival } from './src/ai/levels.js?v=2.81';
-import { chooseAIMove, createsScoringReply } from './src/ai/ai.js?v=2.81';
-import * as Stats from './src/stats/stats.js?v=2.81';
+         migrateGameSnapshot, isValidGameSnapshot } from './src/game/state.js?v=2.82';
+import { svgRadar, perfilDesdeNivel, listaEjes } from './src/ui/radar.js?v=2.82';
+import { AI_VERSION, AI_LEVELS, setDifficulty, getDifficulty, RIVALES, setRival, getRival } from './src/ai/levels.js?v=2.82';
+import { chooseAIMove, createsScoringReply } from './src/ai/ai.js?v=2.82';
+import * as Stats from './src/stats/stats.js?v=2.82';
 import { aggregateStats, statsByOpponent, statsByCircleCount, ultimasPartidas,
-         formatearDuracion, porcentaje } from './src/stats/aggregates.js?v=2.81';
-import { saveGame, loadSavedGame, clearSavedGame, hasSavedGame } from './src/platform/storage.js?v=2.81';
+         formatearDuracion, porcentaje } from './src/stats/aggregates.js?v=2.82';
+import { saveGame, loadSavedGame, clearSavedGame, hasSavedGame } from './src/platform/storage.js?v=2.82';
 // ── Constantes ──────────────────────────────────────────────────────────────
 // Única fuente de la versión visible — antes se escribía a mano en tres
 // sitios (aquí, el panel de info, y el CACHE de sw.js) y se desincronizaban
 // entre sí. sw.js sigue siendo aparte por necesidad (un service worker no
 // puede leer esta constante, vive en otro archivo) — al subir de versión,
 // solo hace falta tocar ESTA línea y la de sw.js, no una tercera copia más.
-const APP_VERSION = 'v2.81';
+const APP_VERSION = 'v2.82';
 
 // Nombre del producto en un solo sitio. Si algún día cambia (NEXTRI u
 // otro), esto evita perseguirlo por cabecera, aviso de rotación, panel de
@@ -1568,11 +1576,14 @@ function applyTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.setAttribute('content', theme === 'light' ? '#f4f6fa' : '#0f1729');
-  const icon = document.getElementById('themeIcon');
-  if (icon) {
-    icon.innerHTML = theme === 'dark'
-      ? '<path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />'
-      : '<circle cx="12" cy="12" r="5" stroke="currentColor" stroke-width="2" /><g stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 1v3M12 20v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M1 12h3M20 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1" /></g>';
+  // Hay dos botones de tema (el del menú y el de partida) y los dos deben
+  // reflejar el estado, así que se rellenan ambos.
+  const dibujo = theme === 'dark'
+    ? '<path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />'
+    : '<circle cx="12" cy="12" r="5" stroke="currentColor" stroke-width="2" /><g stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 1v3M12 20v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M1 12h3M20 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1" /></g>';
+  for (const id of ['themeIcon', 'themeIconMenu']) {
+    const icon = document.getElementById(id);
+    if (icon) icon.innerHTML = dibujo;
   }
   try { localStorage.setItem(THEME_KEY, theme); } catch { /* ignorar */ }
 }
@@ -3107,7 +3118,7 @@ function pintarAvataresRivales() {
     if (!r) return;
     b.style.setProperty('--rival-color', r.color);
     const hueco = b.querySelector('.rival-avatar');
-    if (hueco) hueco.innerHTML = `<img src="${r.retrato}?v=2.81" alt="" loading="lazy">`;
+    if (hueco) hueco.innerHTML = `<img src="${r.retrato}?v=2.82" alt="" loading="lazy">`;
   });
 }
 
@@ -3200,7 +3211,7 @@ function updateRecHint(n, val) {
 // contra quién juegas sin leer el nombre.
 function avatarDeRival(nombre) {
   const r = Object.values(RIVALES).find(x => x.nombre === nombre);
-  return r ? `<span class="card-avatar"><img src="${r.retrato}?v=2.81" alt=""></span>` : '🤖';
+  return r ? `<span class="card-avatar"><img src="${r.retrato}?v=2.82" alt=""></span>` : '🤖';
 }
 
 function buildGameUI() {
