@@ -975,7 +975,7 @@
        vez de una imagen recortada. Escala nítido a cualquier densidad de
        pantalla, se adapta solo a los dos temas (sin necesitar dos
        versiones) y lo leen los buscadores y lectores de pantalla. -->
-  <img class="marca-simbolo" src="logo-marca.svg?v=2.84" alt="" aria-hidden="true">
+  <img class="marca-simbolo" src="logo-marca.svg?v=2.85" alt="" aria-hidden="true">
   <h1 class="marca-texto">NEXTRI</h1>
 </div>
 
@@ -1240,33 +1240,33 @@
 // global — funcionaba, pero nada declaraba qué necesitaba cada uno, y una
 // mezcla de versiones en caché podía emparejar mitades incompatibles sin
 // que nada lo detectara.
-import { seedRng, rngNextFrom, rngIntFrom, getRngSeed, getRngState, restoreRngState } from './src/game/random.js?v=2.84';
-import { dist, distSq, segmentPassesOverCircle, pointInTriangle, segmentsIntersect } from './src/game/geometry.js?v=2.84';
+import { seedRng, rngNextFrom, rngIntFrom, getRngSeed, getRngState, restoreRngState } from './src/game/random.js?v=2.85';
+import { dist, distSq, segmentPassesOverCircle, pointInTriangle, segmentsIntersect } from './src/game/geometry.js?v=2.85';
 import { MOVE_REASON_TEXT, edgeKey, edgeExists, connectionCount, areAdjacent,
-         lineIntersectsAny, findNewTriangles, triangleTraps, checkMoveValidity } from './src/game/rules.js?v=2.84';
-import { BOARD_GENERATOR_VERSION, BOARD_QUALITY_TARGET } from './src/game/board-quality.js?v=2.84';
+         lineIntersectsAny, findNewTriangles, triangleTraps, checkMoveValidity } from './src/game/rules.js?v=2.85';
+import { BOARD_GENERATOR_VERSION, BOARD_QUALITY_TARGET } from './src/game/board-quality.js?v=2.85';
 import { ADJACENCY_TARGET, generateCirclePositions, buildCandidateGraph,
-         attemptBoardGeneration, chooseAdjacency, finalizeAdjacency } from './src/game/board.js?v=2.84';
+         attemptBoardGeneration, chooseAdjacency, finalizeAdjacency } from './src/game/board.js?v=2.85';
 import { createPlayer, playerById, nextPlayerId, applyAction, hasAnyLegalMove,
-         replayFromLog } from './src/game/engine.js?v=2.84';
+         replayFromLog } from './src/game/engine.js?v=2.85';
 import { STATE_SCHEMA_VERSION, RULES_VERSION, serializeGameState, restoreGameState,
-         migrateGameSnapshot, isValidGameSnapshot } from './src/game/state.js?v=2.84';
+         migrateGameSnapshot, isValidGameSnapshot } from './src/game/state.js?v=2.85';
 import { invitadoDeLaSemana, progresoDesbloqueo, estaDesbloqueado, loQueFalta,
-         REQUISITOS_DESBLOQUEO } from './src/ai/invitados.js?v=2.84';
-import { svgRadar, perfilDesdeNivel, listaEjes } from './src/ui/radar.js?v=2.84';
-import { AI_VERSION, AI_LEVELS, setDifficulty, getDifficulty, RIVALES, setRival, getRival } from './src/ai/levels.js?v=2.84';
-import { chooseAIMove, createsScoringReply } from './src/ai/ai.js?v=2.84';
-import * as Stats from './src/stats/stats.js?v=2.84';
+         REQUISITOS_DESBLOQUEO } from './src/ai/invitados.js?v=2.85';
+import { svgRadar, perfilDesdeNivel, listaEjes } from './src/ui/radar.js?v=2.85';
+import { AI_VERSION, AI_LEVELS, setDifficulty, getDifficulty, RIVALES, setRival, getRival } from './src/ai/levels.js?v=2.85';
+import { chooseAIMove, createsScoringReply } from './src/ai/ai.js?v=2.85';
+import * as Stats from './src/stats/stats.js?v=2.85';
 import { victoriasPorRival, aggregateStats, statsByOpponent, statsByCircleCount, ultimasPartidas,
-         formatearDuracion, porcentaje } from './src/stats/aggregates.js?v=2.84';
-import { saveGame, loadSavedGame, clearSavedGame, hasSavedGame } from './src/platform/storage.js?v=2.84';
+         formatearDuracion, porcentaje } from './src/stats/aggregates.js?v=2.85';
+import { saveGame, loadSavedGame, clearSavedGame, hasSavedGame } from './src/platform/storage.js?v=2.85';
 // ── Constantes ──────────────────────────────────────────────────────────────
 // Única fuente de la versión visible — antes se escribía a mano en tres
 // sitios (aquí, el panel de info, y el CACHE de sw.js) y se desincronizaban
 // entre sí. sw.js sigue siendo aparte por necesidad (un service worker no
 // puede leer esta constante, vive en otro archivo) — al subir de versión,
 // solo hace falta tocar ESTA línea y la de sw.js, no una tercera copia más.
-const APP_VERSION = 'v2.84';
+const APP_VERSION = 'v2.85';
 
 // Nombre del producto en un solo sitio. Si algún día cambia (NEXTRI u
 // otro), esto evita perseguirlo por cabecera, aviso de rotación, panel de
@@ -1792,9 +1792,15 @@ function startGame() {
   }
   // Modo "1 jugador": la máquina ocupa el segundo puesto automáticamente
   if (numPlayers === 1) {
-    const rival = getRival();
+    const rival = rivalEfectivo || getRival();
     const maquina = createPlayer(1, { name: rival.nombre, isAI: true });
-    maquina.color = rival.color; // sus triángulos van de su color
+    // Identidad estable del rival, no deducible del nombre visible. Sin
+    // esto, la única pista de contra quién juegas era el texto de la
+    // tarjeta: al reanudar o repetir partida se podía perder, y con los
+    // invitados directamente no había forma de identificarlos.
+    maquina.opponentId = rival.id;
+    maquina.opponentKind = rival.kind;
+    maquina.color = rival.color;
     players.push(maquina);
   }
   // Leer número de círculos del slider
@@ -1841,7 +1847,8 @@ function startGame() {
   const maquina = players.find(p => p.isAI);
   Stats.iniciarPartida({
     mode: gameMode, playerCount: players.length,
-    opponentId: maquina ? Object.keys(RIVALES).find(k => RIVALES[k].nombre === maquina.name) : null,
+    opponentId: maquina ? maquina.opponentId : null,
+    opponentKind: maquina ? maquina.opponentKind : null,
     circleCount: N_CIRCLES, aiVersion: AI_VERSION,
     appVersion: APP_VERSION, rulesVersion: RULES_VERSION,
     startReason: revanchaDe ? 'rematch' : 'new', rematchOfGameId: revanchaDe,
@@ -1877,7 +1884,7 @@ function startGame() {
 // Reanuda la partida guardada. Monta la misma interfaz que startGame()
 // pero SIN generar tablero: la geometría viene del guardado, así que el
 // tablero es exactamente el que se dejó a medias.
-function resumeGame() {
+async function resumeGame() {
   const snapshot = loadSavedGame();
   if (!snapshot) return false;
 
@@ -1897,7 +1904,10 @@ function resumeGame() {
   if (!restaurado) return false;
   aplicarEstadoRestaurado(restaurado);
   // Reanudar retoma el registro existente: mismo gameId, resumedCount++.
-  if (restaurado.statsGameId) Stats.reanudarPartida(restaurado.statsGameId);
+  // Se ESPERA a que termine: es asíncrono, y si la partida aceptara
+  // jugadas antes de que estadísticas hubiera restaurado su estado, esas
+  // primeras jugadas se perderían o irían a un registro equivocado.
+  if (restaurado.statsGameId) await Stats.reanudarPartida(restaurado.statsGameId);
 
   // numPlayers se usa al volver al menú; mantenerlo coherente con lo
   // restaurado (en modo Solo son 2 jugadores pero numPlayers vale 1).
@@ -1941,9 +1951,9 @@ function resumeGame() {
   return true;
 }
 
-function onResumeClick() {
+async function onResumeClick() {
   vibrate(HAPTIC.tap);
-  if (!resumeGame()) {
+  if (!await resumeGame()) {
     // El guardado estaba corrupto o era de un formato antiguo: quitarlo y
     // volver al menú en vez de dejar un botón que no hace nada.
     clearSavedGame();
@@ -3160,6 +3170,9 @@ function setGameMode(modo) {
 // estadísticas ya guardadas, no de un contador aparte que pudiera
 // desincronizarse del historial real.
 let invitadoActual = null;
+// Rival realmente en juego: normalmente el fijo elegido, pero puede ser
+// el invitado de la semana, que no está en RIVALES.
+let rivalEfectivo = null;
 let invitadoDesbloqueado = false;
 
 async function actualizarInvitado() {
@@ -3196,17 +3209,22 @@ function pintarAvataresRivales() {
     if (!r) return;
     b.style.setProperty('--rival-color', r.color);
     const hueco = b.querySelector('.rival-avatar');
-    if (hueco) hueco.innerHTML = `<img src="${r.retrato}?v=2.84" alt="" loading="lazy">`;
+    if (hueco) hueco.innerHTML = `<img src="${r.retrato}?v=2.85" alt="" loading="lazy">`;
   });
 }
 
 function elegirRival(id) {
   vibrate(HAPTIC.tap);
+  rivalEfectivo = null;
   if (id === 'invitado') {
     if (!invitadoDesbloqueado) { mostrarComoDesbloquear(); return; }
     // El invitado usa el mismo motor: solo cambia el perfil y el nombre.
+    // El invitado usa los parámetros del nivel equivalente, pero conserva
+    // SU identidad: en estadísticas debe figurar como el invitado que es,
+    // no como el rival fijo cuyo perfil comparte.
     setRival(invitadoActual.nivel === 'easy' ? 'delta'
            : invitadoActual.nivel === 'hard' ? 'vector' : 'circuit');
+    rivalEfectivo = { ...invitadoActual, kind: 'guest' };
     aiDifficulty = getDifficulty();
     marcarRivalActivo('invitado');
     pintarFichaRival(invitadoActual);
@@ -3320,9 +3338,11 @@ function updateRecHint(n, val) {
 
 // El avatar del rival en su tarjeta, para que se reconozca de un vistazo
 // contra quién juegas sin leer el nombre.
-function avatarDeRival(nombre) {
-  const r = Object.values(RIVALES).find(x => x.nombre === nombre);
-  return r ? `<span class="card-avatar"><img src="${r.retrato}?v=2.84" alt=""></span>` : '🤖';
+function avatarDeRival(id) {
+  // Por identidad, no por nombre visible: dos rivales podrían llamarse
+  // igual, y los invitados no están en RIVALES.
+  const r = RIVALES[id] || (invitadoActual && invitadoActual.id === id ? invitadoActual : null);
+  return r ? `<span class="card-avatar"><img src="${r.retrato}?v=2.85" alt=""></span>` : '🤖';
 }
 
 function buildGameUI() {
@@ -3351,7 +3371,7 @@ function buildGameUI() {
     card.innerHTML = `
       <span class="player-name" id="label${i+1}">${escapeHtml(p.name.toUpperCase())}</span>
       <span class="player-score" id="score${i+1}">0</span>
-      <span class="player-initial" id="init${i+1}">${p.isAI ? avatarDeRival(p.name) : escapeHtml(p.initial)}</span>`;
+      <span class="player-initial" id="init${i+1}">${p.isAI ? avatarDeRival(p.opponentId) : escapeHtml(p.initial)}</span>`;
     if (i === half) panel.appendChild(diceArea);
     panel.appendChild(card);
   });

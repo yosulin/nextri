@@ -268,6 +268,36 @@ conColorMalo.players[1].color = 'javascript:alert(1)';
 store.set(SAVE_KEY, JSON.stringify(conColorMalo));
 check('Un color con formato inválido se rechaza', loadSavedGame() === null);
 
+// AUDITORÍA 001 (P1): la identidad del rival debe sobrevivir a guardar y
+// reanudar, y NO puede depender del nombre visible - dos rivales podrían
+// llamarse igual, y los invitados ni siquiera están en el catálogo fijo.
+store.clear(); failMode = null;
+buildScenario(800000, 6); gameStatus = 'playing';
+players[1].opponentId = 'vampir';
+players[1].opponentKind = 'guest';
+players[1].name = 'Vampir';
+saveGame(estadoVivo());
+const recIdent = loadSavedGame();
+check('la identidad del rival sobrevive a guardar/reanudar',
+  recIdent && recIdent.players[1].opponentId === 'vampir' &&
+  recIdent.players[1].opponentKind === 'guest',
+  recIdent ? JSON.stringify(recIdent.players[1]) : 'no se recuperó');
+
+// Y debe seguir siendo válida aunque el nombre visible cambie: es lo que
+// distingue una identidad estable de un nombre.
+const conOtroNombre = JSON.parse(JSON.stringify(recIdent));
+conOtroNombre.players[1].name = 'Otro nombre cualquiera';
+store.set(SAVE_KEY, JSON.stringify(conOtroNombre));
+const trasRenombrar = loadSavedGame();
+check('la identidad no depende del nombre visible',
+  trasRenombrar && trasRenombrar.players[1].opponentId === 'vampir');
+
+// Una familia inventada no debe colarse
+const familiaMala = JSON.parse(JSON.stringify(recIdent));
+familiaMala.players[1].opponentKind = 'inventada';
+store.set(SAVE_KEY, JSON.stringify(familiaMala));
+check('una familia de rival desconocida se rechaza', loadSavedGame() === null);
+
 console.log('');
 if (failures > 0) { console.error(`${failures} comprobación(es) fallaron`); process.exit(1); }
 console.log('Todas las comprobaciones pasaron.');

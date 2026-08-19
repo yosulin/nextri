@@ -73,7 +73,11 @@ export function setRival(id) {
   if (RIVALES[id]) { rivalElegido = id; aiDifficulty = RIVALES[id].nivel; }
   return rivalElegido;
 }
-export function getRival() { return RIVALES[rivalElegido]; }
+// Devuelve el rival CON su identidad estable: quien lo use no debe tener
+// que deducirla del nombre visible, que puede cambiar o repetirse.
+export function getRival() {
+  return { id: rivalElegido, kind: 'core', ...RIVALES[rivalElegido] };
+}
 
 export let aiDifficulty = 'medium';
 
