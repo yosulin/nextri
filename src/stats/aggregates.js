@@ -193,3 +193,16 @@ export function ultimasPartidas(partidas, limite = 15) {
       duracionMs: p.activeDurationMs
     }));
 }
+
+// Victorias del humano contra cada rival. Lo usa el desbloqueo del
+// invitado semanal: sale de las partidas ya guardadas, sin llevar una
+// cuenta aparte que pudiera desincronizarse del historial real.
+export function victoriasPorRival(partidas) {
+  const salida = {};
+  for (const p of partidas) {
+    if (p.mode !== 'solo' || !p.opponentId) continue;
+    if (p.status !== 'finished' || p.result !== 'human-win') continue;
+    salida[p.opponentId] = (salida[p.opponentId] || 0) + 1;
+  }
+  return salida;
+}

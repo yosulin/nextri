@@ -44,6 +44,9 @@ jobs:
       - name: Radar de perfiles de rival
         run: node scripts/test-radar.cjs
 
+      - name: Invitado semanal y desbloqueo
+        run: node scripts/test-invitados.cjs
+
       - name: Generación de tableros (invariantes y calidad)
         run: node scripts/test-board-gen.cjs 40
 

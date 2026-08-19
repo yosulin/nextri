@@ -39,6 +39,10 @@ test('la aplicación arranca y se puede jugar', async ({ page }) => {
   // Los avatares se pintan desde levels.js al arrancar: si no aparecen,
   // algo falló en esa parte sin lanzar excepción.
   await expect(page.locator('[data-rival="circuit"] .rival-avatar img')).toHaveCount(1);
+  // Cuarta tarjeta: el invitado semanal, bloqueado hasta ganar a los tres
+  await expect(page.locator('[data-accion="rival"]')).toHaveCount(4);
+  await expect(page.locator('#btnInvitado')).toHaveClass(/bloqueado/);
+  await expect(page.locator('#invitadoNombre')).toHaveText('???');
   await expect(page.locator('#rivalDesc')).toContainText('Circuit');
   // Modo Local para probar el flujo de varios jugadores
   await page.locator('[data-accion="modo"][data-modo="local"]').click();

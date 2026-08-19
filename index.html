@@ -696,6 +696,24 @@
      rival elegido se conserva, porque es lo que justifica la elección. */
 
 
+  /* Tarjeta del invitado semanal */
+  .rival-invitado { position: relative; overflow: hidden; }
+  .rival-invitado.bloqueado { cursor: help; }
+  .cortinilla {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    display: flex; align-items: flex-end; justify-content: center;
+    padding-bottom: 6px;
+    background: linear-gradient(to top, var(--border) 60%, color-mix(in srgb, var(--border) 70%, transparent));
+    backdrop-filter: blur(2px);
+    /* La altura la fija el JavaScript según lo que FALTE por desbloquear:
+       tapa entera al principio y se retira conforme avanzas, así que el
+       progreso se ve de un vistazo sin abrir nada. */
+    transition: height .5s ease;
+    border-radius: 12px;
+  }
+  .cortinilla.abierta { display: none; }
+  .cortinilla-txt { font-size: 1.1rem; opacity: .75; }
+
   /* ── Ajustes y estadísticas ── */
   .menu-ajustes { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; width: 100%; }
   .fila-ajuste {
@@ -957,7 +975,7 @@
        vez de una imagen recortada. Escala nítido a cualquier densidad de
        pantalla, se adapta solo a los dos temas (sin necesitar dos
        versiones) y lo leen los buscadores y lectores de pantalla. -->
-  <img class="marca-simbolo" src="logo-marca.svg?v=2.83" alt="" aria-hidden="true">
+  <img class="marca-simbolo" src="logo-marca.svg?v=2.84" alt="" aria-hidden="true">
   <h1 class="marca-texto">NEXTRI</h1>
 </div>
 
@@ -994,6 +1012,15 @@
         <button type="button" class="rival-btn" data-accion="rival" data-rival="vector" role="radio" aria-checked="false">
           <span class="rival-avatar"></span>
           <span class="rival-name">Vector</span><span class="rival-tag">Analista</span>
+        </button>
+        <button type="button" class="rival-btn rival-invitado" id="btnInvitado" data-accion="rival" data-rival="invitado" role="radio" aria-checked="false">
+          <span class="rival-avatar"></span>
+          <span class="rival-name" id="invitadoNombre">?</span>
+          <span class="rival-tag" id="invitadoApodo">Invitado</span>
+          <!-- Cortinilla de bloqueo: su altura baja conforme avanza el
+               progreso, así que se ve cuánto queda de un vistazo sin
+               tener que abrir nada. -->
+          <span class="cortinilla" id="cortinillaInvitado"><span class="cortinilla-txt">🔒</span></span>
         </button>
       </div>
       <div class="rival-desc" id="rivalDesc"></div>
@@ -1213,31 +1240,33 @@
 // global — funcionaba, pero nada declaraba qué necesitaba cada uno, y una
 // mezcla de versiones en caché podía emparejar mitades incompatibles sin
 // que nada lo detectara.
-import { seedRng, rngNextFrom, rngIntFrom, getRngSeed, getRngState, restoreRngState } from './src/game/random.js?v=2.83';
-import { dist, distSq, segmentPassesOverCircle, pointInTriangle, segmentsIntersect } from './src/game/geometry.js?v=2.83';
+import { seedRng, rngNextFrom, rngIntFrom, getRngSeed, getRngState, restoreRngState } from './src/game/random.js?v=2.84';
+import { dist, distSq, segmentPassesOverCircle, pointInTriangle, segmentsIntersect } from './src/game/geometry.js?v=2.84';
 import { MOVE_REASON_TEXT, edgeKey, edgeExists, connectionCount, areAdjacent,
-         lineIntersectsAny, findNewTriangles, triangleTraps, checkMoveValidity } from './src/game/rules.js?v=2.83';
-import { BOARD_GENERATOR_VERSION, BOARD_QUALITY_TARGET } from './src/game/board-quality.js?v=2.83';
+         lineIntersectsAny, findNewTriangles, triangleTraps, checkMoveValidity } from './src/game/rules.js?v=2.84';
+import { BOARD_GENERATOR_VERSION, BOARD_QUALITY_TARGET } from './src/game/board-quality.js?v=2.84';
 import { ADJACENCY_TARGET, generateCirclePositions, buildCandidateGraph,
-         attemptBoardGeneration, chooseAdjacency, finalizeAdjacency } from './src/game/board.js?v=2.83';
+         attemptBoardGeneration, chooseAdjacency, finalizeAdjacency } from './src/game/board.js?v=2.84';
 import { createPlayer, playerById, nextPlayerId, applyAction, hasAnyLegalMove,
-         replayFromLog } from './src/game/engine.js?v=2.83';
+         replayFromLog } from './src/game/engine.js?v=2.84';
 import { STATE_SCHEMA_VERSION, RULES_VERSION, serializeGameState, restoreGameState,
-         migrateGameSnapshot, isValidGameSnapshot } from './src/game/state.js?v=2.83';
-import { svgRadar, perfilDesdeNivel, listaEjes } from './src/ui/radar.js?v=2.83';
-import { AI_VERSION, AI_LEVELS, setDifficulty, getDifficulty, RIVALES, setRival, getRival } from './src/ai/levels.js?v=2.83';
-import { chooseAIMove, createsScoringReply } from './src/ai/ai.js?v=2.83';
-import * as Stats from './src/stats/stats.js?v=2.83';
-import { aggregateStats, statsByOpponent, statsByCircleCount, ultimasPartidas,
-         formatearDuracion, porcentaje } from './src/stats/aggregates.js?v=2.83';
-import { saveGame, loadSavedGame, clearSavedGame, hasSavedGame } from './src/platform/storage.js?v=2.83';
+         migrateGameSnapshot, isValidGameSnapshot } from './src/game/state.js?v=2.84';
+import { invitadoDeLaSemana, progresoDesbloqueo, estaDesbloqueado, loQueFalta,
+         REQUISITOS_DESBLOQUEO } from './src/ai/invitados.js?v=2.84';
+import { svgRadar, perfilDesdeNivel, listaEjes } from './src/ui/radar.js?v=2.84';
+import { AI_VERSION, AI_LEVELS, setDifficulty, getDifficulty, RIVALES, setRival, getRival } from './src/ai/levels.js?v=2.84';
+import { chooseAIMove, createsScoringReply } from './src/ai/ai.js?v=2.84';
+import * as Stats from './src/stats/stats.js?v=2.84';
+import { victoriasPorRival, aggregateStats, statsByOpponent, statsByCircleCount, ultimasPartidas,
+         formatearDuracion, porcentaje } from './src/stats/aggregates.js?v=2.84';
+import { saveGame, loadSavedGame, clearSavedGame, hasSavedGame } from './src/platform/storage.js?v=2.84';
 // ── Constantes ──────────────────────────────────────────────────────────────
 // Única fuente de la versión visible — antes se escribía a mano en tres
 // sitios (aquí, el panel de info, y el CACHE de sw.js) y se desincronizaban
 // entre sí. sw.js sigue siendo aparte por necesidad (un service worker no
 // puede leer esta constante, vive en otro archivo) — al subir de versión,
 // solo hace falta tocar ESTA línea y la de sw.js, no una tercera copia más.
-const APP_VERSION = 'v2.83';
+const APP_VERSION = 'v2.84';
 
 // Nombre del producto en un solo sitio. Si algún día cambia (NEXTRI u
 // otro), esto evita perseguirlo por cabecera, aviso de rotación, panel de
@@ -3126,26 +3155,82 @@ function setGameMode(modo) {
 // Pinta los avatares una sola vez al arrancar. Los SVG viven junto a la
 // definición de cada rival (levels.js), no sueltos en el HTML, así que
 // añadir un rival nuevo no obliga a tocar el marcado.
+// El invitado de la semana: se pinta su nombre y se ajusta la cortinilla
+// de bloqueo según lo que lleve conseguido. Las victorias salen de las
+// estadísticas ya guardadas, no de un contador aparte que pudiera
+// desincronizarse del historial real.
+let invitadoActual = null;
+let invitadoDesbloqueado = false;
+
+async function actualizarInvitado() {
+  invitadoActual = invitadoDeLaSemana();
+  const btn = document.getElementById('btnInvitado');
+  if (!btn) return;
+
+  const victorias = victoriasPorRival(await Stats.todasLasPartidas());
+  const progreso = progresoDesbloqueo(victorias);
+  invitadoDesbloqueado = estaDesbloqueado(victorias);
+
+  btn.style.setProperty('--rival-color', invitadoActual.color);
+  document.getElementById('invitadoNombre').textContent =
+    invitadoDesbloqueado ? invitadoActual.nombre : '???';
+  document.getElementById('invitadoApodo').textContent =
+    invitadoDesbloqueado ? invitadoActual.apodo : 'Invitado';
+
+  const cortinilla = document.getElementById('cortinillaInvitado');
+  // La cortinilla ocupa lo que FALTA: al 0% tapa entero, al 100% desaparece.
+  cortinilla.style.height = `${Math.round((1 - progreso) * 100)}%`;
+  cortinilla.classList.toggle('abierta', invitadoDesbloqueado);
+  btn.classList.toggle('bloqueado', !invitadoDesbloqueado);
+  btn.setAttribute('aria-disabled', invitadoDesbloqueado ? 'false' : 'true');
+
+  const falta = loQueFalta(victorias);
+  btn.title = invitadoDesbloqueado
+    ? `${invitadoActual.nombre} · ${invitadoActual.apodo}`
+    : 'Bloqueado: ' + falta.map(f => `gana ${f.faltan} vez${f.faltan > 1 ? 'es' : ''} a ${f.rival}`).join(', ');
+}
+
 function pintarAvataresRivales() {
   document.querySelectorAll('[data-accion="rival"]').forEach(b => {
     const r = RIVALES[b.dataset.rival];
     if (!r) return;
     b.style.setProperty('--rival-color', r.color);
     const hueco = b.querySelector('.rival-avatar');
-    if (hueco) hueco.innerHTML = `<img src="${r.retrato}?v=2.83" alt="" loading="lazy">`;
+    if (hueco) hueco.innerHTML = `<img src="${r.retrato}?v=2.84" alt="" loading="lazy">`;
   });
 }
 
 function elegirRival(id) {
   vibrate(HAPTIC.tap);
+  if (id === 'invitado') {
+    if (!invitadoDesbloqueado) { mostrarComoDesbloquear(); return; }
+    // El invitado usa el mismo motor: solo cambia el perfil y el nombre.
+    setRival(invitadoActual.nivel === 'easy' ? 'delta'
+           : invitadoActual.nivel === 'hard' ? 'vector' : 'circuit');
+    aiDifficulty = getDifficulty();
+    marcarRivalActivo('invitado');
+    pintarFichaRival(invitadoActual);
+    actualizarTextoJugar();
+    return;
+  }
   setRival(id);
   aiDifficulty = getDifficulty();
+  marcarRivalActivo(id);
+  pintarFichaRival(getRival());
+  actualizarTextoJugar();
+}
+
+function marcarRivalActivo(id) {
   document.querySelectorAll('[data-accion="rival"]').forEach(b => {
     const activo = b.dataset.rival === id;
     b.classList.toggle('is-active', activo);
     b.setAttribute('aria-checked', activo ? 'true' : 'false');
   });
-  const r = getRival();
+}
+
+// Dibuja la ficha de un rival, sea fijo o invitado: los dos tienen nombre,
+// apodo, color, descripción y nivel, así que el mismo código vale.
+function pintarFichaRival(r) {
   const ficha = document.getElementById('rivalDesc');
   ficha.style.setProperty('--rival-color', r.color);
   // El radar se calcula de los parámetros REALES con los que juega, así
@@ -3164,11 +3249,23 @@ function elegirRival(id) {
 }
 
 // El botón dice exactamente qué va a pasar al pulsarlo.
+async function mostrarComoDesbloquear() {
+  const victorias = victoriasPorRival(await Stats.todasLasPartidas());
+  const falta = loQueFalta(victorias);
+  const lista = falta.map(f => {
+    const nombre = RIVALES[f.rival] ? RIVALES[f.rival].nombre : f.rival;
+    return `· Gana ${f.faltan} vez${f.faltan > 1 ? 'es' : ''} más a ${nombre}`;
+  }).join('\n');
+  alert(`Invitado de la semana bloqueado.\n\nPara desbloquearlo:\n${lista}`);
+}
+
 function actualizarTextoJugar() {
   const btn = document.getElementById('startBtn');
   if (!btn) return;
+  const esInvitado = document.querySelector('[data-rival="invitado"].is-active');
+  const nombreRival = esInvitado && invitadoActual ? invitadoActual.nombre : getRival().nombre;
   btn.textContent = (gameMode === 'solo')
-    ? `▶ Jugar contra ${getRival().nombre}`
+    ? `▶ Jugar contra ${nombreRival}`
     : `▶ Jugar ${numPlayers} jugadores`;
 }
 
@@ -3225,7 +3322,7 @@ function updateRecHint(n, val) {
 // contra quién juegas sin leer el nombre.
 function avatarDeRival(nombre) {
   const r = Object.values(RIVALES).find(x => x.nombre === nombre);
-  return r ? `<span class="card-avatar"><img src="${r.retrato}?v=2.83" alt=""></span>` : '🤖';
+  return r ? `<span class="card-avatar"><img src="${r.retrato}?v=2.84" alt=""></span>` : '🤖';
 }
 
 function buildGameUI() {
@@ -3331,6 +3428,7 @@ function iniciarApp() {
   document.getElementById('infoLema').textContent = LEMA;
   document.title = PRODUCTO;
   pintarAvataresRivales();
+  actualizarInvitado();
   elegirRival('circuit');   // rival recomendado por defecto
   setGameMode('solo');      // el modo más probable al abrir en el móvil
   actualizarResumenOpciones();
