@@ -155,6 +155,19 @@ for (const p of PANTALLAS) {
     expect(ancho.total, 'no debe haber desplazamiento horizontal')
       .toBeLessThanOrEqual(ancho.visible + 4);
 
+    // Si el contenido CABE, no debe haber desplazamiento vertical. Esto
+    // pilla el caso de v2.82: un relleno fijo o 100vh (que en móvil mide
+    // más que la pantalla visible) generaban scroll aunque sobrara sitio.
+    const v = await page.evaluate(() => ({
+      contenido: document.body.getBoundingClientRect().height,
+      documento: document.documentElement.scrollHeight,
+      visible: window.innerHeight
+    }));
+    if (v.contenido <= v.visible) {
+      expect(v.documento, `hay ${v.documento - v.visible}px de scroll aunque el contenido cabe`)
+        .toBeLessThanOrEqual(v.visible + 4);
+    }
+
     // El texto debe ser legible: nada por debajo de 11px
     const demasiadoPequeño = await page.evaluate(() => {
       const sel = ['.rival-name', '.rival-tag', '.setup-label', '#startBtn'];

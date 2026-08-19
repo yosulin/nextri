@@ -48,7 +48,13 @@
     background: var(--bg);
     color: var(--text);
     font-family: 'Nunito', sans-serif;
+    /* 100dvh, no 100vh: en móvil 100vh mide la pantalla SIN la barra de
+       direcciones, así que el cuerpo siempre resultaba más alto que lo
+       que de verdad se ve y aparecía desplazamiento aunque todo cupiera.
+       dvh sigue la altura visible real. El respaldo en vh queda para
+       navegadores que no lo entiendan. */
     min-height: 100vh;
+    min-height: 100dvh;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -744,8 +750,10 @@
      lo que necesite (más rivales, radar, opciones) sin que eso deje el
      botón de jugar fuera de alcance. */
   .barra-accion {
-    position: fixed;
-    left: 0; right: 0; bottom: 0;
+    position: sticky;
+    bottom: 0;
+    margin-top: auto;
+    width: 100%;
     z-index: 20;
     display: flex; flex-direction: column; gap: 8px;
     align-items: center;
@@ -763,7 +771,13 @@
   #resumeBtn { width: 100%; max-width: 480px; }
   #resumeBtn { border-color: var(--p1-color); color: var(--p1-color); }
   /* Hueco para que el último contenido del menú no quede bajo la barra */
-  body:not(.in-game) { padding-bottom: 132px; }
+  /* El relleno inferior fijo sumaba 132px SIEMPRE, aunque sobrara sitio:
+     eso dejaba un hueco muerto y provocaba desplazamiento en pantallas
+     donde el contenido ya cabía. Ahora la barra va en el FLUJO normal,
+     empujada al final por un margen automático: si sobra sitio se queda
+     abajo sin ocupar de más, y si falta, el menú se desplaza y la barra
+     viaja con él (el botón sigue siendo lo último, siempre alcanzable). */
+  body:not(.in-game) { padding-bottom: 12px; }
   /* Los botones flotantes de tema y ajustes suben por encima de la barra */
 
 
@@ -943,7 +957,7 @@
        vez de una imagen recortada. Escala nítido a cualquier densidad de
        pantalla, se adapta solo a los dos temas (sin necesitar dos
        versiones) y lo leen los buscadores y lectores de pantalla. -->
-  <img class="marca-simbolo" src="logo-marca.svg?v=2.82" alt="" aria-hidden="true">
+  <img class="marca-simbolo" src="logo-marca.svg?v=2.83" alt="" aria-hidden="true">
   <h1 class="marca-texto">NEXTRI</h1>
 </div>
 
@@ -1199,31 +1213,31 @@
 // global — funcionaba, pero nada declaraba qué necesitaba cada uno, y una
 // mezcla de versiones en caché podía emparejar mitades incompatibles sin
 // que nada lo detectara.
-import { seedRng, rngNextFrom, rngIntFrom, getRngSeed, getRngState, restoreRngState } from './src/game/random.js?v=2.82';
-import { dist, distSq, segmentPassesOverCircle, pointInTriangle, segmentsIntersect } from './src/game/geometry.js?v=2.82';
+import { seedRng, rngNextFrom, rngIntFrom, getRngSeed, getRngState, restoreRngState } from './src/game/random.js?v=2.83';
+import { dist, distSq, segmentPassesOverCircle, pointInTriangle, segmentsIntersect } from './src/game/geometry.js?v=2.83';
 import { MOVE_REASON_TEXT, edgeKey, edgeExists, connectionCount, areAdjacent,
-         lineIntersectsAny, findNewTriangles, triangleTraps, checkMoveValidity } from './src/game/rules.js?v=2.82';
-import { BOARD_GENERATOR_VERSION, BOARD_QUALITY_TARGET } from './src/game/board-quality.js?v=2.82';
+         lineIntersectsAny, findNewTriangles, triangleTraps, checkMoveValidity } from './src/game/rules.js?v=2.83';
+import { BOARD_GENERATOR_VERSION, BOARD_QUALITY_TARGET } from './src/game/board-quality.js?v=2.83';
 import { ADJACENCY_TARGET, generateCirclePositions, buildCandidateGraph,
-         attemptBoardGeneration, chooseAdjacency, finalizeAdjacency } from './src/game/board.js?v=2.82';
+         attemptBoardGeneration, chooseAdjacency, finalizeAdjacency } from './src/game/board.js?v=2.83';
 import { createPlayer, playerById, nextPlayerId, applyAction, hasAnyLegalMove,
-         replayFromLog } from './src/game/engine.js?v=2.82';
+         replayFromLog } from './src/game/engine.js?v=2.83';
 import { STATE_SCHEMA_VERSION, RULES_VERSION, serializeGameState, restoreGameState,
-         migrateGameSnapshot, isValidGameSnapshot } from './src/game/state.js?v=2.82';
-import { svgRadar, perfilDesdeNivel, listaEjes } from './src/ui/radar.js?v=2.82';
-import { AI_VERSION, AI_LEVELS, setDifficulty, getDifficulty, RIVALES, setRival, getRival } from './src/ai/levels.js?v=2.82';
-import { chooseAIMove, createsScoringReply } from './src/ai/ai.js?v=2.82';
-import * as Stats from './src/stats/stats.js?v=2.82';
+         migrateGameSnapshot, isValidGameSnapshot } from './src/game/state.js?v=2.83';
+import { svgRadar, perfilDesdeNivel, listaEjes } from './src/ui/radar.js?v=2.83';
+import { AI_VERSION, AI_LEVELS, setDifficulty, getDifficulty, RIVALES, setRival, getRival } from './src/ai/levels.js?v=2.83';
+import { chooseAIMove, createsScoringReply } from './src/ai/ai.js?v=2.83';
+import * as Stats from './src/stats/stats.js?v=2.83';
 import { aggregateStats, statsByOpponent, statsByCircleCount, ultimasPartidas,
-         formatearDuracion, porcentaje } from './src/stats/aggregates.js?v=2.82';
-import { saveGame, loadSavedGame, clearSavedGame, hasSavedGame } from './src/platform/storage.js?v=2.82';
+         formatearDuracion, porcentaje } from './src/stats/aggregates.js?v=2.83';
+import { saveGame, loadSavedGame, clearSavedGame, hasSavedGame } from './src/platform/storage.js?v=2.83';
 // ── Constantes ──────────────────────────────────────────────────────────────
 // Única fuente de la versión visible — antes se escribía a mano en tres
 // sitios (aquí, el panel de info, y el CACHE de sw.js) y se desincronizaban
 // entre sí. sw.js sigue siendo aparte por necesidad (un service worker no
 // puede leer esta constante, vive en otro archivo) — al subir de versión,
 // solo hace falta tocar ESTA línea y la de sw.js, no una tercera copia más.
-const APP_VERSION = 'v2.82';
+const APP_VERSION = 'v2.83';
 
 // Nombre del producto en un solo sitio. Si algún día cambia (NEXTRI u
 // otro), esto evita perseguirlo por cabecera, aviso de rotación, panel de
@@ -3118,7 +3132,7 @@ function pintarAvataresRivales() {
     if (!r) return;
     b.style.setProperty('--rival-color', r.color);
     const hueco = b.querySelector('.rival-avatar');
-    if (hueco) hueco.innerHTML = `<img src="${r.retrato}?v=2.82" alt="" loading="lazy">`;
+    if (hueco) hueco.innerHTML = `<img src="${r.retrato}?v=2.83" alt="" loading="lazy">`;
   });
 }
 
@@ -3211,7 +3225,7 @@ function updateRecHint(n, val) {
 // contra quién juegas sin leer el nombre.
 function avatarDeRival(nombre) {
   const r = Object.values(RIVALES).find(x => x.nombre === nombre);
-  return r ? `<span class="card-avatar"><img src="${r.retrato}?v=2.82" alt=""></span>` : '🤖';
+  return r ? `<span class="card-avatar"><img src="${r.retrato}?v=2.83" alt=""></span>` : '🤖';
 }
 
 function buildGameUI() {
