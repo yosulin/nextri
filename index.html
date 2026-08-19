@@ -714,6 +714,30 @@
   .cortinilla.abierta { display: none; }
   .cortinilla-txt { font-size: 1.1rem; opacity: .75; }
 
+  /* Aviso de doble triángulo: el destello se ve, pero conviene nombrar la
+     jugada. Solo aparece en el doble, para que no pierda fuerza. */
+  .aviso-doble {
+    position: fixed;
+    top: 42%; left: 50%;
+    transform: translate(-50%, -50%) scale(.6);
+    z-index: 40;
+    font-family: 'Fredoka One', cursive;
+    font-size: clamp(1.8rem, 9vw, 2.8rem);
+    letter-spacing: 2px;
+    color: var(--p1-color);
+    text-shadow: 0 4px 18px rgba(0,0,0,.35);
+    opacity: 0;
+    pointer-events: none;
+  }
+  .aviso-doble.mostrar { animation: doble-aparece 1.4s ease-out forwards; }
+  @keyframes doble-aparece {
+    0%   { opacity: 0; transform: translate(-50%,-50%) scale(.5) rotate(-6deg); }
+    18%  { opacity: 1; transform: translate(-50%,-50%) scale(1.12) rotate(2deg); }
+    32%  { transform: translate(-50%,-50%) scale(1) rotate(0deg); }
+    75%  { opacity: 1; }
+    100% { opacity: 0; transform: translate(-50%,-58%) scale(1.05); }
+  }
+
   /* ── Ajustes y estadísticas ── */
   .menu-ajustes { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; width: 100%; }
   .fila-ajuste {
@@ -975,7 +999,7 @@
        vez de una imagen recortada. Escala nítido a cualquier densidad de
        pantalla, se adapta solo a los dos temas (sin necesitar dos
        versiones) y lo leen los buscadores y lectores de pantalla. -->
-  <img class="marca-simbolo" src="logo-marca.svg?v=2.85" alt="" aria-hidden="true">
+  <img class="marca-simbolo" src="logo-marca.svg?v=2.86" alt="" aria-hidden="true">
   <h1 class="marca-texto">NEXTRI</h1>
 </div>
 
@@ -999,30 +1023,10 @@
     <!-- Solo: elegir rival -->
     <div class="setup-section" id="soloModeInfo">
       <div class="setup-label">Elige tu rival</div>
-      <div class="rival-row" role="radiogroup" aria-label="Rival">
-        <button type="button" class="rival-btn" data-accion="rival" data-rival="delta" role="radio" aria-checked="false">
-          <span class="rival-avatar"></span>
-          <span class="rival-name">Delta</span><span class="rival-tag">Espontáneo</span>
-        </button>
-        <button type="button" class="rival-btn is-active" data-accion="rival" data-rival="circuit" role="radio" aria-checked="true">
-          <span class="rival-check" aria-hidden="true">✓</span>
-          <span class="rival-avatar"></span>
-          <span class="rival-name">Circuit</span><span class="rival-tag">Estratega</span>
-        </button>
-        <button type="button" class="rival-btn" data-accion="rival" data-rival="vector" role="radio" aria-checked="false">
-          <span class="rival-avatar"></span>
-          <span class="rival-name">Vector</span><span class="rival-tag">Analista</span>
-        </button>
-        <button type="button" class="rival-btn rival-invitado" id="btnInvitado" data-accion="rival" data-rival="invitado" role="radio" aria-checked="false">
-          <span class="rival-avatar"></span>
-          <span class="rival-name" id="invitadoNombre">?</span>
-          <span class="rival-tag" id="invitadoApodo">Invitado</span>
-          <!-- Cortinilla de bloqueo: su altura baja conforme avanza el
-               progreso, así que se ve cuánto queda de un vistazo sin
-               tener que abrir nada. -->
-          <span class="cortinilla" id="cortinillaInvitado"><span class="cortinilla-txt">🔒</span></span>
-        </button>
-      </div>
+      <!-- Las tarjetas se generan desde el catálogo de bots, no a mano:
+           añadir Random, Phantom o un invitado nuevo ya no obliga a tocar
+           el HTML. Ver construirTarjetasRival(). -->
+      <div class="rival-row" id="rivalRow" role="radiogroup" aria-label="Rival"></div>
       <div class="rival-desc" id="rivalDesc"></div>
     </div>
 
@@ -1134,6 +1138,7 @@
 
   <div class="turn-info" id="turnInfo">–</div>
 
+  <div class="aviso-doble" id="avisoDoble" aria-hidden="true">¡DOBLE!</div>
   <div class="canvas-wrap">
     <canvas id="gameCanvas"></canvas>
   </div>
@@ -1240,33 +1245,33 @@
 // global — funcionaba, pero nada declaraba qué necesitaba cada uno, y una
 // mezcla de versiones en caché podía emparejar mitades incompatibles sin
 // que nada lo detectara.
-import { seedRng, rngNextFrom, rngIntFrom, getRngSeed, getRngState, restoreRngState } from './src/game/random.js?v=2.85';
-import { dist, distSq, segmentPassesOverCircle, pointInTriangle, segmentsIntersect } from './src/game/geometry.js?v=2.85';
+import { seedRng, rngNextFrom, rngIntFrom, getRngSeed, getRngState, restoreRngState } from './src/game/random.js?v=2.86';
+import { dist, distSq, segmentPassesOverCircle, pointInTriangle, segmentsIntersect } from './src/game/geometry.js?v=2.86';
 import { MOVE_REASON_TEXT, edgeKey, edgeExists, connectionCount, areAdjacent,
-         lineIntersectsAny, findNewTriangles, triangleTraps, checkMoveValidity } from './src/game/rules.js?v=2.85';
-import { BOARD_GENERATOR_VERSION, BOARD_QUALITY_TARGET } from './src/game/board-quality.js?v=2.85';
+         lineIntersectsAny, findNewTriangles, triangleTraps, checkMoveValidity } from './src/game/rules.js?v=2.86';
+import { BOARD_GENERATOR_VERSION, BOARD_QUALITY_TARGET } from './src/game/board-quality.js?v=2.86';
 import { ADJACENCY_TARGET, generateCirclePositions, buildCandidateGraph,
-         attemptBoardGeneration, chooseAdjacency, finalizeAdjacency } from './src/game/board.js?v=2.85';
+         attemptBoardGeneration, chooseAdjacency, finalizeAdjacency } from './src/game/board.js?v=2.86';
 import { createPlayer, playerById, nextPlayerId, applyAction, hasAnyLegalMove,
-         replayFromLog } from './src/game/engine.js?v=2.85';
+         replayFromLog } from './src/game/engine.js?v=2.86';
 import { STATE_SCHEMA_VERSION, RULES_VERSION, serializeGameState, restoreGameState,
-         migrateGameSnapshot, isValidGameSnapshot } from './src/game/state.js?v=2.85';
+         migrateGameSnapshot, isValidGameSnapshot } from './src/game/state.js?v=2.86';
 import { invitadoDeLaSemana, progresoDesbloqueo, estaDesbloqueado, loQueFalta,
-         REQUISITOS_DESBLOQUEO } from './src/ai/invitados.js?v=2.85';
-import { svgRadar, perfilDesdeNivel, listaEjes } from './src/ui/radar.js?v=2.85';
-import { AI_VERSION, AI_LEVELS, setDifficulty, getDifficulty, RIVALES, setRival, getRival } from './src/ai/levels.js?v=2.85';
-import { chooseAIMove, createsScoringReply } from './src/ai/ai.js?v=2.85';
-import * as Stats from './src/stats/stats.js?v=2.85';
+         REQUISITOS_DESBLOQUEO } from './src/ai/invitados.js?v=2.86';
+import { svgRadar, perfilDesdeNivel, listaEjes } from './src/ui/radar.js?v=2.86';
+import { AI_VERSION, AI_LEVELS, setDifficulty, getDifficulty, RIVALES, setRival, getRival } from './src/ai/levels.js?v=2.86';
+import { chooseAIMove, createsScoringReply } from './src/ai/ai.js?v=2.86';
+import * as Stats from './src/stats/stats.js?v=2.86';
 import { victoriasPorRival, aggregateStats, statsByOpponent, statsByCircleCount, ultimasPartidas,
-         formatearDuracion, porcentaje } from './src/stats/aggregates.js?v=2.85';
-import { saveGame, loadSavedGame, clearSavedGame, hasSavedGame } from './src/platform/storage.js?v=2.85';
+         formatearDuracion, porcentaje } from './src/stats/aggregates.js?v=2.86';
+import { saveGame, loadSavedGame, clearSavedGame, hasSavedGame } from './src/platform/storage.js?v=2.86';
 // ── Constantes ──────────────────────────────────────────────────────────────
 // Única fuente de la versión visible — antes se escribía a mano en tres
 // sitios (aquí, el panel de info, y el CACHE de sw.js) y se desincronizaban
 // entre sí. sw.js sigue siendo aparte por necesidad (un service worker no
 // puede leer esta constante, vive en otro archivo) — al subir de versión,
 // solo hace falta tocar ESTA línea y la de sw.js, no una tercera copia más.
-const APP_VERSION = 'v2.85';
+const APP_VERSION = 'v2.86';
 
 // Nombre del producto en un solo sitio. Si algún día cambia (NEXTRI u
 // otro), esto evita perseguirlo por cabecera, aviso de rotación, panel de
@@ -1564,7 +1569,10 @@ const HAPTIC = {
   toggleOn: [10, 30, 10],
   toggleOff: 10,
   dismiss: 15,
-  celebrate: [15, 60, 15, 60, 40]
+  celebrate: [15, 60, 15, 60, 40],
+  // Doble triángulo: patrón más largo y marcado, para que se note en la
+  // mano que ha pasado algo distinto.
+  doble: [25, 50, 25, 50, 25, 80, 90]
 };
 
 function vibrate(pattern = HAPTIC.tap) {
@@ -1601,6 +1609,121 @@ function playSuccessSound() {
   const now = ctx.currentTime;
   tone(ctx, { freq: 587.33, start: now, duration: 0.12 }); // D5
   tone(ctx, { freq: 880, start: now + 0.09, duration: 0.18 }); // A5
+}
+
+// Doble triángulo: acorde ascendente en vez de dos notas. Suena a remate,
+// no a acierto — la diferencia debe oírse sin tener que mirar el tablero.
+function playDobleSound() {
+  const ctx = getAudioContext();
+  if (!ctx) return;
+  const now = ctx.currentTime;
+  tone(ctx, { freq: 587.33, start: now, duration: 0.10 });        // D5
+  tone(ctx, { freq: 880,    start: now + 0.07, duration: 0.10 }); // A5
+  tone(ctx, { freq: 1174.66, start: now + 0.14, duration: 0.28 }); // D6
+  tone(ctx, { freq: 1567.98, start: now + 0.20, duration: 0.30 }); // G6
+}
+
+// ── Celebración de triángulos ────────────────────────────────────────────────
+// Destellos dibujados sobre el propio lienzo, con su ciclo de vida aparte:
+// no tocan el estado de la partida ni pasan por el motor, así que un
+// efecto a medias nunca puede afectar a las reglas.
+let destellos = [];
+
+function celebrarTriangulos(nuevos, cuantos) {
+  const ahora = performance.now();
+  for (const t of nuevos) {
+    const cx = (circles[t.a].x + circles[t.b].x + circles[t.c].x) / 3;
+    const cy = (circles[t.a].y + circles[t.b].y + circles[t.c].y) / 3;
+    destellos.push({
+      x: cx, y: cy, inicio: ahora,
+      duracion: cuantos >= 2 ? 1100 : 650,
+      color: playerColorById(t.ownerId) || '#ffffff',
+      epico: cuantos >= 2,
+      vertices: [t.a, t.b, t.c]
+    });
+  }
+  if (cuantos >= 2) mostrarAvisoDoble();
+  animarDestellos();
+}
+
+let animandoDestellos = false;
+function animarDestellos() {
+  if (animandoDestellos) return;
+  animandoDestellos = true;
+  const paso = () => {
+    const ahora = performance.now();
+    destellos = destellos.filter(d => ahora - d.inicio < d.duracion);
+    draw();
+    if (destellos.length > 0) requestAnimationFrame(paso);
+    else animandoDestellos = false;
+  };
+  requestAnimationFrame(paso);
+}
+
+// Dibuja los destellos activos. Se llama desde draw(), al final, para que
+// queden por encima del tablero.
+function dibujarDestellos() {
+  const ahora = performance.now();
+  for (const d of destellos) {
+    const t = Math.min(1, (ahora - d.inicio) / d.duracion);
+    const suave = 1 - Math.pow(1 - t, 3); // arranca rápido y frena
+
+    // Onda expansiva desde el centro del triángulo
+    const radio = (d.epico ? 90 : 46) * suave;
+    ctx.save();
+    ctx.globalAlpha = (1 - t) * (d.epico ? 0.75 : 0.5);
+    ctx.strokeStyle = d.color;
+    ctx.lineWidth = (d.epico ? 5 : 3) * (1 - t) + 1;
+    ctx.beginPath();
+    ctx.arc(d.x, d.y, radio, 0, Math.PI * 2);
+    ctx.stroke();
+
+    if (d.epico) {
+      // Segunda onda desfasada y rayos: solo en el doble, para que la
+      // diferencia se vea de lejos.
+      const t2 = Math.max(0, t - 0.18) / 0.82;
+      if (t2 > 0) {
+        ctx.globalAlpha = (1 - t2) * 0.55;
+        ctx.beginPath();
+        ctx.arc(d.x, d.y, 90 * (1 - Math.pow(1 - t2, 3)), 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.globalAlpha = (1 - t) * 0.8;
+      ctx.lineWidth = 3;
+      for (let i = 0; i < 8; i++) {
+        const ang = (Math.PI * 2 * i / 8) + t * 0.6;
+        const r1 = 26 + 40 * suave, r2 = r1 + 16 * (1 - t);
+        ctx.beginPath();
+        ctx.moveTo(d.x + Math.cos(ang) * r1, d.y + Math.sin(ang) * r1);
+        ctx.lineTo(d.x + Math.cos(ang) * r2, d.y + Math.sin(ang) * r2);
+        ctx.stroke();
+      }
+    }
+
+    // Relleno del triángulo que palpita y se apaga
+    if (d.vertices) {
+      const [a, b, c] = d.vertices;
+      ctx.globalAlpha = (1 - t) * (d.epico ? 0.55 : 0.35);
+      ctx.fillStyle = d.color;
+      ctx.beginPath();
+      ctx.moveTo(circles[a].x, circles[a].y);
+      ctx.lineTo(circles[b].x, circles[b].y);
+      ctx.lineTo(circles[c].x, circles[c].y);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+}
+
+// Aviso de texto para el doble: el destello se ve, pero conviene nombrarlo.
+function mostrarAvisoDoble() {
+  const el = document.getElementById('avisoDoble');
+  if (!el) return;
+  el.classList.remove('mostrar');
+  void el.offsetWidth; // reinicia la animación si se encadenan dos dobles
+  el.classList.add('mostrar');
+  setTimeout(() => el.classList.remove('mostrar'), 1400);
 }
 
 // ── Tema claro/oscuro ────────────────────────────────────────────────────────
@@ -1779,6 +1902,7 @@ function startGame() {
   eventLog = [];
   lastAIEdgeKey = null;
   aiHighlightGen++;
+  destellos = [];  // que no se arrastren efectos de la partida anterior
   stopUndoCountdown();
   vibrate(HAPTIC.celebrate);
   resetRollState();
@@ -2371,10 +2495,15 @@ function attemptConnect(fromIdx, toIdx) {
     }, AI_HIGHLIGHT_MS);
   }
 
-  const cerroTriangulo = triangles.length > trianguloAntes;
+  const cerrados = triangles.length - trianguloAntes;
   updateScores();
-  if (cerroTriangulo) { vibrate(HAPTIC.celebrate); playSuccessSound(); }
-  else vibrate(HAPTIC.select);
+  if (cerrados > 0) {
+    // Dos triángulos de una sola línea es la jugada más difícil del juego,
+    // así que se celebra distinto: no es lo mismo acertar que rematar.
+    celebrarTriangulos(triangles.slice(trianguloAntes), cerrados);
+    vibrate(cerrados >= 2 ? HAPTIC.doble : HAPTIC.celebrate);
+    if (cerrados >= 2) playDobleSound(); else playSuccessSound();
+  } else vibrate(HAPTIC.select);
 
   setSelectedCircle(null);
   draw();
@@ -2979,6 +3108,9 @@ function draw() {
     drawLine(origin, { x: traceGesture.curX, y: traceGesture.curY }, lineColor, 2.5);
     ctx.restore();
   }
+
+  // Los destellos van al final: por encima de todo lo demás.
+  if (destellos.length) dibujarDestellos();
 }
 
 function drawLine(a, b, color, width) {
@@ -3185,10 +3317,10 @@ async function actualizarInvitado() {
   invitadoDesbloqueado = estaDesbloqueado(victorias);
 
   btn.style.setProperty('--rival-color', invitadoActual.color);
-  document.getElementById('invitadoNombre').textContent =
-    invitadoDesbloqueado ? invitadoActual.nombre : '???';
-  document.getElementById('invitadoApodo').textContent =
-    invitadoDesbloqueado ? invitadoActual.apodo : 'Invitado';
+  const etiquetaNombre = btn.querySelector('.rival-name');
+  const etiquetaApodo = btn.querySelector('.rival-tag');
+  if (etiquetaNombre) etiquetaNombre.textContent = invitadoDesbloqueado ? invitadoActual.nombre : '???';
+  if (etiquetaApodo) etiquetaApodo.textContent = invitadoDesbloqueado ? invitadoActual.apodo : 'Invitado';
 
   const cortinilla = document.getElementById('cortinillaInvitado');
   // La cortinilla ocupa lo que FALTA: al 0% tapa entero, al 100% desaparece.
@@ -3203,13 +3335,51 @@ async function actualizarInvitado() {
     : 'Bloqueado: ' + falta.map(f => `gana ${f.faltan} vez${f.faltan > 1 ? 'es' : ''} a ${f.rival}`).join(', ');
 }
 
+// Catálogo de bots: la única fuente de la que salen las tarjetas. Añadir
+// un rival nuevo (Random, Phantom, Chaos) es añadirlo aquí, sin tocar el
+// HTML ni la lógica de selección.
+function catalogoBots() {
+  const fijos = Object.entries(RIVALES).map(([id, r]) => ({
+    id, kind: 'core', nombre: r.nombre, apodo: r.apodo,
+    color: r.color, retrato: r.retrato, bloqueable: false
+  }));
+  const inv = invitadoDeLaSemana();
+  fijos.push({
+    id: 'invitado', kind: 'guest', nombre: inv.nombre, apodo: inv.apodo,
+    color: inv.color, retrato: null, bloqueable: true
+  });
+  return fijos;
+}
+
+// Construye las tarjetas desde el catálogo.
+function construirTarjetasRival() {
+  const fila = document.getElementById('rivalRow');
+  if (!fila) return;
+  fila.innerHTML = catalogoBots().map(b => `
+    <button type="button" class="rival-btn${b.bloqueable ? ' rival-invitado' : ''}"
+            ${b.bloqueable ? 'id="btnInvitado"' : ''}
+            data-accion="rival" data-rival="${b.id}" data-kind="${b.kind}"
+            role="radio" aria-checked="false" style="--rival-color:${b.color}">
+      <span class="rival-check" aria-hidden="true">✓</span>
+      <span class="rival-avatar">${b.retrato ? `<img src="${b.retrato}?v=2.86" alt="" loading="lazy">` : ''}</span>
+      <span class="rival-name">${escapeHtml(b.nombre)}</span>
+      <span class="rival-tag">${escapeHtml(b.apodo)}</span>
+      ${b.bloqueable ? '<span class="cortinilla" id="cortinillaInvitado"><span class="cortinilla-txt">🔒</span></span>' : ''}
+    </button>`).join('');
+  // Las tarjetas nacen después de conectarAcciones(), así que se enlazan
+  // aquí mismo: si no, serían botones mudos.
+  fila.querySelectorAll('[data-accion="rival"]').forEach(el => {
+    el.addEventListener('click', () => elegirRival(el.dataset.rival));
+  });
+}
+
 function pintarAvataresRivales() {
   document.querySelectorAll('[data-accion="rival"]').forEach(b => {
     const r = RIVALES[b.dataset.rival];
     if (!r) return;
     b.style.setProperty('--rival-color', r.color);
     const hueco = b.querySelector('.rival-avatar');
-    if (hueco) hueco.innerHTML = `<img src="${r.retrato}?v=2.85" alt="" loading="lazy">`;
+    if (hueco) hueco.innerHTML = `<img src="${r.retrato}?v=2.86" alt="" loading="lazy">`;
   });
 }
 
@@ -3342,7 +3512,7 @@ function avatarDeRival(id) {
   // Por identidad, no por nombre visible: dos rivales podrían llamarse
   // igual, y los invitados no están en RIVALES.
   const r = RIVALES[id] || (invitadoActual && invitadoActual.id === id ? invitadoActual : null);
-  return r ? `<span class="card-avatar"><img src="${r.retrato}?v=2.85" alt=""></span>` : '🤖';
+  return r ? `<span class="card-avatar"><img src="${r.retrato}?v=2.86" alt=""></span>` : '🤖';
 }
 
 function buildGameUI() {
@@ -3447,6 +3617,7 @@ function iniciarApp() {
   document.getElementById('portraitMsg').textContent = `${PRODUCTO} se juega en vertical.`;
   document.getElementById('infoLema').textContent = LEMA;
   document.title = PRODUCTO;
+  construirTarjetasRival();
   pintarAvataresRivales();
   actualizarInvitado();
   elegirRival('circuit');   // rival recomendado por defecto

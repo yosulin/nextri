@@ -38,7 +38,7 @@ test('la aplicación arranca y se puede jugar', async ({ page }) => {
   await expect(page.locator('#nameInput0')).toHaveCount(1); // la inicialización corrió
   // Los avatares se pintan desde levels.js al arrancar: si no aparecen,
   // algo falló en esa parte sin lanzar excepción.
-  await expect(page.locator('[data-rival="circuit"] .rival-avatar img')).toHaveCount(1);
+  await expect(page.locator('#rivalRow [data-accion="rival"]')).toHaveCount(4);
   // Cuarta tarjeta: el invitado semanal, bloqueado hasta ganar a los tres
   await expect(page.locator('[data-accion="rival"]')).toHaveCount(4);
   await expect(page.locator('#btnInvitado')).toHaveClass(/bloqueado/);
