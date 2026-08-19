@@ -1,4 +1,4 @@
-const CACHE = 'nextri-v2.86';
+const CACHE = 'nextri-v2.87';
 // Rutas RELATIVAS al propio service worker, no absolutas. Con
 // '/nextri/...' la app quedaba atada a esa ruta exacta: al renombrar el
 // repositorio hubo que reescribirlas una por una, y habría vuelto a
@@ -8,29 +8,33 @@ const ASSETS = [
   './',
   './index.html',
   './manifest.json',
-  './logo-marca.svg?v=2.86',
+  './logo-marca.svg?v=2.87',
   './favicon.ico',
   './icon.svg',
-  './rivales/delta.png?v=2.86',
-  './rivales/circuit.png?v=2.86',
-  './rivales/vector.png?v=2.86',
+  './rivales/delta.png?v=2.87',
+  './rivales/circuit.png?v=2.87',
+  './rivales/vector.png?v=2.87',
   './icon-192.png',
   './icon-512.png',
-  './src/game/random.js?v=2.86',
-  './src/game/geometry.js?v=2.86',
-  './src/game/rules.js?v=2.86',
-  './src/game/board.js?v=2.86',
-  './src/game/board-quality.js?v=2.86',
-  './src/game/engine.js?v=2.86',
-  './src/game/state.js?v=2.86',
-  './src/ui/radar.js?v=2.86',
-  './src/ai/invitados.js?v=2.86',
-  './src/ai/levels.js?v=2.86',
-  './src/ai/ai.js?v=2.86',
-  './src/stats/repository.js?v=2.86',
-  './src/stats/aggregates.js?v=2.86',
-  './src/stats/stats.js?v=2.86',
-  './src/platform/storage.js?v=2.86'
+  './src/game/random.js?v=2.87',
+  './src/game/geometry.js?v=2.87',
+  './src/game/rules.js?v=2.87',
+  './src/game/board.js?v=2.87',
+  './src/game/board-quality.js?v=2.87',
+  './src/game/engine.js?v=2.87',
+  './src/game/state.js?v=2.87',
+  './src/i18n/i18n.js?v=2.87',
+  './src/i18n/locales/es.js?v=2.87',
+  './src/i18n/locales/en.js?v=2.87',
+  './src/i18n/locales/fr.js?v=2.87',
+  './src/ui/radar.js?v=2.87',
+  './src/ai/invitados.js?v=2.87',
+  './src/ai/levels.js?v=2.87',
+  './src/ai/ai.js?v=2.87',
+  './src/stats/repository.js?v=2.87',
+  './src/stats/aggregates.js?v=2.87',
+  './src/stats/stats.js?v=2.87',
+  './src/platform/storage.js?v=2.87'
 ];
 
 self.addEventListener('install', e => {

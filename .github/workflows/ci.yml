@@ -47,6 +47,9 @@ jobs:
       - name: Invitado semanal y desbloqueo
         run: node scripts/test-invitados.cjs
 
+      - name: Traducciones completas
+        run: node scripts/test-i18n.cjs
+
       - name: Generación de tableros (invariantes y calidad)
         run: node scripts/test-board-gen.cjs 40
 

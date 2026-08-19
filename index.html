@@ -749,6 +749,17 @@
   .fila-ajuste span { flex: 1; text-align: left; }
   .fila-ajuste i { color: var(--muted); font-style: normal; font-size: 1.1rem; }
   .fila-ajuste:hover { border-color: var(--p2-color); }
+  .fila-idioma { cursor: default; }
+  .fila-idioma:hover { border-color: var(--border); }
+  .idiomas { display: flex; gap: 6px; }
+  .btn-idioma {
+    width: 38px; height: 34px;
+    border: 2px solid var(--border); border-radius: 10px;
+    background: transparent; cursor: pointer; font-size: 1.1rem;
+    line-height: 1; padding: 0;
+  }
+  .btn-idioma.is-active { border-color: var(--p2-color); background: var(--p2-light); }
+
   .datos-nota { font-size: .78rem; color: var(--muted); margin-bottom: 6px; line-height: 1.4; text-align: center; }
 
   /* La pantalla de estadísticas puede ser larga: se desplaza por dentro,
@@ -999,7 +1010,7 @@
        vez de una imagen recortada. Escala nítido a cualquier densidad de
        pantalla, se adapta solo a los dos temas (sin necesitar dos
        versiones) y lo leen los buscadores y lectores de pantalla. -->
-  <img class="marca-simbolo" src="logo-marca.svg?v=2.86" alt="" aria-hidden="true">
+  <img class="marca-simbolo" src="logo-marca.svg?v=2.87" alt="" aria-hidden="true">
   <h1 class="marca-texto">NEXTRI</h1>
 </div>
 
@@ -1009,7 +1020,7 @@
 
     <!-- Cómo jugar: Solo o Local (queda sitio para 'online') -->
     <div class="setup-section">
-      <div class="setup-label">¿Cómo quieres jugar?</div>
+      <div class="setup-label" data-i18n="menu.comoJugar">¿Cómo quieres jugar?</div>
       <div class="mode-row" role="radiogroup" aria-label="Modo de juego">
         <button type="button" class="mode-btn is-active" data-accion="modo" data-modo="solo" role="radio" aria-checked="true">
           <span class="mode-icon">🤖</span><span>Solo</span>
@@ -1022,7 +1033,7 @@
 
     <!-- Solo: elegir rival -->
     <div class="setup-section" id="soloModeInfo">
-      <div class="setup-label">Elige tu rival</div>
+      <div class="setup-label" data-i18n="menu.eligeRival">Elige tu rival</div>
       <!-- Las tarjetas se generan desde el catálogo de bots, no a mano:
            añadir Random, Phantom o un invitado nuevo ya no obliga a tocar
            el HTML. Ver construirTarjetasRival(). -->
@@ -1032,7 +1043,7 @@
 
     <!-- Local: cuántos jugadores -->
     <div class="setup-section" id="localPlayersSection" style="display:none;">
-      <div class="setup-label">Número de jugadores</div>
+      <div class="setup-label" data-i18n="menu.numeroJugadores">Número de jugadores</div>
       <div class="player-count-row" id="pcRow" role="radiogroup" aria-label="Número de jugadores">
         <button type="button" class="pc-btn" data-n="2" role="radio" aria-checked="false" data-accion="jugadores">2</button>
         <button type="button" class="pc-btn" data-n="3" role="radio" aria-checked="false" data-accion="jugadores">3</button>
@@ -1052,7 +1063,7 @@
     <details class="setup-options" id="opcionesPartida">
       <summary>Opciones de partida <span class="options-summary" id="optionsSummary"></span></summary>
     <div class="setup-section">
-      <div class="setup-label">Círculos en el tablero</div>
+      <div class="setup-label" data-i18n="menu.circulos">Círculos en el tablero</div>
       <div class="slider-row">
         <input type="range" id="circleSlider" min="25" max="100" value="35"
           data-accion="circulos">
@@ -1069,8 +1080,8 @@
           <div class="toggle-thumb" id="toggleThumb"></div>
         </div>
         <div class="toggle-label-text">
-          <span>Orden de inicio aleatorio</span>
-          <span class="toggle-sub">Se sortea quién empieza</span>
+          <span data-i18n="menu.ordenAleatorio">Orden de inicio aleatorio</span>
+          <span class="toggle-sub" data-i18n="menu.ordenAleatorioDesc">Se sortea quién empieza</span>
         </div>
       </label>
     </div>
@@ -1104,7 +1115,7 @@
 <div id="portraitGuard" class="portrait-guard" aria-live="polite">
   <div>
     <div class="portrait-icon">↻</div>
-    <strong>Gira el móvil</strong>
+    <strong data-i18n="aviso.giraMovil">Gira el móvil</strong>
     <p id="portraitMsg">NEXTRI se juega en vertical.</p>
   </div>
 </div>
@@ -1198,9 +1209,13 @@
     <h3 id="ajustesTitulo">● NEXTRI</h3>
     <p class="info-lema">cada línea cuenta</p>
     <div class="menu-ajustes">
-      <button class="fila-ajuste" data-accion="abrir-stats">📊 <span>Estadísticas</span><i>›</i></button>
-      <button class="fila-ajuste" data-accion="abrir-info">ⓘ <span>Información</span><i>›</i></button>
-      <button class="fila-ajuste" data-accion="abrir-datos">💾 <span>Datos</span><i>›</i></button>
+      <button class="fila-ajuste" data-accion="abrir-stats">📊 <span data-i18n="ajustes.estadisticas">Estadísticas</span><i>›</i></button>
+      <button class="fila-ajuste" data-accion="abrir-info">ⓘ <span data-i18n="ajustes.informacion">Información</span><i>›</i></button>
+      <button class="fila-ajuste" data-accion="abrir-datos">💾 <span data-i18n="ajustes.datos">Datos</span><i>›</i></button>
+      <div class="fila-ajuste fila-idioma">
+        🌐 <span data-i18n="ajustes.idioma">Idioma</span>
+        <span class="idiomas" id="selectorIdioma"></span>
+      </div>
     </div>
     <button class="btn-new" data-accion="cerrar" data-objetivo="ajustesOverlay">Cerrar</button>
   </div>
@@ -1245,33 +1260,35 @@
 // global — funcionaba, pero nada declaraba qué necesitaba cada uno, y una
 // mezcla de versiones en caché podía emparejar mitades incompatibles sin
 // que nada lo detectara.
-import { seedRng, rngNextFrom, rngIntFrom, getRngSeed, getRngState, restoreRngState } from './src/game/random.js?v=2.86';
-import { dist, distSq, segmentPassesOverCircle, pointInTriangle, segmentsIntersect } from './src/game/geometry.js?v=2.86';
+import { seedRng, rngNextFrom, rngIntFrom, getRngSeed, getRngState, restoreRngState } from './src/game/random.js?v=2.87';
+import { dist, distSq, segmentPassesOverCircle, pointInTriangle, segmentsIntersect } from './src/game/geometry.js?v=2.87';
 import { MOVE_REASON_TEXT, edgeKey, edgeExists, connectionCount, areAdjacent,
-         lineIntersectsAny, findNewTriangles, triangleTraps, checkMoveValidity } from './src/game/rules.js?v=2.86';
-import { BOARD_GENERATOR_VERSION, BOARD_QUALITY_TARGET } from './src/game/board-quality.js?v=2.86';
+         lineIntersectsAny, findNewTriangles, triangleTraps, checkMoveValidity } from './src/game/rules.js?v=2.87';
+import { BOARD_GENERATOR_VERSION, BOARD_QUALITY_TARGET } from './src/game/board-quality.js?v=2.87';
 import { ADJACENCY_TARGET, generateCirclePositions, buildCandidateGraph,
-         attemptBoardGeneration, chooseAdjacency, finalizeAdjacency } from './src/game/board.js?v=2.86';
+         attemptBoardGeneration, chooseAdjacency, finalizeAdjacency } from './src/game/board.js?v=2.87';
 import { createPlayer, playerById, nextPlayerId, applyAction, hasAnyLegalMove,
-         replayFromLog } from './src/game/engine.js?v=2.86';
+         replayFromLog } from './src/game/engine.js?v=2.87';
 import { STATE_SCHEMA_VERSION, RULES_VERSION, serializeGameState, restoreGameState,
-         migrateGameSnapshot, isValidGameSnapshot } from './src/game/state.js?v=2.86';
+         migrateGameSnapshot, isValidGameSnapshot } from './src/game/state.js?v=2.87';
 import { invitadoDeLaSemana, progresoDesbloqueo, estaDesbloqueado, loQueFalta,
-         REQUISITOS_DESBLOQUEO } from './src/ai/invitados.js?v=2.86';
-import { svgRadar, perfilDesdeNivel, listaEjes } from './src/ui/radar.js?v=2.86';
-import { AI_VERSION, AI_LEVELS, setDifficulty, getDifficulty, RIVALES, setRival, getRival } from './src/ai/levels.js?v=2.86';
-import { chooseAIMove, createsScoringReply } from './src/ai/ai.js?v=2.86';
-import * as Stats from './src/stats/stats.js?v=2.86';
+         REQUISITOS_DESBLOQUEO } from './src/ai/invitados.js?v=2.87';
+import { t, setLocale, getLocale, idiomaInicial, traducirDocumento, IDIOMAS }
+         from './src/i18n/i18n.js?v=2.87';
+import { svgRadar, perfilDesdeNivel, listaEjes } from './src/ui/radar.js?v=2.87';
+import { AI_VERSION, AI_LEVELS, setDifficulty, getDifficulty, RIVALES, setRival, getRival } from './src/ai/levels.js?v=2.87';
+import { chooseAIMove, createsScoringReply } from './src/ai/ai.js?v=2.87';
+import * as Stats from './src/stats/stats.js?v=2.87';
 import { victoriasPorRival, aggregateStats, statsByOpponent, statsByCircleCount, ultimasPartidas,
-         formatearDuracion, porcentaje } from './src/stats/aggregates.js?v=2.86';
-import { saveGame, loadSavedGame, clearSavedGame, hasSavedGame } from './src/platform/storage.js?v=2.86';
+         formatearDuracion, porcentaje } from './src/stats/aggregates.js?v=2.87';
+import { saveGame, loadSavedGame, clearSavedGame, hasSavedGame } from './src/platform/storage.js?v=2.87';
 // ── Constantes ──────────────────────────────────────────────────────────────
 // Única fuente de la versión visible — antes se escribía a mano en tres
 // sitios (aquí, el panel de info, y el CACHE de sw.js) y se desincronizaban
 // entre sí. sw.js sigue siendo aparte por necesidad (un service worker no
 // puede leer esta constante, vive en otro archivo) — al subir de versión,
 // solo hace falta tocar ESTA línea y la de sw.js, no una tercera copia más.
-const APP_VERSION = 'v2.86';
+const APP_VERSION = 'v2.87';
 
 // Nombre del producto en un solo sitio. Si algún día cambia (NEXTRI u
 // otro), esto evita perseguirlo por cabecera, aviso de rotación, panel de
@@ -2304,11 +2321,11 @@ function updateDiceDisplay(val) {
   document.getElementById('dice')?.classList.toggle('waiting', val === 0);
   const ll = document.getElementById('linesLeftLabel');
   if (val === 0) {
-    ll.textContent = 'Tira el dado';
+    ll.textContent = t('juego.tiraDado');
   } else if (linesLeft > 0) {
     ll.textContent = `${linesLeft} línea${linesLeft !== 1 ? 's' : ''}`;
   } else {
-    ll.textContent = 'Sin líneas';
+    ll.textContent = t('juego.sinLineas');
   }
 }
 
@@ -2582,29 +2599,39 @@ function closeDialog(overlayId) {
   lastFocusedBeforeDialog = null;
 }
 
-document.addEventListener('keydown', (e) => {
-  ['modalOverlay', 'infoOverlay'].forEach((id) => {
-    const overlay = document.getElementById(id);
-    if (!overlay || !overlay.classList.contains('show')) return;
+// Escape y atrapado del foco para CUALQUIER diálogo abierto. Antes la
+// lista de overlays estaba escrita a mano y solo cubría dos de los seis
+// que existen hoy: en ajustes, estadísticas, datos o salir de partida, ni
+// Escape cerraba ni el Tab se quedaba dentro. Ahora se busca el que esté
+// abierto de verdad, así que un diálogo nuevo queda cubierto sin tener que
+// acordarse de apuntarlo en ningún sitio.
+function dialogoAbierto() {
+  const abiertos = document.querySelectorAll('.modal-overlay.show, .info-overlay.show');
+  return abiertos.length ? abiertos[abiertos.length - 1] : null; // el último, si hay varios
+}
 
-    if (e.key === 'Escape') {
-      closeDialog(id);
-      return;
+document.addEventListener('keydown', (e) => {
+  const overlay = dialogoAbierto();
+  if (!overlay) return;
+
+  if (e.key === 'Escape') {
+    e.preventDefault();
+    closeDialog(overlay.id);
+    return;
+  }
+  if (e.key === 'Tab') {
+    const focusable = focusableIn(overlay);
+    if (focusable.length === 0) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
     }
-    if (e.key === 'Tab') {
-      const focusable = focusableIn(overlay);
-      if (focusable.length === 0) return;
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (e.shiftKey && document.activeElement === first) {
-        e.preventDefault();
-        last.focus();
-      } else if (!e.shiftKey && document.activeElement === last) {
-        e.preventDefault();
-        first.focus();
-      }
-    }
-  });
+  }
 });
 
 function invalidateActiveCirclesCache() {
@@ -3287,7 +3314,7 @@ function setGameMode(modo) {
   document.getElementById('soloModeInfo').style.display = (modo === 'solo') ? 'flex' : 'none';
   // En Local son varios nombres, así que la etiqueta cambia con el modo.
   document.getElementById('etiquetaNombres').textContent =
-    (modo === 'solo') ? 'Tu nombre' : 'Nombres de los jugadores';
+    (modo === 'solo') ? t('menu.tuNombre') : t('menu.nombresJugadores');
   document.getElementById('localPlayersSection').style.display = (modo === 'local') ? 'flex' : 'none';
   // En Solo hay un humano; en Local, los que se elijan (mínimo 2).
   setPlayerCount(modo === 'solo' ? 1 : Math.max(2, numPlayers));
@@ -3361,7 +3388,7 @@ function construirTarjetasRival() {
             data-accion="rival" data-rival="${b.id}" data-kind="${b.kind}"
             role="radio" aria-checked="false" style="--rival-color:${b.color}">
       <span class="rival-check" aria-hidden="true">✓</span>
-      <span class="rival-avatar">${b.retrato ? `<img src="${b.retrato}?v=2.86" alt="" loading="lazy">` : ''}</span>
+      <span class="rival-avatar">${b.retrato ? `<img src="${b.retrato}?v=2.87" alt="" loading="lazy">` : ''}</span>
       <span class="rival-name">${escapeHtml(b.nombre)}</span>
       <span class="rival-tag">${escapeHtml(b.apodo)}</span>
       ${b.bloqueable ? '<span class="cortinilla" id="cortinillaInvitado"><span class="cortinilla-txt">🔒</span></span>' : ''}
@@ -3373,13 +3400,49 @@ function construirTarjetasRival() {
   });
 }
 
+// Selector de idioma: se genera desde el catálogo de idiomas, así que
+// añadir uno nuevo es añadir su archivo de textos, sin tocar el HTML.
+function construirSelectorIdioma() {
+  const cont = document.getElementById('selectorIdioma');
+  if (!cont) return;
+  cont.innerHTML = Object.entries(IDIOMAS).map(([codigo, idioma]) => `
+    <button type="button" class="btn-idioma${codigo === getLocale() ? ' is-active' : ''}"
+            data-idioma="${codigo}" lang="${codigo}"
+            aria-label="${idioma.nombre}" title="${idioma.nombre}">${idioma.bandera}</button>`).join('');
+  cont.querySelectorAll('[data-idioma]').forEach(b => {
+    b.addEventListener('click', () => cambiarIdioma(b.dataset.idioma));
+  });
+}
+
+function cambiarIdioma(codigo) {
+  vibrate(HAPTIC.tap);
+  setLocale(codigo);
+  aplicarIdioma();
+}
+
+// Vuelve a pintar todo lo que lleva texto. Las partes generadas por
+// JavaScript (tarjetas, ficha del rival, botón de jugar) se reconstruyen;
+// las estáticas se traducen por sus marcas data-i18n.
+function aplicarIdioma() {
+  traducirDocumento();
+  construirSelectorIdioma();
+  construirTarjetasRival();
+  pintarAvataresRivales();
+  actualizarInvitado();
+  const activo = document.querySelector('[data-accion="rival"].is-active');
+  elegirRival(activo ? activo.dataset.rival : 'circuit');
+  actualizarResumenOpciones();
+  document.getElementById('etiquetaNombres').textContent =
+    gameMode === 'solo' ? t('menu.tuNombre') : t('menu.nombresJugadores');
+}
+
 function pintarAvataresRivales() {
   document.querySelectorAll('[data-accion="rival"]').forEach(b => {
     const r = RIVALES[b.dataset.rival];
     if (!r) return;
     b.style.setProperty('--rival-color', r.color);
     const hueco = b.querySelector('.rival-avatar');
-    if (hueco) hueco.innerHTML = `<img src="${r.retrato}?v=2.86" alt="" loading="lazy">`;
+    if (hueco) hueco.innerHTML = `<img src="${r.retrato}?v=2.87" alt="" loading="lazy">`;
   });
 }
 
@@ -3453,8 +3516,8 @@ function actualizarTextoJugar() {
   const esInvitado = document.querySelector('[data-rival="invitado"].is-active');
   const nombreRival = esInvitado && invitadoActual ? invitadoActual.nombre : getRival().nombre;
   btn.textContent = (gameMode === 'solo')
-    ? `▶ Jugar contra ${nombreRival}`
-    : `▶ Jugar ${numPlayers} jugadores`;
+    ? t('menu.jugarContra', { rival: nombreRival })
+    : t('menu.jugarJugadores', { n: numPlayers });
 }
 
 // Resumen de las opciones plegadas, para no tener que abrirlas por curiosidad.
@@ -3512,7 +3575,7 @@ function avatarDeRival(id) {
   // Por identidad, no por nombre visible: dos rivales podrían llamarse
   // igual, y los invitados no están en RIVALES.
   const r = RIVALES[id] || (invitadoActual && invitadoActual.id === id ? invitadoActual : null);
-  return r ? `<span class="card-avatar"><img src="${r.retrato}?v=2.86" alt=""></span>` : '🤖';
+  return r ? `<span class="card-avatar"><img src="${r.retrato}?v=2.87" alt=""></span>` : '🤖';
 }
 
 function buildGameUI() {
@@ -3617,6 +3680,9 @@ function iniciarApp() {
   document.getElementById('portraitMsg').textContent = `${PRODUCTO} se juega en vertical.`;
   document.getElementById('infoLema').textContent = LEMA;
   document.title = PRODUCTO;
+  setLocale(idiomaInicial());
+  traducirDocumento();
+  construirSelectorIdioma();
   construirTarjetasRival();
   pintarAvataresRivales();
   actualizarInvitado();
