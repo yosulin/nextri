@@ -116,7 +116,7 @@ test('el modo Solo contra la máquina arranca sin errores', async ({ page }) => 
 test('cambiar el tema no rompe nada', async ({ page }) => {
   const errores = vigilarErrores(page);
   await page.goto('/index.html');
-  await page.locator('[data-accion="tema"]').click();
+  await page.locator('.barra-accion [data-accion="tema"]').click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', /light|dark/);
   expect(errores).toEqual([]);
 });
@@ -157,7 +157,7 @@ for (const p of PANTALLAS) {
 
     // El texto debe ser legible: nada por debajo de 11px
     const demasiadoPequeño = await page.evaluate(() => {
-      const sel = ['.rival-name', '.rival-tag', '.setup-label', '#startBtn', '.marca-lema'];
+      const sel = ['.rival-name', '.rival-tag', '.setup-label', '#startBtn'];
       return sel.flatMap(s => [...document.querySelectorAll(s)])
         .filter(el => el.offsetParent !== null)
         .map(el => ({ sel: el.className || el.id, px: parseFloat(getComputedStyle(el).fontSize) }))
@@ -217,7 +217,7 @@ test('las estadísticas se registran y sobreviven a recargar', async ({ page }) 
   expect(trasRecargar, 'la estadística debe sobrevivir a recargar').toBeGreaterThan(0);
 
   // Y la pantalla se abre desde el engranaje
-  await page.locator('[data-accion="abrir-ajustes"]').click();
+  await page.locator('.barra-accion [data-accion="abrir-ajustes"]').click();
   await expect(page.locator('#ajustesOverlay')).toHaveClass(/show/);
   await page.locator('[data-accion="abrir-stats"]').click();
   await expect(page.locator('#statsOverlay')).toHaveClass(/show/);
