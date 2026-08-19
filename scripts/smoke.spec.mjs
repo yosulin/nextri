@@ -42,7 +42,9 @@ test('la aplicación arranca y se puede jugar', async ({ page }) => {
   // Cuarta tarjeta: el invitado semanal, bloqueado hasta ganar a los tres
   await expect(page.locator('[data-accion="rival"]')).toHaveCount(4);
   await expect(page.locator('#btnInvitado')).toHaveClass(/bloqueado/);
-  await expect(page.locator('#invitadoNombre')).toHaveText('???');
+  // El nombre vive dentro de la tarjeta generada, no en un id propio:
+  // las tarjetas ya no se escriben a mano en el HTML.
+  await expect(page.locator('#btnInvitado .rival-name')).toHaveText('???');
   await expect(page.locator('#rivalDesc')).toContainText('Circuit');
   // Modo Local para probar el flujo de varios jugadores
   await page.locator('[data-accion="modo"][data-modo="local"]').click();
