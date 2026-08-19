@@ -51,6 +51,11 @@ export const EN = {
   'ajustes.informacion': 'About',
   'ajustes.datos': 'Data',
   'ajustes.idioma': 'Language',
+  'ajustes.preferencias': 'Preferences',
+  'ajustes.masOpciones': 'More options',
+  'ajustes.tema': 'Theme',
+  'ajustes.temaClaro': 'Light',
+  'ajustes.temaOscuro': 'Dark',
   'ajustes.cerrar': 'Close',
 
   'datos.nota': 'Everything is stored on this device only. Nothing is sent to any server and no names are stored.',

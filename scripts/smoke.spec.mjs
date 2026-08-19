@@ -122,8 +122,14 @@ test('el modo Solo contra la máquina arranca sin errores', async ({ page }) => 
 test('cambiar el tema no rompe nada', async ({ page }) => {
   const errores = vigilarErrores(page);
   await page.goto('/index.html');
-  await page.locator('.barra-accion [data-accion="tema"]').click();
-  await expect(page.locator('html')).toHaveAttribute('data-theme', /light|dark/);
+  // El tema vive ahora dentro del panel de ajustes, con las dos opciones
+  // a la vista en vez de un botón que alterna.
+  await page.locator('.barra-accion [data-accion="abrir-ajustes"]').click();
+  await expect(page.locator('#ajustesOverlay')).toHaveClass(/show/);
+  await page.locator('#selectorTema [data-tema="light"]').click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+  await page.locator('#selectorTema [data-tema="dark"]').click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   expect(errores).toEqual([]);
 });
 

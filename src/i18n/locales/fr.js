@@ -51,6 +51,11 @@ export const FR = {
   'ajustes.informacion': 'À propos',
   'ajustes.datos': 'Données',
   'ajustes.idioma': 'Langue',
+  'ajustes.preferencias': 'Préférences',
+  'ajustes.masOpciones': 'Plus d\u2019options',
+  'ajustes.tema': 'Thème',
+  'ajustes.temaClaro': 'Clair',
+  'ajustes.temaOscuro': 'Sombre',
   'ajustes.cerrar': 'Fermer',
 
   'datos.nota': 'Tout est enregistré uniquement sur cet appareil. Rien n\u2019est envoyé à un serveur et aucun nom n\u2019est conservé.',

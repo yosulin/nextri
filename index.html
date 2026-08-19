@@ -749,16 +749,65 @@
   .fila-ajuste span { flex: 1; text-align: left; }
   .fila-ajuste i { color: var(--muted); font-style: normal; font-size: 1.1rem; }
   .fila-ajuste:hover { border-color: var(--p2-color); }
-  .fila-idioma { cursor: default; }
-  .fila-idioma:hover { border-color: var(--border); }
-  .idiomas { display: flex; gap: 6px; }
-  .btn-idioma {
-    width: 38px; height: 34px;
-    border: 2px solid var(--border); border-radius: 10px;
-    background: transparent; cursor: pointer; font-size: 1.1rem;
-    line-height: 1; padding: 0;
+  /* ── Panel de control ──
+     El engranaje va a albergar cada vez más opciones, así que se presenta
+     como la consola del juego y no como una lista suelta: cabecera con la
+     marca, grupos con título, y dos tipos de fila bien distintos — las de
+     preferencia se cambian ahí mismo y las de navegación llevan a otra
+     pantalla. Un borde de acento a la izquierda de cada grupo da el aire
+     técnico que pega con los robots. */
+  .panel-control { gap: 14px; }
+  .pc-cabecera {
+    display: flex; align-items: center; gap: 12px;
+    width: 100%; text-align: left;
+    padding-bottom: 12px; border-bottom: 1px solid var(--border);
   }
-  .btn-idioma.is-active { border-color: var(--p2-color); background: var(--p2-light); }
+  .pc-simbolo { width: 40px; height: 40px; flex-shrink: 0; }
+  .pc-cabecera h3 { font-size: 1.15rem; line-height: 1.1; }
+  .pc-version { font-size: .7rem; color: var(--muted); letter-spacing: 1px; }
+
+  .pc-grupo {
+    width: 100%;
+    border-left: 3px solid var(--p2-color);
+    padding-left: 10px;
+  }
+  .pc-grupo + .pc-grupo { margin-top: 4px; }
+  .pc-grupo-tit {
+    font-size: .66rem; text-transform: uppercase; letter-spacing: 1.4px;
+    color: var(--muted); font-weight: 800;
+    margin-bottom: 6px; text-align: left;
+  }
+
+  .pc-fila {
+    display: flex; align-items: center; gap: 10px;
+    width: 100%; text-align: left;
+    background: var(--bg);
+    border: 1px solid var(--border); border-radius: 12px;
+    padding: 10px 12px; margin-bottom: 6px;
+    color: var(--text); font-family: 'Nunito', sans-serif;
+    font-weight: 700; font-size: .88rem;
+  }
+  .pc-icono { font-size: 1.05rem; width: 22px; text-align: center; flex-shrink: 0; }
+  .pc-etiqueta { flex: 1; }
+  .pc-nav { cursor: pointer; transition: border-color .2s, transform .12s; }
+  .pc-nav:hover { border-color: var(--p2-color); }
+  .pc-nav:active { transform: scale(.985); }
+  .pc-flecha { color: var(--muted); font-size: 1.15rem; }
+
+  /* Control segmentado: para elegir entre pocas opciones sin abrir nada */
+  .segmento { display: flex; gap: 4px; background: var(--surface);
+              border-radius: 10px; padding: 3px; }
+  .segmento button {
+    min-width: 36px; height: 30px;
+    border: none; border-radius: 8px; background: transparent;
+    color: var(--muted); cursor: pointer; font-size: 1rem;
+    line-height: 1; padding: 0 6px;
+    font-family: 'Nunito', sans-serif; font-weight: 700;
+    transition: background .18s, color .18s;
+  }
+  .segmento button.is-active {
+    background: var(--p2-color); color: #fff;
+  }
 
   .datos-nota { font-size: .78rem; color: var(--muted); margin-bottom: 6px; line-height: 1.4; text-align: center; }
 
@@ -1010,7 +1059,7 @@
        vez de una imagen recortada. Escala nítido a cualquier densidad de
        pantalla, se adapta solo a los dos temas (sin necesitar dos
        versiones) y lo leen los buscadores y lectores de pantalla. -->
-  <img class="marca-simbolo" src="logo-marca.svg?v=2.87" alt="" aria-hidden="true">
+  <img class="marca-simbolo" src="logo-marca.svg?v=2.88" alt="" aria-hidden="true">
   <h1 class="marca-texto">NEXTRI</h1>
 </div>
 
@@ -1099,10 +1148,7 @@
     <!-- Tema y ajustes viajan DENTRO de la barra: sueltos y flotando
          acababan pisando el contenido del menú al desplazarse. Aquí su
          sitio queda reservado y no se solapan con nada. -->
-    <button class="corner-btn en-barra" data-accion="tema" aria-label="Cambiar tema" title="Cambiar tema">
-      <svg id="themeIconMenu" width="18" height="18" viewBox="0 0 24 24" fill="none"></svg>
-    </button>
-    <button class="btn-new" data-accion="empezar" id="startBtn">▶ Empezar</button>
+        <button class="btn-new" data-accion="empezar" id="startBtn">▶ Empezar</button>
     <button class="corner-btn en-barra" data-accion="abrir-ajustes" aria-label="Ajustes e información" title="Ajustes">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
         <circle cx="12" cy="12" r="3.2" stroke="currentColor" stroke-width="2"/>
@@ -1204,20 +1250,57 @@
 <!-- Panel de ajustes (solo en el menú): agrupa estadísticas, información
      y gestión de datos en un sitio, en vez de repartirlos por la pantalla -->
 <div class="info-overlay" id="ajustesOverlay" role="dialog" aria-modal="true" aria-labelledby="ajustesTitulo" data-accion="cerrar-fondo" data-objetivo="ajustesOverlay">
-  <div class="info-sheet">
+  <div class="info-sheet panel-control">
     <button class="dialog-close-x" data-accion="cerrar" data-objetivo="ajustesOverlay" aria-label="Cerrar">×</button>
-    <h3 id="ajustesTitulo">● NEXTRI</h3>
-    <p class="info-lema">cada línea cuenta</p>
-    <div class="menu-ajustes">
-      <button class="fila-ajuste" data-accion="abrir-stats">📊 <span data-i18n="ajustes.estadisticas">Estadísticas</span><i>›</i></button>
-      <button class="fila-ajuste" data-accion="abrir-info">ⓘ <span data-i18n="ajustes.informacion">Información</span><i>›</i></button>
-      <button class="fila-ajuste" data-accion="abrir-datos">💾 <span data-i18n="ajustes.datos">Datos</span><i>›</i></button>
-      <div class="fila-ajuste fila-idioma">
-        🌐 <span data-i18n="ajustes.idioma">Idioma</span>
-        <span class="idiomas" id="selectorIdioma"></span>
+
+    <!-- Cabecera con la marca: el panel es "la consola" del juego, así que
+         se presenta como tal en vez de como una lista de opciones sueltas -->
+    <div class="pc-cabecera">
+      <img class="pc-simbolo" src="logo-marca.svg?v=2.88" alt="" aria-hidden="true">
+      <div>
+        <h3 id="ajustesTitulo">NEXTRI</h3>
+        <span class="pc-version" id="pcVersion"></span>
       </div>
     </div>
-    <button class="btn-new" data-accion="cerrar" data-objetivo="ajustesOverlay">Cerrar</button>
+
+    <!-- Preferencias: interruptores, no navegación -->
+    <div class="pc-grupo">
+      <div class="pc-grupo-tit" data-i18n="ajustes.preferencias">Preferencias</div>
+
+      <div class="pc-fila">
+        <span class="pc-icono">🎨</span>
+        <span class="pc-etiqueta" data-i18n="ajustes.tema">Tema</span>
+        <span class="pc-control segmento" id="selectorTema"></span>
+      </div>
+
+      <div class="pc-fila">
+        <span class="pc-icono">🌐</span>
+        <span class="pc-etiqueta" data-i18n="ajustes.idioma">Idioma</span>
+        <span class="pc-control segmento" id="selectorIdioma"></span>
+      </div>
+    </div>
+
+    <!-- Secciones: llevan a otra pantalla -->
+    <div class="pc-grupo">
+      <div class="pc-grupo-tit" data-i18n="ajustes.masOpciones">Más opciones</div>
+      <button class="pc-fila pc-nav" data-accion="abrir-stats">
+        <span class="pc-icono">📊</span>
+        <span class="pc-etiqueta" data-i18n="ajustes.estadisticas">Estadísticas</span>
+        <span class="pc-flecha">›</span>
+      </button>
+      <button class="pc-fila pc-nav" data-accion="abrir-datos">
+        <span class="pc-icono">💾</span>
+        <span class="pc-etiqueta" data-i18n="ajustes.datos">Datos</span>
+        <span class="pc-flecha">›</span>
+      </button>
+      <button class="pc-fila pc-nav" data-accion="abrir-info">
+        <span class="pc-icono">ⓘ</span>
+        <span class="pc-etiqueta" data-i18n="ajustes.informacion">Información</span>
+        <span class="pc-flecha">›</span>
+      </button>
+    </div>
+
+    <button class="btn-new" data-accion="cerrar" data-objetivo="ajustesOverlay" data-i18n="ajustes.cerrar">Cerrar</button>
   </div>
 </div>
 
@@ -1260,35 +1343,35 @@
 // global — funcionaba, pero nada declaraba qué necesitaba cada uno, y una
 // mezcla de versiones en caché podía emparejar mitades incompatibles sin
 // que nada lo detectara.
-import { seedRng, rngNextFrom, rngIntFrom, getRngSeed, getRngState, restoreRngState } from './src/game/random.js?v=2.87';
-import { dist, distSq, segmentPassesOverCircle, pointInTriangle, segmentsIntersect } from './src/game/geometry.js?v=2.87';
+import { seedRng, rngNextFrom, rngIntFrom, getRngSeed, getRngState, restoreRngState } from './src/game/random.js?v=2.88';
+import { dist, distSq, segmentPassesOverCircle, pointInTriangle, segmentsIntersect } from './src/game/geometry.js?v=2.88';
 import { MOVE_REASON_TEXT, edgeKey, edgeExists, connectionCount, areAdjacent,
-         lineIntersectsAny, findNewTriangles, triangleTraps, checkMoveValidity } from './src/game/rules.js?v=2.87';
-import { BOARD_GENERATOR_VERSION, BOARD_QUALITY_TARGET } from './src/game/board-quality.js?v=2.87';
+         lineIntersectsAny, findNewTriangles, triangleTraps, checkMoveValidity } from './src/game/rules.js?v=2.88';
+import { BOARD_GENERATOR_VERSION, BOARD_QUALITY_TARGET } from './src/game/board-quality.js?v=2.88';
 import { ADJACENCY_TARGET, generateCirclePositions, buildCandidateGraph,
-         attemptBoardGeneration, chooseAdjacency, finalizeAdjacency } from './src/game/board.js?v=2.87';
+         attemptBoardGeneration, chooseAdjacency, finalizeAdjacency } from './src/game/board.js?v=2.88';
 import { createPlayer, playerById, nextPlayerId, applyAction, hasAnyLegalMove,
-         replayFromLog } from './src/game/engine.js?v=2.87';
+         replayFromLog } from './src/game/engine.js?v=2.88';
 import { STATE_SCHEMA_VERSION, RULES_VERSION, serializeGameState, restoreGameState,
-         migrateGameSnapshot, isValidGameSnapshot } from './src/game/state.js?v=2.87';
+         migrateGameSnapshot, isValidGameSnapshot } from './src/game/state.js?v=2.88';
 import { invitadoDeLaSemana, progresoDesbloqueo, estaDesbloqueado, loQueFalta,
-         REQUISITOS_DESBLOQUEO } from './src/ai/invitados.js?v=2.87';
+         REQUISITOS_DESBLOQUEO } from './src/ai/invitados.js?v=2.88';
 import { t, setLocale, getLocale, idiomaInicial, traducirDocumento, IDIOMAS }
-         from './src/i18n/i18n.js?v=2.87';
-import { svgRadar, perfilDesdeNivel, listaEjes } from './src/ui/radar.js?v=2.87';
-import { AI_VERSION, AI_LEVELS, setDifficulty, getDifficulty, RIVALES, setRival, getRival } from './src/ai/levels.js?v=2.87';
-import { chooseAIMove, createsScoringReply } from './src/ai/ai.js?v=2.87';
-import * as Stats from './src/stats/stats.js?v=2.87';
+         from './src/i18n/i18n.js?v=2.88';
+import { svgRadar, perfilDesdeNivel, listaEjes } from './src/ui/radar.js?v=2.88';
+import { AI_VERSION, AI_LEVELS, setDifficulty, getDifficulty, RIVALES, setRival, getRival } from './src/ai/levels.js?v=2.88';
+import { chooseAIMove, createsScoringReply } from './src/ai/ai.js?v=2.88';
+import * as Stats from './src/stats/stats.js?v=2.88';
 import { victoriasPorRival, aggregateStats, statsByOpponent, statsByCircleCount, ultimasPartidas,
-         formatearDuracion, porcentaje } from './src/stats/aggregates.js?v=2.87';
-import { saveGame, loadSavedGame, clearSavedGame, hasSavedGame } from './src/platform/storage.js?v=2.87';
+         formatearDuracion, porcentaje } from './src/stats/aggregates.js?v=2.88';
+import { saveGame, loadSavedGame, clearSavedGame, hasSavedGame } from './src/platform/storage.js?v=2.88';
 // ── Constantes ──────────────────────────────────────────────────────────────
 // Única fuente de la versión visible — antes se escribía a mano en tres
 // sitios (aquí, el panel de info, y el CACHE de sw.js) y se desincronizaban
 // entre sí. sw.js sigue siendo aparte por necesidad (un service worker no
 // puede leer esta constante, vive en otro archivo) — al subir de versión,
 // solo hace falta tocar ESTA línea y la de sw.js, no una tercera copia más.
-const APP_VERSION = 'v2.87';
+const APP_VERSION = 'v2.88';
 
 // Nombre del producto en un solo sitio. Si algún día cambia (NEXTRI u
 // otro), esto evita perseguirlo por cabecera, aviso de rotación, panel de
@@ -3388,7 +3471,7 @@ function construirTarjetasRival() {
             data-accion="rival" data-rival="${b.id}" data-kind="${b.kind}"
             role="radio" aria-checked="false" style="--rival-color:${b.color}">
       <span class="rival-check" aria-hidden="true">✓</span>
-      <span class="rival-avatar">${b.retrato ? `<img src="${b.retrato}?v=2.87" alt="" loading="lazy">` : ''}</span>
+      <span class="rival-avatar">${b.retrato ? `<img src="${b.retrato}?v=2.88" alt="" loading="lazy">` : ''}</span>
       <span class="rival-name">${escapeHtml(b.nombre)}</span>
       <span class="rival-tag">${escapeHtml(b.apodo)}</span>
       ${b.bloqueable ? '<span class="cortinilla" id="cortinillaInvitado"><span class="cortinilla-txt">🔒</span></span>' : ''}
@@ -3406,11 +3489,34 @@ function construirSelectorIdioma() {
   const cont = document.getElementById('selectorIdioma');
   if (!cont) return;
   cont.innerHTML = Object.entries(IDIOMAS).map(([codigo, idioma]) => `
-    <button type="button" class="btn-idioma${codigo === getLocale() ? ' is-active' : ''}"
+    <button type="button" class="${codigo === getLocale() ? 'is-active' : ''}"
             data-idioma="${codigo}" lang="${codigo}"
             aria-label="${idioma.nombre}" title="${idioma.nombre}">${idioma.bandera}</button>`).join('');
   cont.querySelectorAll('[data-idioma]').forEach(b => {
     b.addEventListener('click', () => cambiarIdioma(b.dataset.idioma));
+  });
+}
+
+// Tema: pasa de ser un botón suelto que alterna a un control con las dos
+// opciones a la vista. Se ve cuál está activa sin tener que deducirlo del
+// icono, y deja sitio para añadir "automático" más adelante.
+function construirSelectorTema() {
+  const cont = document.getElementById('selectorTema');
+  if (!cont) return;
+  const actual = document.documentElement.getAttribute('data-theme') || 'dark';
+  const opciones = [
+    { id: 'light', icono: '☀️', etiqueta: t('ajustes.temaClaro') },
+    { id: 'dark',  icono: '🌙', etiqueta: t('ajustes.temaOscuro') }
+  ];
+  cont.innerHTML = opciones.map(o => `
+    <button type="button" class="${o.id === actual ? 'is-active' : ''}"
+            data-tema="${o.id}" aria-label="${o.etiqueta}" title="${o.etiqueta}">${o.icono}</button>`).join('');
+  cont.querySelectorAll('[data-tema]').forEach(b => {
+    b.addEventListener('click', () => {
+      vibrate(HAPTIC.tap);
+      applyTheme(b.dataset.tema);
+      construirSelectorTema();
+    });
   });
 }
 
@@ -3426,6 +3532,7 @@ function cambiarIdioma(codigo) {
 function aplicarIdioma() {
   traducirDocumento();
   construirSelectorIdioma();
+  construirSelectorTema();
   construirTarjetasRival();
   pintarAvataresRivales();
   actualizarInvitado();
@@ -3442,7 +3549,7 @@ function pintarAvataresRivales() {
     if (!r) return;
     b.style.setProperty('--rival-color', r.color);
     const hueco = b.querySelector('.rival-avatar');
-    if (hueco) hueco.innerHTML = `<img src="${r.retrato}?v=2.87" alt="" loading="lazy">`;
+    if (hueco) hueco.innerHTML = `<img src="${r.retrato}?v=2.88" alt="" loading="lazy">`;
   });
 }
 
@@ -3575,7 +3682,7 @@ function avatarDeRival(id) {
   // Por identidad, no por nombre visible: dos rivales podrían llamarse
   // igual, y los invitados no están en RIVALES.
   const r = RIVALES[id] || (invitadoActual && invitadoActual.id === id ? invitadoActual : null);
-  return r ? `<span class="card-avatar"><img src="${r.retrato}?v=2.87" alt=""></span>` : '🤖';
+  return r ? `<span class="card-avatar"><img src="${r.retrato}?v=2.88" alt=""></span>` : '🤖';
 }
 
 function buildGameUI() {
@@ -3673,6 +3780,7 @@ function conectarAcciones() {
 function iniciarApp() {
   conectarAcciones();
   document.getElementById('infoVersion').textContent = APP_VERSION;
+  document.getElementById('pcVersion').textContent = APP_VERSION;
   applyTheme(getInitialTheme());
   initPlayerCountSelector();
   setPlayerCount(2); // mínimo y default: 2 jugadores
@@ -3683,6 +3791,7 @@ function iniciarApp() {
   setLocale(idiomaInicial());
   traducirDocumento();
   construirSelectorIdioma();
+  construirSelectorTema();
   construirTarjetasRival();
   pintarAvataresRivales();
   actualizarInvitado();

@@ -52,6 +52,11 @@ export const ES = {
   'ajustes.informacion': 'Información',
   'ajustes.datos': 'Datos',
   'ajustes.idioma': 'Idioma',
+  'ajustes.preferencias': 'Preferencias',
+  'ajustes.masOpciones': 'Más opciones',
+  'ajustes.tema': 'Tema',
+  'ajustes.temaClaro': 'Claro',
+  'ajustes.temaOscuro': 'Oscuro',
   'ajustes.cerrar': 'Cerrar',
 
   'datos.nota': 'Todo se guarda solo en este dispositivo. No se envía nada a ningún servidor y no se guardan nombres.',
