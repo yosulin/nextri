@@ -52,6 +52,7 @@ export const ES = {
   'ajustes.informacion': 'Información',
   'ajustes.datos': 'Datos',
   'ajustes.idioma': 'Idioma',
+  'perfil.proximamente': 'Tu perfil llegará con el juego online.',
   'ajustes.preferencias': 'Preferencias',
   'ajustes.masOpciones': 'Más opciones',
   'ajustes.tema': 'Tema',

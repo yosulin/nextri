@@ -666,6 +666,17 @@
   body.in-game .icono-info { display: block; }
   .corner-btn:hover { color: var(--text); border-color: var(--p1-color); }
 
+  /* Cabecera: perfil · marca · ajustes. Los dos botones son iguales en
+     tamaño y estilo, y el título queda centrado entre ellos aunque uno
+     lleve icono más ancho, porque los laterales tienen el mismo ancho. */
+  .cabecera {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 8px; width: 100%; max-width: 480px;
+  }
+  .cabecera .marca { flex: 1; }
+  .corner-btn.en-cabecera { position: static; flex-shrink: 0; }
+  body.in-game .cabecera > .corner-btn { display: none; }
+
   /* ── Logotipo ── */
   .marca {
     display: flex; align-items: center; justify-content: center;
@@ -1054,13 +1065,34 @@
 </head>
 <body>
 
-<div class="marca">
+<div class="cabecera">
+  <!-- Perfil: hoy solo abre un aviso, pero el sitio queda reservado desde
+       ya para cuando haya inicio de sesión, en vez de tener que rehacer la
+       cabecera entonces. -->
+  <button class="corner-btn en-cabecera" data-accion="perfil"
+          aria-label="Perfil" title="Perfil">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="8" r="3.6" stroke="currentColor" stroke-width="2"/>
+      <path d="M4.5 20a7.5 7.5 0 0 1 15 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    </svg>
+  </button>
+
+  <div class="marca">
   <!-- Logotipo compuesto: la marca en SVG + el nombre como TEXTO REAL, en
        vez de una imagen recortada. Escala nítido a cualquier densidad de
        pantalla, se adapta solo a los dos temas (sin necesitar dos
        versiones) y lo leen los buscadores y lectores de pantalla. -->
-  <img class="marca-simbolo" src="logo-marca.svg?v=2.88" alt="" aria-hidden="true">
-  <h1 class="marca-texto">NEXTRI</h1>
+  <img class="marca-simbolo" src="logo-marca.svg?v=2.89" alt="" aria-hidden="true">
+    <h1 class="marca-texto">NEXTRI</h1>
+  </div>
+
+  <button class="corner-btn en-cabecera" data-accion="abrir-ajustes"
+          aria-label="Ajustes" title="Ajustes">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="3.2" stroke="currentColor" stroke-width="2"/>
+      <path d="M19.4 13.5a7.6 7.6 0 0 0 0-3l1.8-1.4-1.9-3.3-2.2.9a7.6 7.6 0 0 0-2.6-1.5L14.2 3H9.8l-.3 2.2a7.6 7.6 0 0 0-2.6 1.5l-2.2-.9-1.9 3.3 1.8 1.4a7.6 7.6 0 0 0 0 3l-1.8 1.4 1.9 3.3 2.2-.9a7.6 7.6 0 0 0 2.6 1.5l.3 2.2h4.4l.3-2.2a7.6 7.6 0 0 0 2.6-1.5l2.2.9 1.9-3.3-1.8-1.4Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+    </svg>
+  </button>
 </div>
 
 <!-- Config de nombres -->
@@ -1149,13 +1181,7 @@
          acababan pisando el contenido del menú al desplazarse. Aquí su
          sitio queda reservado y no se solapan con nada. -->
         <button class="btn-new" data-accion="empezar" id="startBtn">▶ Empezar</button>
-    <button class="corner-btn en-barra" data-accion="abrir-ajustes" aria-label="Ajustes e información" title="Ajustes">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-        <circle cx="12" cy="12" r="3.2" stroke="currentColor" stroke-width="2"/>
-        <path d="M19.4 13.5a7.6 7.6 0 0 0 0-3l1.8-1.4-1.9-3.3-2.2.9a7.6 7.6 0 0 0-2.6-1.5L14.2 3H9.8l-.3 2.2a7.6 7.6 0 0 0-2.6 1.5l-2.2-.9-1.9 3.3 1.8 1.4a7.6 7.6 0 0 0 0 3l-1.8 1.4 1.9 3.3 2.2-.9a7.6 7.6 0 0 0 2.6 1.5l.3 2.2h4.4l.3-2.2a7.6 7.6 0 0 0 2.6-1.5l2.2.9 1.9-3.3-1.8-1.4Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
-      </svg>
-    </button>
-  </div>
+      </div>
 </div>
 
 <div id="portraitGuard" class="portrait-guard" aria-live="polite">
@@ -1256,7 +1282,7 @@
     <!-- Cabecera con la marca: el panel es "la consola" del juego, así que
          se presenta como tal en vez de como una lista de opciones sueltas -->
     <div class="pc-cabecera">
-      <img class="pc-simbolo" src="logo-marca.svg?v=2.88" alt="" aria-hidden="true">
+      <img class="pc-simbolo" src="logo-marca.svg?v=2.89" alt="" aria-hidden="true">
       <div>
         <h3 id="ajustesTitulo">NEXTRI</h3>
         <span class="pc-version" id="pcVersion"></span>
@@ -1343,35 +1369,35 @@
 // global — funcionaba, pero nada declaraba qué necesitaba cada uno, y una
 // mezcla de versiones en caché podía emparejar mitades incompatibles sin
 // que nada lo detectara.
-import { seedRng, rngNextFrom, rngIntFrom, getRngSeed, getRngState, restoreRngState } from './src/game/random.js?v=2.88';
-import { dist, distSq, segmentPassesOverCircle, pointInTriangle, segmentsIntersect } from './src/game/geometry.js?v=2.88';
+import { seedRng, rngNextFrom, rngIntFrom, getRngSeed, getRngState, restoreRngState } from './src/game/random.js?v=2.89';
+import { dist, distSq, segmentPassesOverCircle, pointInTriangle, segmentsIntersect } from './src/game/geometry.js?v=2.89';
 import { MOVE_REASON_TEXT, edgeKey, edgeExists, connectionCount, areAdjacent,
-         lineIntersectsAny, findNewTriangles, triangleTraps, checkMoveValidity } from './src/game/rules.js?v=2.88';
-import { BOARD_GENERATOR_VERSION, BOARD_QUALITY_TARGET } from './src/game/board-quality.js?v=2.88';
+         lineIntersectsAny, findNewTriangles, triangleTraps, checkMoveValidity } from './src/game/rules.js?v=2.89';
+import { BOARD_GENERATOR_VERSION, BOARD_QUALITY_TARGET } from './src/game/board-quality.js?v=2.89';
 import { ADJACENCY_TARGET, generateCirclePositions, buildCandidateGraph,
-         attemptBoardGeneration, chooseAdjacency, finalizeAdjacency } from './src/game/board.js?v=2.88';
+         attemptBoardGeneration, chooseAdjacency, finalizeAdjacency } from './src/game/board.js?v=2.89';
 import { createPlayer, playerById, nextPlayerId, applyAction, hasAnyLegalMove,
-         replayFromLog } from './src/game/engine.js?v=2.88';
+         replayFromLog } from './src/game/engine.js?v=2.89';
 import { STATE_SCHEMA_VERSION, RULES_VERSION, serializeGameState, restoreGameState,
-         migrateGameSnapshot, isValidGameSnapshot } from './src/game/state.js?v=2.88';
+         migrateGameSnapshot, isValidGameSnapshot } from './src/game/state.js?v=2.89';
 import { invitadoDeLaSemana, progresoDesbloqueo, estaDesbloqueado, loQueFalta,
-         REQUISITOS_DESBLOQUEO } from './src/ai/invitados.js?v=2.88';
+         REQUISITOS_DESBLOQUEO } from './src/ai/invitados.js?v=2.89';
 import { t, setLocale, getLocale, idiomaInicial, traducirDocumento, IDIOMAS }
-         from './src/i18n/i18n.js?v=2.88';
-import { svgRadar, perfilDesdeNivel, listaEjes } from './src/ui/radar.js?v=2.88';
-import { AI_VERSION, AI_LEVELS, setDifficulty, getDifficulty, RIVALES, setRival, getRival } from './src/ai/levels.js?v=2.88';
-import { chooseAIMove, createsScoringReply } from './src/ai/ai.js?v=2.88';
-import * as Stats from './src/stats/stats.js?v=2.88';
+         from './src/i18n/i18n.js?v=2.89';
+import { svgRadar, perfilDesdeNivel, listaEjes } from './src/ui/radar.js?v=2.89';
+import { AI_VERSION, AI_LEVELS, setDifficulty, getDifficulty, RIVALES, setRival, getRival } from './src/ai/levels.js?v=2.89';
+import { chooseAIMove, createsScoringReply } from './src/ai/ai.js?v=2.89';
+import * as Stats from './src/stats/stats.js?v=2.89';
 import { victoriasPorRival, aggregateStats, statsByOpponent, statsByCircleCount, ultimasPartidas,
-         formatearDuracion, porcentaje } from './src/stats/aggregates.js?v=2.88';
-import { saveGame, loadSavedGame, clearSavedGame, hasSavedGame } from './src/platform/storage.js?v=2.88';
+         formatearDuracion, porcentaje } from './src/stats/aggregates.js?v=2.89';
+import { saveGame, loadSavedGame, clearSavedGame, hasSavedGame } from './src/platform/storage.js?v=2.89';
 // ── Constantes ──────────────────────────────────────────────────────────────
 // Única fuente de la versión visible — antes se escribía a mano en tres
 // sitios (aquí, el panel de info, y el CACHE de sw.js) y se desincronizaban
 // entre sí. sw.js sigue siendo aparte por necesidad (un service worker no
 // puede leer esta constante, vive en otro archivo) — al subir de versión,
 // solo hace falta tocar ESTA línea y la de sw.js, no una tercera copia más.
-const APP_VERSION = 'v2.88';
+const APP_VERSION = 'v2.89';
 
 // Nombre del producto en un solo sitio. Si algún día cambia (NEXTRI u
 // otro), esto evita perseguirlo por cabecera, aviso de rotación, panel de
@@ -3456,7 +3482,7 @@ function catalogoBots() {
   const inv = invitadoDeLaSemana();
   fijos.push({
     id: 'invitado', kind: 'guest', nombre: inv.nombre, apodo: inv.apodo,
-    color: inv.color, retrato: null, bloqueable: true
+    color: inv.color, retrato: inv.retrato || null, bloqueable: true
   });
   return fijos;
 }
@@ -3471,7 +3497,7 @@ function construirTarjetasRival() {
             data-accion="rival" data-rival="${b.id}" data-kind="${b.kind}"
             role="radio" aria-checked="false" style="--rival-color:${b.color}">
       <span class="rival-check" aria-hidden="true">✓</span>
-      <span class="rival-avatar">${b.retrato ? `<img src="${b.retrato}?v=2.88" alt="" loading="lazy">` : ''}</span>
+      <span class="rival-avatar">${b.retrato ? `<img src="${b.retrato}?v=2.89" alt="" loading="lazy">` : ''}</span>
       <span class="rival-name">${escapeHtml(b.nombre)}</span>
       <span class="rival-tag">${escapeHtml(b.apodo)}</span>
       ${b.bloqueable ? '<span class="cortinilla" id="cortinillaInvitado"><span class="cortinilla-txt">🔒</span></span>' : ''}
@@ -3549,7 +3575,7 @@ function pintarAvataresRivales() {
     if (!r) return;
     b.style.setProperty('--rival-color', r.color);
     const hueco = b.querySelector('.rival-avatar');
-    if (hueco) hueco.innerHTML = `<img src="${r.retrato}?v=2.88" alt="" loading="lazy">`;
+    if (hueco) hueco.innerHTML = `<img src="${r.retrato}?v=2.89" alt="" loading="lazy">`;
   });
 }
 
@@ -3682,7 +3708,7 @@ function avatarDeRival(id) {
   // Por identidad, no por nombre visible: dos rivales podrían llamarse
   // igual, y los invitados no están en RIVALES.
   const r = RIVALES[id] || (invitadoActual && invitadoActual.id === id ? invitadoActual : null);
-  return r ? `<span class="card-avatar"><img src="${r.retrato}?v=2.88" alt=""></span>` : '🤖';
+  return r ? `<span class="card-avatar"><img src="${r.retrato}?v=2.89" alt=""></span>` : '🤖';
 }
 
 function buildGameUI() {
@@ -3730,6 +3756,7 @@ const ACCIONES = {
   tirar:         () => rollDice(),
   tema:          () => toggleTheme(),
   compartir:     () => shareResult(),
+  perfil:        () => { vibrate(HAPTIC.tap); alert(t('perfil.proximamente')); },
   'abrir-ajustes': () => { vibrate(HAPTIC.select); openDialog(document.body.classList.contains('in-game') ? 'infoOverlay' : 'ajustesOverlay'); },
   'abrir-info':  () => { vibrate(HAPTIC.select); closeDialog('ajustesOverlay'); openDialog('infoOverlay'); },
   'abrir-stats': () => { vibrate(HAPTIC.select); closeDialog('ajustesOverlay'); mostrarEstadisticas(); },

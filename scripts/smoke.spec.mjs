@@ -124,7 +124,7 @@ test('cambiar el tema no rompe nada', async ({ page }) => {
   await page.goto('/index.html');
   // El tema vive ahora dentro del panel de ajustes, con las dos opciones
   // a la vista en vez de un botón que alterna.
-  await page.locator('.barra-accion [data-accion="abrir-ajustes"]').click();
+  await page.locator('.cabecera [data-accion="abrir-ajustes"]').click();
   await expect(page.locator('#ajustesOverlay')).toHaveClass(/show/);
   await page.locator('#selectorTema [data-tema="light"]').click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
@@ -242,7 +242,7 @@ test('las estadísticas se registran y sobreviven a recargar', async ({ page }) 
   expect(trasRecargar, 'la estadística debe sobrevivir a recargar').toBeGreaterThan(0);
 
   // Y la pantalla se abre desde el engranaje
-  await page.locator('.barra-accion [data-accion="abrir-ajustes"]').click();
+  await page.locator('.cabecera [data-accion="abrir-ajustes"]').click();
   await expect(page.locator('#ajustesOverlay')).toHaveClass(/show/);
   await page.locator('[data-accion="abrir-stats"]').click();
   await expect(page.locator('#statsOverlay')).toHaveClass(/show/);

@@ -33,6 +33,21 @@ export const INVITADOS_POR_FECHA = {
 };
 
 export const INVITADOS = {
+  lumina: {
+    nombre: 'Lumina', apodo: 'Intuitiva', color: '#ec4899', nivel: 'medium',
+    descripcion: 'Siente el tablero y crea conexiones inesperadas.',
+    retrato: 'rivales/lumina.png'
+  },
+  phantom: {
+    nombre: 'Phantom', apodo: 'Escurridizo', color: '#8b93d6', nivel: 'hard',
+    descripcion: 'Aparece cuando menos lo esperas.',
+    retrato: 'rivales/phantom.png'
+  },
+  chaos: {
+    nombre: 'Chaos', apodo: 'Irreverente', color: '#f97316', nivel: 'easy',
+    descripcion: 'Rompe patrones y crea el desorden.',
+    retrato: 'rivales/chaos.png'
+  },
   vampir: {
     nombre: 'Vampir', apodo: 'Nocturno', color: '#b3324a', nivel: 'hard',
     descripcion: 'Espera en la sombra y ataca cuando te confías.',
