@@ -50,6 +50,9 @@ jobs:
       - name: Traducciones completas
         run: node scripts/test-i18n.cjs
 
+      - name: Progreso semanal del invitado
+        run: node scripts/test-guest-progress.cjs
+
       - name: Generación de tableros (invariantes y calidad)
         run: node scripts/test-board-gen.cjs 40
 

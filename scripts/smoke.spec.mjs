@@ -42,7 +42,7 @@ test('la aplicación arranca y se puede jugar', async ({ page }) => {
   await expect(page.locator('#fichasRival .ficha-rival')).toHaveCount(4);
   await expect(page.locator('.ficha-rival.centrada')).toHaveCount(1);
   // Cuarta tarjeta: el invitado semanal, bloqueado hasta ganar a los tres
-  await expect(page.locator('[data-accion="rival"]')).toHaveCount(4);
+  await expect(page.locator('#fichasRival .ficha-rival')).toHaveCount(4);
   await expect(page.locator('#btnInvitado')).toHaveClass(/bloqueado/);
   // El nombre vive dentro de la tarjeta generada, no en un id propio:
   // las tarjetas ya no se escriben a mano en el HTML.

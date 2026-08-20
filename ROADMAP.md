@@ -1,92 +1,60 @@
 # Hoja de ruta de NEXTRI
 
-Estado a v2.66. Lo marcado como hecho está verificado con pruebas
-automáticas en CI (motor, estado, guardado, RNG, y una prueba de humo que
-carga la app real en un navegador y juega una partida).
+Estado a v2.91. Lo marcado como hecho está verificado con pruebas en CI
+(motor, estado, guardado, RNG, estadísticas, radar, generación de tableros,
+traducciones, progreso semanal, y una prueba que carga la app real en un
+navegador y juega una partida).
 
 ## Hecho
 
-- Juego local de 2 a 6 jugadores y modo Solo contra Delta, Circuit o Vector.
-- Motor puro: `applyAction(state, action)` sin DOM ni globales, con IDs
-  estables de jugador. Es el mismo código que podrá ejecutar un servidor.
-- Estado serializable, guardar y reanudar partida.
-- Generador aleatorio determinista con semilla y flujos separados.
-- Registro de eventos y replay, coherente con deshacer.
-- Módulos ES reales, rutas relativas, PWA instalable sin conexión.
-- Identidad de marca: nombre, icono, paleta y lenguaje.
+- Juego local de 2 a 6 jugadores y modo Solo contra Delta, Circuit y Vector.
+- Motor puro `applyAction(state, action)`, sin DOM ni globales, con IDs
+  estables de jugador e identidad persistida del rival.
+- Estado serializable, guardar y reanudar, registro de eventos y replay.
+- Generador de números aleatorios determinista con flujos separados.
+- Generador de tableros v2: varios candidatos y se elige el de mejor calidad.
+- PWA instalable y sin conexión, con rutas relativas.
+- Estadísticas locales en IndexedDB, sin backend y sin guardar nombres.
+- Progreso semanal del invitado, **separado** de las estadísticas.
+- Identidad de marca, radar de perfil, carrusel de rivales.
+- i18n local con español, inglés y francés.
 
-## Estadísticas (hecho, v2.76)
+## Siguiente
 
-Instrumentación local completa, sin backend ni analítica de terceros: todo
-queda en el dispositivo, en IndexedDB, y sin guardar nombres de personas.
-Cada partida se etiqueta con `aiVersion`, para poder comparar el
-comportamiento de los rivales antes y después de cambiarlos.
+1. **Terminar i18n**: quedan estadísticas, fin de partida y avisos por
+   traducir. Se hace antes de la nueva interfaz para no traducir dos veces.
+2. **Nueva interfaz BOT / LOCAL / SALAS**. Salas visible como
+   "Próximamente", sin backend fingido.
+3. **Supabase, primera pasada**: acceso con Google, perfiles, sincronización
+   de estadísticas y evento semanal. Empezando por invitados, no por OAuth
+   obligatorio: un juego que se comparte por enlace no puede recibir a nadie
+   con un muro de acceso.
+4. **IA 2.0**. Requisitos de entrada: generador aleatorio por partida (hoy
+   es único del módulo, y un servidor con varias salas las haría compartir
+   secuencia) y una línea base de partidas jugadas con la IA actual, para
+   poder comparar `AI_VERSION` 1 contra 2.
+5. **Calibración** de Delta, Circuit y Vector con datos reales.
+6. **Random, Phantom y Chaos**, una vez calibrada la IA 2.0.
+7. **Beta con usuarios**, repositorio privado y `playnextri.com`.
+8. **Capacitor para Android**, y iOS cuando haya Mac. La lógica se mantiene
+   compartida; nada crítico exclusivo de una plataforma.
+9. **Salas online**: invitados, código de sala, dos jugadores remotos,
+   servidor autoritativo.
 
-El repositorio está detrás de una interfaz mínima, de modo que en el futuro
-se pueda añadir uno contra Supabase sin tocar el motor ni la interfaz.
+## Decisiones tomadas
 
-## IA 2.0 (pendiente, en espera de datos)
+- Los rivales son **personalidades**, no niveles de dificultad — aunque hoy
+  técnicamente aún sean tres niveles de racionalidad limitada. Un solo
+  `chooseAIMove()` parametrizado, nunca un motor por rival.
+- **Nada de ajustar la IA según el marcador**: ni ayudar al que pierde ni
+  frenar al que gana.
+- El invitado se desbloquea **cada semana**, y su progreso no depende del
+  historial de partidas.
+- Supabase decide *qué* invitado está activo, nunca *cómo* juega: su código
+  y su arte viajan en la app, para que funcione sin conexión.
+- El repositorio pasará a privado antes de la beta seria.
 
-Delta, Circuit y Vector con evaluación por fases de partida y búsqueda con
-profundidad, manteniendo un solo algoritmo parametrizado. En espera a
-propósito: primero hay que jugar partidas con la IA actual para tener una
-línea base con la que comparar.
+## Fuera de alcance por ahora
 
-## Antes del online
-
-- **RNG por partida.** Hoy el generador es un singleton del módulo. En el
-  navegador solo hay una partida y no pasa nada, pero un servidor con
-  varias salas las haría compartir secuencia. Cada partida debe llevar el
-  suyo. Es requisito de entrada a la v3.0, no deuda opcional.
-- Extraer la capa de interfaz de `index.html` a `src/ui/`.
-
-## v3.x — Juego online
-
-Por orden, sin adelantar pasos:
-
-1. **Invitados primero.** Se entra escribiendo un nombre, sin cuenta.
-2. **Salas** con código corto y enlace compartible (más QR, que para jugar
-   en persona con varios móviles es lo más cómodo).
-3. **Dos jugadores remotos** de principio a fin: crear, unirse, jugar,
-   desconectar, reconectar, terminar, revancha.
-4. **Servidor autoritativo.** El cliente manda intenciones, nunca
-   resultados; el dado lo tira el servidor.
-5. Después: OAuth opcional, perfil e historial, salas de 2 a 6.
-
-Tecnología prevista: Supabase (autenticación anónima, PostgreSQL, tiempo
-real, RLS), por no montar infraestructura propia.
-
-## v4 — Aplicaciones para Android e iOS
-
-La app ya es instalable como PWA, lo que cubre buena parte del caso de uso
-sin pasar por ninguna tienda. El salto a aplicación nativa aporta:
-presencia en las tiendas, notificaciones push fiables en iOS, y
-posibilidad de juego por turnos asíncrono con avisos.
-
-**Vía recomendada: Capacitor.** Envuelve esta misma web en un contenedor
-nativo, de modo que no hay que reescribir el juego ni mantener dos
-versiones. Encaja especialmente bien aquí porque el motor ya está separado
-de la interfaz y no depende del navegador.
-
-Lo que haría falta, en orden:
-
-1. Añadir Capacitor y generar los proyectos de Android e iOS.
-2. Ajustes propios del móvil: zona segura (muescas), botón atrás de
-   Android, orientación bloqueada de verdad, vibración nativa.
-3. Iconos y pantallas de arranque en todos los tamaños que piden las
-   tiendas, a partir de `icon.svg`.
-4. Notificaciones push (útiles sobre todo con el modo asíncrono).
-5. Publicación: cuenta de desarrollador de Google Play (pago único) y de
-   Apple (cuota anual), fichas de tienda, capturas y política de
-   privacidad.
-
-**Requisito previo real:** conviene hacerlo *después* del online. Publicar
-en tiendas obliga a mantener versiones y a pasar revisiones por cada
-cambio, y hacerlo mientras el juego aún cambia de forma cada semana sería
-cargar con ese peso demasiado pronto.
-
-## Ideas sin fecha
-
-Modo asíncrono por turnos, amigos e invitaciones, estadísticas, logros.
-Ninguna antes de que crear sala → jugar → reconectar → revancha funcione
-de forma sólida.
+Modo Savage con artefactos (Chaos es su puerta de entrada), ranking,
+amigos e invitaciones, modo asíncrono por turnos.
