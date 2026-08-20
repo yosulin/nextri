@@ -60,12 +60,15 @@ test('la aplicación arranca y se puede jugar', async ({ page }) => {
   const slider = page.locator('#circleSlider');
   await slider.evaluate(el => { el.value = '50'; el.dispatchEvent(new Event('input', { bubbles: true })); });
   await expect(page.locator('#sliderVal')).toHaveText('50');
-  await page.locator('[data-accion="cerrar"][data-objetivo="ajustesOverlay"]').first().click();
 
-  // La casilla está oculta a propósito (accesible pero no visible), así
-  // que se activa como lo haría una persona: pulsando su interruptor.
+  // La casilla vive DENTRO del mismo panel de ajustes (v2.97), así que se
+  // marca antes de cerrarlo, no después. Está oculta a propósito
+  // (accesible pero no visible), así que se activa como lo haría una
+  // persona: pulsando su interruptor.
   await page.locator('#randomToggleInput').check({ force: true });
   await expect(page.locator('#randomToggleInput')).toBeChecked();
+
+  await page.locator('[data-accion="cerrar"][data-objetivo="ajustesOverlay"]').first().click();
 
   // 3. Empezar partida
   await page.locator('#startBtn').click();
