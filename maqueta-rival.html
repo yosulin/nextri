@@ -62,16 +62,23 @@
       var(--surface) 70%);
     border:2px solid color-mix(in srgb, var(--rival) 45%, var(--border));
     padding:16px; display:grid; grid-template-columns:1fr auto; gap:10px;
-    min-height:230px; transition:transform .26s ease, opacity .26s ease;
+    min-height:230px;
   }
-  /* Visor que recorta: la ficha sale por un lado y la nueva entra por el
-     otro, en vez de fundirse. Es lo que hace que se perciba como pasar
-     cartas y no como un cambio de contenido. */
-  .visor{overflow:hidden;border-radius:22px}
-  .ficha.sale-izq{transform:translateX(-105%);opacity:0}
-  .ficha.sale-der{transform:translateX(105%);opacity:0}
-  .ficha.entra-izq{transform:translateX(-105%);opacity:0;transition:none}
-  .ficha.entra-der{transform:translateX(105%);opacity:0;transition:none}
+  /* Tira de fichas: TODAS existen a la vez y se arrastran con el dedo,
+     igual que el carrusel pequeño. Antes había una sola ficha que se
+     animaba al soltar, así que no seguía al dedo — que es justo lo que
+     hace que se sienta como pasar cartas. El anclaje deja cada ficha
+     centrada al terminar el gesto. */
+  .fichas{
+    display:flex; gap:12px;
+    overflow-x:auto; scroll-snap-type:x mandatory;
+    scrollbar-width:none; -webkit-overflow-scrolling:touch;
+    padding:2px;
+  }
+  .fichas::-webkit-scrollbar{display:none}
+  .fichas > .ficha{
+    flex:0 0 100%; scroll-snap-align:center;
+  }
   .ficha h2{
     font-family:'Fredoka One',cursive;font-size:1.7rem;line-height:1;
     color:var(--rival);letter-spacing:.5px;
@@ -190,7 +197,7 @@
     <button class="flecha" onclick="mover(1)" aria-label="Siguiente">›</button>
   </div>
 
-  <div class="visor"><div class="ficha" id="ficha"></div></div>
+  <div class="fichas" id="fichas"></div>
 
 </div>
 
@@ -263,82 +270,67 @@ function radar(perfil, color, tam = 116) {
   </svg>`;
 }
 
-// dir: 1 avanza (la ficha sale por la izquierda), -1 retrocede, 0 sin
-// movimiento (primera carga o clic directo en un avatar).
-function pintar(dir = 0) {
-  const r = RIVALES[actual];
-  const ficha = document.getElementById('ficha');
-
-  const rellenar = () => {
-    ficha.style.setProperty('--rival', r.color);
-    document.body.style.setProperty('--rival-cta', r.color);
-    ficha.innerHTML = `
+// Todas las fichas se pintan una vez; después solo se sincroniza cuál
+// está centrada. Así el arrastre lo hace el navegador y responde al dedo
+// de inmediato, sin código de gestos por medio.
+function pintarFichas() {
+  document.getElementById('fichas').innerHTML = RIVALES.map(r => `
+    <div class="ficha" style="--rival:${r.color}">
       <div>
         <h2>${r.nombre}</h2>
         <div class="apodo">${r.apodo}</div>
         <div class="desc">${r.desc}</div>
         <div class="radar">${radar(r.perfil, r.color)}</div>
       </div>
-      <img class="retrato" src="rivales/${r.id}.png" alt="">`;
-  };
+      <img class="retrato" src="rivales/${r.id}.png" alt="">
+    </div>`).join('');
+}
 
-  if (dir === 0) { rellenar(); }
-  else {
-    ficha.classList.add(dir > 0 ? 'sale-izq' : 'sale-der');
-    setTimeout(() => {
-      rellenar();
-      // Colocar la nueva al otro lado SIN animar, y soltarla en el
-      // fotograma siguiente para que el navegador anime la entrada.
-      ficha.classList.remove('sale-izq', 'sale-der');
-      ficha.classList.add(dir > 0 ? 'entra-der' : 'entra-izq');
-      requestAnimationFrame(() => requestAnimationFrame(() => {
-        ficha.classList.remove('entra-der', 'entra-izq');
-      }));
-    }, 260);
-  }
-
+// Refleja el rival actual en el botón y en el carrusel pequeño.
+function sincronizar() {
+  const r = RIVALES[actual];
+  document.body.style.setProperty('--rival-cta', r.color);
   document.getElementById('jugar').innerHTML = r.bloqueado
     ? `🔒 ${r.nombre} bloqueado`
     : `▶ Jugar contra ${r.nombre} <span>›</span>`;
-
-  document.querySelectorAll('.av').forEach((el,i)=>{
-    el.classList.toggle('on', i===actual);
-  });
+  document.querySelectorAll('.av').forEach((el, i) => el.classList.toggle('on', i === actual));
   const activo = document.querySelectorAll('.av')[actual];
-  if (activo) activo.scrollIntoView({ inline:'center', block:'nearest' });
+  if (activo) activo.scrollIntoView({ inline: 'center', block: 'nearest' });
+}
+
+// Llevar la tira a una ficha concreta (al pulsar un avatar o una flecha).
+function irA(i, suave = true) {
+  const tira = document.getElementById('fichas');
+  const ficha = tira.children[i];
+  if (!ficha) return;
+  actual = i;
+  tira.scrollTo({ left: ficha.offsetLeft - tira.offsetLeft, behavior: suave ? 'smooth' : 'auto' });
+  sincronizar();
 }
 
 function mover(d) {
-  actual = (actual + d + RIVALES.length) % RIVALES.length;
-  pintar(d);
+  irA((actual + d + RIVALES.length) % RIVALES.length);
 }
 
-// Deslizar la ficha con el dedo: en el móvil es el gesto natural, y las
-// flechas se quedan para quien prefiera pulsar. Se exige recorrido mínimo
-// y que el movimiento sea claramente horizontal, para no robarle el
-// gesto al desplazamiento vertical de la página.
-(function gestoFicha() {
-  const ficha = document.getElementById('ficha');
-  let x0 = null, y0 = null;
-  ficha.addEventListener('pointerdown', e => { x0 = e.clientX; y0 = e.clientY; });
-  ficha.addEventListener('pointerup', e => {
-    if (x0 === null) return;
-    const dx = e.clientX - x0, dy = e.clientY - y0;
-    x0 = null;
-    if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.6) {
-      mover(dx < 0 ? 1 : -1);   // arrastrar a la izquierda trae el siguiente
-    }
+// Al arrastrar, se detecta qué ficha ha quedado centrada. Se espera a que
+// el desplazamiento se detenga para no recalcular en cada fotograma.
+(function seguirDesplazamiento() {
+  const tira = document.getElementById('fichas');
+  let temporizador = null;
+  tira.addEventListener('scroll', () => {
+    clearTimeout(temporizador);
+    temporizador = setTimeout(() => {
+      const centro = tira.scrollLeft + tira.clientWidth / 2;
+      let mejor = 0, mejorDist = Infinity;
+      [...tira.children].forEach((f, i) => {
+        const c = f.offsetLeft - tira.offsetLeft + f.clientWidth / 2;
+        const d = Math.abs(c - centro);
+        if (d < mejorDist) { mejorDist = d; mejor = i; }
+      });
+      if (mejor !== actual) { actual = mejor; sincronizar(); }
+    }, 90);
   });
-  ficha.addEventListener('pointercancel', () => { x0 = null; });
 })();
-
-// Al pulsar un avatar, el desplazamiento va en el sentido del salto.
-function irA(i) {
-  if (i === actual) return;
-  const dir = i > actual ? 1 : -1;
-  actual = i;
-  pintar(dir);
-}
 
 function avisoOnline() {
   const cap = document.getElementById('capaOnline');
@@ -356,7 +348,8 @@ function alternarTema(){
   h.setAttribute('data-theme', h.getAttribute('data-theme')==='light'?'dark':'light');
 }
 
-pintar();
+pintarFichas();
+irA(0, false);
 </script>
 </body>
 </html>
