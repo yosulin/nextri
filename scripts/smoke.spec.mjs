@@ -43,10 +43,10 @@ test('la aplicación arranca y se puede jugar', async ({ page }) => {
   await expect(page.locator('.ficha-rival.centrada')).toHaveCount(1);
   // Cuarta tarjeta: el invitado semanal, bloqueado hasta ganar a los tres
   await expect(page.locator('#fichasRival .ficha-rival')).toHaveCount(4);
-  await expect(page.locator('#btnInvitado')).toHaveClass(/bloqueado/);
+  await expect(page.locator('.ficha-rival[data-rival="invitado"]')).toHaveClass(/bloqueada/);
   // El nombre vive dentro de la tarjeta generada, no en un id propio:
   // las tarjetas ya no se escriben a mano en el HTML.
-  await expect(page.locator('#btnInvitado .rival-name')).toHaveText('???');
+  await expect(page.locator('.ficha-rival[data-rival="invitado"] h2')).toHaveText('???');
   await expect(page.locator('#rivalDesc')).toContainText('Circuit');
   // Modo Local para probar el flujo de varios jugadores
   await page.locator('[data-accion="modo"][data-modo="local"]').click();
@@ -184,7 +184,7 @@ for (const p of PANTALLAS) {
 
     // El texto debe ser legible: nada por debajo de 11px
     const demasiadoPequeño = await page.evaluate(() => {
-      const sel = ['.rival-name', '.rival-tag', '.setup-label', '#startBtn'];
+      const sel = ['.ficha-rival h2', '.fr-apodo', '.fr-desc', '.setup-label', '#startBtn'];
       return sel.flatMap(s => [...document.querySelectorAll(s)])
         .filter(el => el.offsetParent !== null)
         .map(el => ({ sel: el.className || el.id, px: parseFloat(getComputedStyle(el).fontSize) }))
