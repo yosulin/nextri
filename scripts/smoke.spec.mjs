@@ -41,6 +41,14 @@ test('la aplicación arranca y se puede jugar', async ({ page }) => {
   // Carrusel de fichas: una por rival del catálogo, con la central marcada.
   await expect(page.locator('#fichasRival .ficha-rival')).toHaveCount(4);
   await expect(page.locator('.ficha-rival.centrada')).toHaveCount(1);
+  // No basta con que HAYA una centrada: tiene que ser Circuit. Es la
+  // comprobación que habría cazado el fallo de orden de inicialización de
+  // la v3.01 (Delta aparecía grande y con opacidad completa mientras el
+  // carrusel pequeño marcaba a Circuit, porque construirTarjetasRival()
+  // centraba el carrusel ANTES de que elegirRival('circuit') fijara el
+  // rival por defecto).
+  await expect(page.locator('.ficha-rival.centrada')).toHaveAttribute('data-rival', 'circuit');
+  await expect(page.locator('#startBtn')).toContainText('Circuit');
   // Cuarta tarjeta: el invitado semanal, bloqueado hasta ganar a los tres
   await expect(page.locator('#fichasRival .ficha-rival')).toHaveCount(4);
   await expect(page.locator('.ficha-rival[data-rival="invitado"]')).toHaveClass(/bloqueada/);
