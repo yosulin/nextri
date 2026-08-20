@@ -60,7 +60,7 @@ test('la aplicación arranca y se puede jugar', async ({ page }) => {
   const slider = page.locator('#circleSlider');
   await slider.evaluate(el => { el.value = '50'; el.dispatchEvent(new Event('input', { bubbles: true })); });
   await expect(page.locator('#sliderVal')).toHaveText('50');
-  await page.locator('[data-accion="cerrar"][data-objetivo="ajustesOverlay"]').click();
+  await page.locator('[data-accion="cerrar"][data-objetivo="ajustesOverlay"]').first().click();
 
   // La casilla está oculta a propósito (accesible pero no visible), así
   // que se activa como lo haría una persona: pulsando su interruptor.
