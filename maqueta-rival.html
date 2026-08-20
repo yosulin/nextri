@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>NEXTRI · maqueta ficha de rival</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&display=swap');
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+  :root{
+    --bg:#0f1729; --surface:#1a2438; --border:#2b3a55;
+    --text:#e8ecf5; --muted:#8496b8;
+    --p1-color:#ff8c32; --p2-color:#2f7ef0;
+  }
+  [data-theme='light']{
+    --bg:#f4f6fa; --surface:#ffffff; --border:#dbe1ec;
+    --text:#0f1729; --muted:#5a6a85;
+    --p1-color:#d96c14; --p2-color:#1f62cc;
+  }
+  body{
+    background:var(--bg); color:var(--text);
+    font-family:'Nunito',sans-serif;
+    min-height:100dvh; display:flex; flex-direction:column;
+    align-items:center; padding:12px 10px; gap:12px;
+  }
+
+  /* Cabecera igual que en el juego */
+  .cabecera{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;max-width:480px}
+  .icono-btn{
+    width:42px;height:42px;border-radius:50%;
+    background:var(--surface);border:2px solid var(--border);
+    color:var(--muted);display:flex;align-items:center;justify-content:center;cursor:pointer;
+  }
+  .marca{display:flex;align-items:center;justify-content:center;gap:10px;flex:1}
+  .marca h1{font-weight:900;font-size:1.7rem;letter-spacing:2px}
+
+  .seccion{width:100%;max-width:480px}
+  .etiqueta{
+    font-size:.68rem;text-transform:uppercase;letter-spacing:1.4px;
+    color:var(--muted);font-weight:800;margin-bottom:8px;
+  }
+
+  /* Modo */
+  .modo-row{display:flex;gap:8px;margin-bottom:14px}
+  .modo-btn{
+    flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;
+    background:var(--surface);border:2px solid var(--border);border-radius:14px;
+    padding:10px;color:var(--muted);font-weight:700;font-size:.86rem;cursor:pointer;
+    font-family:'Nunito',sans-serif;
+  }
+  .modo-btn .ic{font-size:1.2rem}
+  .modo-btn.on{border-color:var(--p1-color);color:var(--p1-color)}
+
+  /* ── FICHA GRANDE DEL RIVAL ──
+     Es la pieza central: el rival ocupa el espacio que merece, con su
+     ilustración grande, su color de fondo y su radar. */
+  .ficha{
+    position:relative;width:100%;border-radius:22px;overflow:hidden;
+    background:linear-gradient(135deg,
+      color-mix(in srgb, var(--rival) 22%, var(--surface)),
+      var(--surface) 70%);
+    border:2px solid color-mix(in srgb, var(--rival) 45%, var(--border));
+    padding:16px; display:grid; grid-template-columns:1fr auto; gap:10px;
+    min-height:230px; transition:opacity .22s, transform .22s;
+  }
+  .ficha.saliendo{opacity:0;transform:scale(.97)}
+  .ficha h2{
+    font-family:'Fredoka One',cursive;font-size:1.7rem;line-height:1;
+    color:var(--rival);letter-spacing:.5px;
+  }
+  .ficha .apodo{color:var(--rival);font-weight:800;font-size:.9rem;opacity:.85;margin-bottom:8px}
+  .ficha .desc{font-size:.84rem;color:var(--muted);line-height:1.35;max-width:20ch}
+  .ficha .retrato{
+    position:absolute;right:-6px;bottom:0;width:52%;max-width:210px;
+    filter:drop-shadow(0 8px 20px rgba(0,0,0,.28));
+    pointer-events:none;
+  }
+  .ficha .radar{margin-top:10px}
+
+  /* Carrusel: la tira de rivales bajo la ficha */
+  .tira{
+    display:flex;align-items:center;gap:8px;margin-top:12px;
+  }
+  .flecha{
+    width:34px;height:34px;flex-shrink:0;border-radius:50%;
+    border:2px solid var(--border);background:var(--surface);
+    color:var(--muted);cursor:pointer;font-size:1.1rem;line-height:1;
+  }
+  .avatares{
+    display:flex;gap:10px;overflow-x:auto;padding:4px 2px;flex:1;
+    scroll-behavior:smooth;scrollbar-width:none;
+  }
+  .avatares::-webkit-scrollbar{display:none}
+  .av{
+    flex-shrink:0;width:62px;display:flex;flex-direction:column;
+    align-items:center;gap:3px;background:none;border:none;cursor:pointer;
+    font-family:'Nunito',sans-serif;
+  }
+  .av img{
+    width:56px;height:56px;border-radius:50%;
+    border:3px solid var(--border);background:var(--surface);
+    transition:border-color .18s, transform .18s;
+  }
+  .av span{font-size:.6rem;font-weight:800;color:var(--muted);letter-spacing:.4px}
+  .av.on img{border-color:var(--avc);transform:scale(1.08)}
+  .av.on span{color:var(--avc)}
+  .av.bloq{position:relative}
+  .av.bloq img{filter:grayscale(1) brightness(.7)}
+  .av.bloq::after{
+    content:'🔒';position:absolute;top:16px;font-size:1rem;
+  }
+
+  .jugar{
+    width:100%;max-width:480px;margin-top:14px;padding:15px;
+    border:none;border-radius:14px;cursor:pointer;
+    background:var(--rival-cta);color:#fff;
+    font-family:'Nunito',sans-serif;font-weight:800;font-size:1.02rem;
+    display:flex;align-items:center;justify-content:center;gap:8px;
+    box-shadow:0 8px 20px -8px var(--rival-cta);
+    transition:background .22s, box-shadow .22s;
+  }
+
+  .nota{max-width:480px;font-size:.72rem;color:var(--muted);text-align:center;line-height:1.5;margin-top:6px}
+</style>
+</head>
+<body>
+
+<div class="cabecera">
+  <button class="icono-btn" title="Perfil">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="8" r="3.6" stroke="currentColor" stroke-width="2"/>
+      <path d="M4.5 20a7.5 7.5 0 0 1 15 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    </svg>
+  </button>
+  <div class="marca"><h1>NEXTRI</h1></div>
+  <button class="icono-btn" title="Ajustes" onclick="alternarTema()">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="3.2" stroke="currentColor" stroke-width="2"/>
+      <path d="M19.4 13.5a7.6 7.6 0 0 0 0-3l1.8-1.4-1.9-3.3-2.2.9a7.6 7.6 0 0 0-2.6-1.5L14.2 3H9.8l-.3 2.2a7.6 7.6 0 0 0-2.6 1.5l-2.2-.9-1.9 3.3 1.8 1.4a7.6 7.6 0 0 0 0 3l-1.8 1.4 1.9 3.3 2.2-.9a7.6 7.6 0 0 0 2.6 1.5l.3 2.2h4.4l.3-2.2a7.6 7.6 0 0 0 2.6-1.5l2.2.9 1.9-3.3-1.8-1.4Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+    </svg>
+  </button>
+</div>
+
+<div class="seccion">
+  <div class="etiqueta">¿Cómo quieres jugar?</div>
+  <div class="modo-row">
+    <button class="modo-btn on"><span class="ic">🤖</span>Solo</button>
+    <button class="modo-btn"><span class="ic">👥</span>Local</button>
+  </div>
+
+  <div class="etiqueta">Elige tu rival</div>
+  <div class="ficha" id="ficha"></div>
+
+  <div class="tira">
+    <button class="flecha" onclick="mover(-1)" aria-label="Anterior">‹</button>
+    <div class="avatares" id="avatares"></div>
+    <button class="flecha" onclick="mover(1)" aria-label="Siguiente">›</button>
+  </div>
+</div>
+
+<button class="jugar" id="jugar"></button>
+
+<p class="nota">
+  Maqueta para validar la interfaz. El engranaje alterna tema claro/oscuro
+  para comprobar que los colores de cada rival funcionan en los dos.
+</p>
+
+<script>
+const RIVALES = [
+  { id:'circuit', nombre:'CIRCUIT', apodo:'Estratega', color:'#2f7ef0',
+    desc:'Calcula antes de actuar. Su fortaleza es el control del tablero.',
+    perfil:{estrategia:.85,ataque:.7,defensa:.75,adaptabilidad:.6,imprevisibilidad:.35} },
+  { id:'delta', nombre:'DELTA', apodo:'Impulsivo', color:'#6bcb77',
+    desc:'Ve oportunidades donde otros no. Juega por instinto.',
+    perfil:{estrategia:.4,ataque:.8,defensa:.35,adaptabilidad:.55,imprevisibilidad:.7} },
+  { id:'vector', nombre:'VECTOR', apodo:'Analista', color:'#a855f7',
+    desc:'Cada movimiento tiene un propósito. Castiga cualquier descuido.',
+    perfil:{estrategia:.95,ataque:.85,defensa:.9,adaptabilidad:.75,imprevisibilidad:.25} },
+  { id:'lumina', nombre:'LUMINA', apodo:'Intuitiva', color:'#ec4899',
+    desc:'Siente el tablero y crea conexiones inesperadas.',
+    perfil:{estrategia:.6,ataque:.55,defensa:.5,adaptabilidad:.9,imprevisibilidad:.75} },
+  { id:'phantom', nombre:'PHANTOM', apodo:'Escurridizo', color:'#8b93d6',
+    desc:'Aparece cuando menos lo esperas.', bloqueado:true,
+    perfil:{estrategia:.7,ataque:.6,defensa:.8,adaptabilidad:.65,imprevisibilidad:.9} },
+  { id:'chaos', nombre:'CHAOS', apodo:'Irreverente', color:'#f97316',
+    desc:'Rompe patrones y crea el desorden.', bloqueado:true,
+    perfil:{estrategia:.3,ataque:.9,defensa:.25,adaptabilidad:.5,imprevisibilidad:1} }
+];
+
+const EJES = [
+  ['estrategia','ESTRATEGIA'], ['ataque','ATAQUE'], ['defensa','DEFENSA'],
+  ['adaptabilidad','ADAPTAB.'], ['imprevisibilidad','IMPREV.']
+];
+
+let actual = 0;
+
+function radar(perfil, color, tam = 116) {
+  const c = tam/2, r = tam*0.32, n = EJES.length;
+  const ang = i => (Math.PI*2*i/n) - Math.PI/2;
+  const pt = (i,rad) => [(c+Math.cos(ang(i))*rad).toFixed(1), (c+Math.sin(ang(i))*rad).toFixed(1)];
+  let rejilla = '';
+  for (const f of [0.4,0.7,1]) {
+    rejilla += `<polygon points="${EJES.map((_,i)=>pt(i,r*f).join(',')).join(' ')}"
+      fill="none" stroke="currentColor" stroke-width="1" opacity="${f===1?0.3:0.14}"/>`;
+  }
+  for (let i=0;i<n;i++){ const [x,y]=pt(i,r);
+    rejilla += `<line x1="${c}" y1="${c}" x2="${x}" y2="${y}" stroke="currentColor" stroke-width="1" opacity="0.14"/>`; }
+  const pts = EJES.map(([k],i)=>pt(i, r*Math.max(.05,perfil[k])).join(',')).join(' ');
+  const etiquetas = EJES.map(([,txt],i)=>{
+    const [x,y]=pt(i,r+13);
+    return `<text x="${x}" y="${y}" font-size="5.2" fill="currentColor" opacity=".65"
+      text-anchor="middle" dominant-baseline="middle" font-family="Nunito">${txt}</text>`;
+  }).join('');
+  return `<svg viewBox="0 0 ${tam} ${tam}" width="${tam}" height="${tam}" style="color:var(--muted)">
+    ${rejilla}${etiquetas}
+    <polygon points="${pts}" fill="${color}" fill-opacity=".3" stroke="${color}" stroke-width="2" stroke-linejoin="round"/>
+  </svg>`;
+}
+
+function pintar() {
+  const r = RIVALES[actual];
+  const ficha = document.getElementById('ficha');
+  ficha.classList.add('saliendo');
+  setTimeout(() => {
+    ficha.style.setProperty('--rival', r.color);
+    document.body.style.setProperty('--rival-cta', r.color);
+    ficha.innerHTML = `
+      <div>
+        <h2>${r.nombre}</h2>
+        <div class="apodo">${r.apodo}</div>
+        <div class="desc">${r.desc}</div>
+        <div class="radar">${radar(r.perfil, r.color)}</div>
+      </div>
+      <img class="retrato" src="rivales/${r.id}.png" alt="">`;
+    ficha.classList.remove('saliendo');
+  }, 180);
+
+  document.getElementById('jugar').innerHTML = r.bloqueado
+    ? `🔒 ${r.nombre} bloqueado`
+    : `▶ Jugar contra ${r.nombre} <span>›</span>`;
+
+  document.querySelectorAll('.av').forEach((el,i)=>{
+    el.classList.toggle('on', i===actual);
+  });
+  const activo = document.querySelectorAll('.av')[actual];
+  if (activo) activo.scrollIntoView({ inline:'center', block:'nearest' });
+}
+
+function mover(d) {
+  actual = (actual + d + RIVALES.length) % RIVALES.length;
+  pintar();
+}
+
+document.getElementById('avatares').innerHTML = RIVALES.map((r,i)=>`
+  <button class="av${r.bloqueado?' bloq':''}" style="--avc:${r.color}" onclick="actual=${i};pintar()">
+    <img src="rivales/${r.id}.png" alt="">
+    <span>${r.nombre}</span>
+  </button>`).join('');
+
+function alternarTema(){
+  const h=document.documentElement;
+  h.setAttribute('data-theme', h.getAttribute('data-theme')==='light'?'dark':'light');
+}
+
+pintar();
+</script>
+</body>
+</html>
