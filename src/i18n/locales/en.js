@@ -55,6 +55,7 @@ export const EN = {
   'ajustes.datos': 'Data',
   'ajustes.idioma': 'Language',
   'ajustes.jugador': 'Player',
+  'ajustes.opcionesPartida': 'Game options',
   'rasgo.muyAlta': 'Very high',
   'rasgo.alta': 'High',
   'rasgo.media': 'Medium',

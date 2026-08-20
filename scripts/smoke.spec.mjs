@@ -54,12 +54,13 @@ test('la aplicación arranca y se puede jugar', async ({ page }) => {
   await expect(page.locator('#localPlayersSection')).toBeVisible();
 
   // 2. Controles que antes eran atributos on* incrustados
-  // Las opciones vuelven a estar plegadas (v2.67): hay que abrirlas para
-  // llegar al deslizador y a la casilla.
-  await page.locator('#opcionesPartida summary').click();
+  // Las opciones de partida viven ahora dentro de Ajustes (v2.97).
+  await page.locator('.barra-accion [data-accion="abrir-ajustes"]').click();
+  await expect(page.locator('#ajustesOverlay')).toHaveClass(/show/);
   const slider = page.locator('#circleSlider');
   await slider.evaluate(el => { el.value = '50'; el.dispatchEvent(new Event('input', { bubbles: true })); });
   await expect(page.locator('#sliderVal')).toHaveText('50');
+  await page.locator('[data-accion="cerrar"][data-objetivo="ajustesOverlay"]').click();
 
   // La casilla está oculta a propósito (accesible pero no visible), así
   // que se activa como lo haría una persona: pulsando su interruptor.

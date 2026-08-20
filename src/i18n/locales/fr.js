@@ -55,6 +55,7 @@ export const FR = {
   'ajustes.datos': 'Données',
   'ajustes.idioma': 'Langue',
   'ajustes.jugador': 'Joueur',
+  'ajustes.opcionesPartida': 'Options de partie',
   'rasgo.muyAlta': 'Très haute',
   'rasgo.alta': 'Haute',
   'rasgo.media': 'Moyenne',

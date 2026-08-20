@@ -865,6 +865,14 @@
   .pc-flecha { color: var(--muted); font-size: 1.15rem; }
   .pc-fila-input { cursor: default; }
   .pc-fila-input:hover { border-color: var(--border); }
+  .pc-fila-slider { align-items: flex-start; cursor: default; }
+  .pc-fila-slider:hover { border-color: var(--border); }
+  .pc-slider-cont { flex: 1; min-width: 0; }
+  .pc-slider-cab { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+  .pc-slider-cab .pc-etiqueta { flex: 1; }
+  .pc-slider-cont .slider-val { font-weight: 800; color: var(--p2-color); font-size: .85rem; }
+  .pc-slider-cont #circleSlider { width: 100%; }
+  .pc-slider-cont .rec-hint { margin-top: 4px; }
   .pc-input {
     flex: 1; border: none; background: transparent; outline: none;
     color: var(--text); font-family: 'Nunito', sans-serif;
@@ -1007,7 +1015,7 @@
   /* El SVG tiene width/height fijos como atributos (para que no se vea
      roto si algo falla al cargar CSS), pero aquí debe CRECER con el hueco
      que le da flex:1 en vez de quedarse a su tamaño original. */
-  .fr-radar svg{ width:100%; height:100%; max-height:150px; }
+  .fr-radar svg{ width:100%; height:100%; max-height:min(46vh,320px); }
 
   .fr-familia{
     display:inline-block; align-self:flex-start;
@@ -1037,7 +1045,7 @@
     align-self:stretch; min-height:200px;
   }
   .ficha-rival .fr-retrato{
-    width:100%; max-width:200px;
+    width:100%; max-width:min(60vw,320px);
     filter:drop-shadow(0 10px 20px rgba(0,0,0,.25)); pointer-events:none;
   }
   /* Bloqueado: se ve quién es, pero no se puede elegir */
@@ -1063,6 +1071,39 @@
   .fr-rasgo-ic{ font-size:1.05rem; }
   .fr-rasgo b{ display:block; color:var(--text); font-weight:800; }
   .fr-rasgo i{ font-style:normal; color:var(--rival-color); font-weight:700; }
+
+  /* ── Carrusel de miniaturas, debajo de la ficha grande ── */
+  .mini-carrusel { display: flex; align-items: center; gap: 8px; width: 100%; }
+  .mini-flecha {
+    width: 30px; height: 30px; flex-shrink: 0; border-radius: 50%;
+    border: 2px solid var(--border); background: var(--surface);
+    color: var(--muted); cursor: pointer; font-size: 1rem; line-height: 1;
+  }
+  .mini-rail {
+    display: flex; gap: 10px; flex: 1; overflow-x: auto;
+    scroll-behavior: smooth; scrollbar-width: none; padding: 4px 2px;
+  }
+  .mini-rail::-webkit-scrollbar { display: none; }
+  .mini-avatar {
+    position: relative; flex-shrink: 0; width: 52px; height: 52px;
+    border-radius: 50%; border: 3px solid var(--border);
+    background: var(--surface); padding: 0; cursor: pointer;
+    overflow: hidden; transition: border-color .18s, transform .18s;
+  }
+  .mini-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .mini-sin-retrato {
+    display: flex; align-items: center; justify-content: center;
+    width: 100%; height: 100%; color: var(--muted); font-weight: 800;
+  }
+  .mini-avatar.is-active {
+    border-color: var(--rival-color); transform: scale(1.08);
+  }
+  .mini-avatar.bloqueada img { filter: grayscale(1) brightness(.65); }
+  .mini-candado {
+    position: absolute; inset: 0; display: flex; align-items: center;
+    justify-content: center; font-size: .8rem;
+    background: rgba(0,0,0,.28);
+  }
 
   /* Opciones secundarias: plegadas para no competir con la decisión principal */
   .setup-options { width: 100%; }
@@ -1175,7 +1216,7 @@
        así que en la cabecera solo va el símbolo. El nombre entero sigue
        en el panel de ajustes y en el modal de información. -->
   <div class="marca-mini" aria-label="NEXTRI">
-    <img class="marca-simbolo" src="logo-marca.svg?v=2.96" alt="">
+    <img class="marca-simbolo" src="logo-marca.svg?v=2.97" alt="">
     <!-- El nombre sigue en el DOM (accesibilidad, y la prueba de humo lo
          usa como señal de que la app inicializó), pero visualmente oculto:
          no cabe junto a las pestañas en la cabecera compacta. -->
@@ -1217,6 +1258,16 @@
            mano. Las contiguas asoman por los costados para que se vea que
            hay más rivales sin necesitar flechas ni una tira aparte. -->
       <div class="fichas-rival" id="fichasRival" role="radiogroup" aria-label="Rival"></div>
+
+      <!-- Carrusel de miniaturas, sincronizado con la ficha grande. Con
+           cada vez más bots (invitados, Random, Phantom...) hace falta un
+           segundo nivel para moverse rápido entre ellos sin arrastrar la
+           ficha grande de uno en uno. -->
+      <div class="mini-carrusel">
+        <button class="mini-flecha" data-accion="mini-atras" aria-label="Anterior">‹</button>
+        <div class="mini-rail" id="miniRail"></div>
+        <button class="mini-flecha" data-accion="mini-adelante" aria-label="Siguiente">›</button>
+      </div>
     </div>
 
     <!-- Local: cuántos jugadores -->
@@ -1238,34 +1289,6 @@
       <div class="setup-label" id="etiquetaNombres" data-i18n="menu.nombresJugadores">Nombres de los jugadores</div>
       <div class="names-grid" id="namesGrid"></div>
     </div>
-
-    <!-- Opciones secundarias: no estorban la decisión principal -->
-    <details class="setup-options" id="opcionesPartida">
-      <summary>Opciones de partida <span class="options-summary" id="optionsSummary"></span></summary>
-    <div class="setup-section">
-      <div class="setup-label" data-i18n="menu.circulos">Círculos en el tablero</div>
-      <div class="slider-row">
-        <input type="range" id="circleSlider" min="25" max="100" value="35"
-          data-accion="circulos">
-        <div class="slider-val" id="sliderVal">35</div>
-      </div>
-      <div class="rec-hint" id="recHint"></div>
-    </div>
-
-    <!-- Orden aleatorio -->
-    <div class="setup-section">
-      <label class="toggle-row">
-        <input type="checkbox" id="randomToggleInput" class="sr-toggle-input" data-accion="orden-aleatorio">
-        <div class="toggle-track" id="toggleTrack" aria-hidden="true">
-          <div class="toggle-thumb" id="toggleThumb"></div>
-        </div>
-        <div class="toggle-label-text">
-          <span data-i18n="menu.ordenAleatorio">Orden de inicio aleatorio</span>
-          <span class="toggle-sub" data-i18n="menu.ordenAleatorioDesc">Se sortea quién empieza</span>
-        </div>
-      </label>
-    </div>
-    </details>
 
   </div>
   </div>
@@ -1381,7 +1404,7 @@
     <!-- Cabecera con la marca: el panel es "la consola" del juego, así que
          se presenta como tal en vez de como una lista de opciones sueltas -->
     <div class="pc-cabecera">
-      <img class="pc-simbolo" src="logo-marca.svg?v=2.96" alt="" aria-hidden="true">
+      <img class="pc-simbolo" src="logo-marca.svg?v=2.97" alt="" aria-hidden="true">
       <div>
         <h3 id="ajustesTitulo">NEXTRI</h3>
         <span class="pc-version" id="pcVersion"></span>
@@ -1416,6 +1439,32 @@
     </div>
 
     <!-- Secciones: llevan a otra pantalla -->
+    <div class="pc-grupo">
+      <div class="pc-grupo-tit" data-i18n="ajustes.opcionesPartida">Opciones de partida</div>
+      <div class="pc-fila pc-fila-slider">
+        <span class="pc-icono">⚫</span>
+        <div class="pc-slider-cont">
+          <div class="pc-slider-cab">
+            <span class="pc-etiqueta" data-i18n="menu.circulos">Círculos en el tablero</span>
+            <span class="slider-val" id="sliderVal">35</span>
+          </div>
+          <input type="range" id="circleSlider" min="25" max="100" value="35" data-accion="circulos">
+          <div class="rec-hint" id="recHint"></div>
+        </div>
+      </div>
+      <label class="pc-fila toggle-row">
+        <span class="pc-icono">🎲</span>
+        <input type="checkbox" id="randomToggleInput" class="sr-toggle-input" data-accion="orden-aleatorio">
+        <div class="toggle-track" id="toggleTrack" aria-hidden="true">
+          <div class="toggle-thumb" id="toggleThumb"></div>
+        </div>
+        <div class="toggle-label-text">
+          <span data-i18n="menu.ordenAleatorio">Orden de inicio aleatorio</span>
+          <span class="toggle-sub" data-i18n="menu.ordenAleatorioDesc">Se sortea quién empieza</span>
+        </div>
+      </label>
+    </div>
+
     <div class="pc-grupo">
       <div class="pc-grupo-tit" data-i18n="ajustes.masOpciones">Más opciones</div>
       <button class="pc-fila pc-nav" data-accion="abrir-stats">
@@ -1478,37 +1527,37 @@
 // global — funcionaba, pero nada declaraba qué necesitaba cada uno, y una
 // mezcla de versiones en caché podía emparejar mitades incompatibles sin
 // que nada lo detectara.
-import { seedRng, rngNextFrom, rngIntFrom, getRngSeed, getRngState, restoreRngState } from './src/game/random.js?v=2.96';
-import { dist, distSq, segmentPassesOverCircle, pointInTriangle, segmentsIntersect } from './src/game/geometry.js?v=2.96';
+import { seedRng, rngNextFrom, rngIntFrom, getRngSeed, getRngState, restoreRngState } from './src/game/random.js?v=2.97';
+import { dist, distSq, segmentPassesOverCircle, pointInTriangle, segmentsIntersect } from './src/game/geometry.js?v=2.97';
 import { MOVE_REASON_TEXT, edgeKey, edgeExists, connectionCount, areAdjacent,
-         lineIntersectsAny, findNewTriangles, triangleTraps, checkMoveValidity } from './src/game/rules.js?v=2.96';
-import { BOARD_GENERATOR_VERSION, BOARD_QUALITY_TARGET } from './src/game/board-quality.js?v=2.96';
+         lineIntersectsAny, findNewTriangles, triangleTraps, checkMoveValidity } from './src/game/rules.js?v=2.97';
+import { BOARD_GENERATOR_VERSION, BOARD_QUALITY_TARGET } from './src/game/board-quality.js?v=2.97';
 import { ADJACENCY_TARGET, generateCirclePositions, buildCandidateGraph,
-         attemptBoardGeneration, chooseAdjacency, finalizeAdjacency } from './src/game/board.js?v=2.96';
+         attemptBoardGeneration, chooseAdjacency, finalizeAdjacency } from './src/game/board.js?v=2.97';
 import { createPlayer, playerById, nextPlayerId, applyAction, hasAnyLegalMove,
-         replayFromLog } from './src/game/engine.js?v=2.96';
+         replayFromLog } from './src/game/engine.js?v=2.97';
 import { STATE_SCHEMA_VERSION, RULES_VERSION, serializeGameState, restoreGameState,
-         migrateGameSnapshot, isValidGameSnapshot } from './src/game/state.js?v=2.96';
-import { invitadoDeLaSemana } from './src/ai/invitados.js?v=2.96';
+         migrateGameSnapshot, isValidGameSnapshot } from './src/game/state.js?v=2.97';
+import { invitadoDeLaSemana } from './src/ai/invitados.js?v=2.97';
 import { createGuestProgressService, guestProgressRatio, isGuestUnlocked,
-         guestMissingRequirements } from './src/progression/guest-progress.js?v=2.96';
+         guestMissingRequirements } from './src/progression/guest-progress.js?v=2.97';
 import { t, setLocale, getLocale, idiomaInicial, traducirDocumento, IDIOMAS }
-         from './src/i18n/i18n.js?v=2.96';
-import { svgRadar, perfilDesdeNivel, listaEjes, EJES_RADAR } from './src/ui/radar.js?v=2.96';
-import { AI_VERSION, AI_LEVELS, setDifficulty, getDifficulty, RIVALES, setRival, getRival } from './src/ai/levels.js?v=2.96';
-import { chooseAIMove, createsScoringReply } from './src/ai/ai.js?v=2.96';
-import * as Stats from './src/stats/stats.js?v=2.96';
-import { leerMeta, guardarMeta } from './src/stats/repository.js?v=2.96';
+         from './src/i18n/i18n.js?v=2.97';
+import { svgRadar, perfilDesdeNivel, listaEjes, EJES_RADAR } from './src/ui/radar.js?v=2.97';
+import { AI_VERSION, AI_LEVELS, setDifficulty, getDifficulty, RIVALES, setRival, getRival } from './src/ai/levels.js?v=2.97';
+import { chooseAIMove, createsScoringReply } from './src/ai/ai.js?v=2.97';
+import * as Stats from './src/stats/stats.js?v=2.97';
+import { leerMeta, guardarMeta } from './src/stats/repository.js?v=2.97';
 import { victoriasPorRival, aggregateStats, statsByOpponent, statsByCircleCount, ultimasPartidas,
-         formatearDuracion, porcentaje } from './src/stats/aggregates.js?v=2.96';
-import { saveGame, loadSavedGame, clearSavedGame, hasSavedGame } from './src/platform/storage.js?v=2.96';
+         formatearDuracion, porcentaje } from './src/stats/aggregates.js?v=2.97';
+import { saveGame, loadSavedGame, clearSavedGame, hasSavedGame } from './src/platform/storage.js?v=2.97';
 // ── Constantes ──────────────────────────────────────────────────────────────
 // Única fuente de la versión visible — antes se escribía a mano en tres
 // sitios (aquí, el panel de info, y el CACHE de sw.js) y se desincronizaban
 // entre sí. sw.js sigue siendo aparte por necesidad (un service worker no
 // puede leer esta constante, vive en otro archivo) — al subir de versión,
 // solo hace falta tocar ESTA línea y la de sw.js, no una tercera copia más.
-const APP_VERSION = 'v2.96';
+const APP_VERSION = 'v2.97';
 
 // Nombre del producto en un solo sitio. Si algún día cambia (NEXTRI u
 // otro), esto evita perseguirlo por cabecera, aviso de rotación, panel de
@@ -3603,14 +3652,17 @@ async function actualizarInvitado() {
   const h2 = btn.querySelector('h2');
   if (h2) h2.textContent = invitadoDesbloqueado ? invitadoActual.nombre : '???';
 
-  // El progreso se refleja en el candado de la ficha: desaparece al
-  // desbloquear, y hasta entonces indica cuánto falta al pulsarlo.
+  // El progreso se refleja en el candado: desaparece al desbloquear, y
+  // hasta entonces indica cuánto falta al pulsarlo. Hay DOS candados (la
+  // ficha grande y su miniatura), así que se actualizan por clase, no por
+  // id — dos elementos con el mismo id habrían dejado el segundo mudo.
   btn.classList.toggle('bloqueada', !invitadoDesbloqueado);
-  const candado = document.getElementById('candadoInvitado');
-  if (candado) {
+  const miniInvitado = document.querySelector('.mini-avatar[data-indice="' + btn.dataset.indice + '"]');
+  for (const candado of document.querySelectorAll('.fr-candado, .mini-candado')) {
     candado.style.display = invitadoDesbloqueado ? 'none' : '';
     candado.title = `${Math.round(progreso * 100)}%`;
   }
+  if (miniInvitado) miniInvitado.classList.toggle('bloqueada', !invitadoDesbloqueado);
 
   const falta = guestMissingRequirements(estado);
   btn.title = invitadoDesbloqueado
@@ -3720,6 +3772,37 @@ function rasgosDestacados(perfil) {
     </div>`).join('');
 }
 
+// Miniaturas debajo de la ficha grande, sincronizadas con ella en los dos
+// sentidos: tocar una miniatura lleva la ficha grande hasta ese rival, y
+// arrastrar la ficha grande mueve la miniatura activa al centro de su
+// propia tira. Con más bots en camino (invitados, Random, Phantom), este
+// segundo nivel deja moverse entre ellos sin arrastrar la ficha grande
+// una por una.
+function construirMiniRail() {
+  const rail = document.getElementById('miniRail');
+  if (!rail) return;
+  const bots = catalogoBots();
+  rail.innerHTML = bots.map((b, i) => `
+    <button type="button" class="mini-avatar" data-indice="${i}"
+            style="--rival-color:${b.color}" aria-label="${escapeHtml(b.nombre)}">
+      ${b.retrato ? `<img src="${b.retrato}?v=2.97" alt="" loading="lazy">` : '<span class="mini-sin-retrato">?</span>'}
+      ${b.bloqueable ? '<span class="mini-candado">🔒</span>' : ''}
+    </button>`).join('');
+  rail.querySelectorAll('[data-indice]').forEach(btn => {
+    btn.addEventListener('click', () => irAFicha(Number(btn.dataset.indice)));
+  });
+}
+
+// Marca la miniatura activa y la centra en su propia tira, sin mover la
+// página ni la ficha grande — cada carrusel se desplaza por su cuenta.
+function marcarMiniActiva(i) {
+  const rail = document.getElementById('miniRail');
+  if (!rail) return;
+  [...rail.children].forEach((b, k) => b.classList.toggle('is-active', k === i));
+  const activa = rail.children[i];
+  if (activa) activa.scrollIntoView({ inline: 'center', block: 'nearest' });
+}
+
 function construirTarjetasRival() {
   const tira = document.getElementById('fichasRival');
   if (!tira) return;
@@ -3743,10 +3826,10 @@ function construirTarjetasRival() {
           <div class="fr-radar">${svgRadar(perfil, b.color, 98)}</div>
         </div>
         <div class="fr-retrato-col">
-          ${b.retrato ? `<img class="fr-retrato" src="${b.retrato}?v=2.96" alt="" loading="lazy">` : ''}
+          ${b.retrato ? `<img class="fr-retrato" src="${b.retrato}?v=2.97" alt="" loading="lazy">` : ''}
         </div>
       </div>
-      ${b.bloqueable ? '<span class="fr-candado" id="candadoInvitado">🔒</span>' : ''}
+      ${b.bloqueable ? '<span class="fr-candado">🔒</span>' : ''}
       <div class="fr-rasgos">${rasgosDestacados(perfil)}</div>
     </div>`;
   }).join('');
@@ -3759,6 +3842,7 @@ function construirTarjetasRival() {
     });
   });
 
+  construirMiniRail();
   seguirCarrusel();
   irAFicha(indiceRivalActual(bots), false);
 }
@@ -3809,6 +3893,7 @@ function marcarFichaCentrada(i) {
     hijos[k].classList.toggle('centrada', k === i);
     hijos[k].setAttribute('aria-checked', k === i ? 'true' : 'false');
   }
+  marcarMiniActiva(i);
 }
 
 function irAFicha(i, suave = true) {
@@ -3875,7 +3960,6 @@ function aplicarIdioma() {
   actualizarInvitado();
   const activo = document.querySelector('[data-accion="rival"].is-active');
   elegirRival(activo ? activo.dataset.rival : 'circuit');
-  actualizarResumenOpciones();
   document.getElementById('etiquetaNombres').textContent =
     gameMode === 'solo' ? t('menu.tuNombre') : t('menu.nombresJugadores');
 }
@@ -3939,14 +4023,6 @@ function actualizarTextoJugar() {
     : t('menu.jugarJugadores', { n: numPlayers });
 }
 
-// Resumen de las opciones plegadas, para no tener que abrirlas por curiosidad.
-function actualizarResumenOpciones() {
-  const el = document.getElementById('optionsSummary');
-  if (!el) return;
-  const n = document.getElementById('circleSlider').value;
-  el.textContent = `${n} círculos · ${isRandomOrder() ? 'Inicio aleatorio' : 'Inicio normal'}`;
-}
-
 function setAIDifficulty(level) {
   vibrate(HAPTIC.tap);
   aiDifficulty = setDifficulty(level);
@@ -3994,7 +4070,7 @@ function avatarDeRival(id) {
   // Por identidad, no por nombre visible: dos rivales podrían llamarse
   // igual, y los invitados no están en RIVALES.
   const r = RIVALES[id] || (invitadoActual && invitadoActual.id === id ? invitadoActual : null);
-  return r ? `<span class="card-avatar"><img src="${r.retrato}?v=2.96" alt=""></span>` : '🤖';
+  return r ? `<span class="card-avatar"><img src="${r.retrato}?v=2.97" alt=""></span>` : '🤖';
 }
 
 function buildGameUI() {
@@ -4069,8 +4145,10 @@ const ACCIONES = {
   'otra-igual':  () => otraPartidaIgual(),
   menu:          () => volverAlMenu(),
   rival:         (el) => elegirRival(el.dataset.rival),
-  circulos:      (el) => { onSliderChange(el.value); actualizarResumenOpciones(); },
-  'orden-aleatorio': () => { toggleRandom(); actualizarResumenOpciones(); }
+  circulos:      (el) => onSliderChange(el.value),
+  'orden-aleatorio': () => toggleRandom(),
+  'mini-atras':    () => mover(-1),
+  'mini-adelante': () => mover(1)
 };
 
 // Algunos controles no se manejan con 'click' sino con sus propios
@@ -4133,7 +4211,6 @@ function iniciarApp() {
   // puedes cambiar" — igual que el pulso del dado invita a tirar.
   setTimeout(() => document.getElementById('pestanaBot')?.classList.add('resaltar'), 250);
   setGameMode('solo');      // el modo más probable al abrir en el móvil
-  actualizarResumenOpciones();
   syncResumeButton(); // ofrecer "continuar" solo si hay partida a medias
   // Cinco horas con la app cerrada no son cinco horas jugando: solo se
   // acumula el tiempo con la partida en marcha y el documento visible.
