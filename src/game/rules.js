@@ -16,7 +16,7 @@
 // Requiere que geometry.js (segmentsIntersect, pointInTriangle) esté
 // cargado antes.
 
-import { DIST_EPS, distSq, segmentsIntersect, pointInTriangle } from './geometry.js?v=2.94';
+import { DIST_EPS, distSq, segmentsIntersect, pointInTriangle } from './geometry.js?v=2.95';
 
 export const MOVE_REASON_TEXT = {
   'edge-exists': 'Esas dos ya están conectadas',
