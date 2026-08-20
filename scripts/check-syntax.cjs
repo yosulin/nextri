@@ -149,6 +149,28 @@ if (inline.length) {
   console.log('OK  sin manejadores on* incrustados en el HTML');
 }
 
+// Los selectores por id de la prueba de humo deben existir en index.html.
+// Al cambiar la estructura se quedan apuntando a elementos que ya no
+// están, y eso NO se detecta hasta que Playwright agota su espera en CI:
+// varios minutos por cada uno, y de uno en uno. Aquí sale en un segundo.
+try {
+  const prueba = readFileSync(path.join(raiz, 'scripts/smoke.spec.mjs'), 'utf-8');
+  const ids = new Set([...prueba.matchAll(/locator\('#([A-Za-z][\w-]*)/g)].map(m => m[1]));
+  // Algunos ids se generan al vuelo con plantillas (nameInput0, card1...),
+  // así que se acepta también la forma con interpolación: id="nameInput${i}".
+  const huerfanos = [...ids].filter(id => {
+    if (html.includes(`id="${id}"`) || html.includes(`getElementById('${id}')`)) return false;
+    const raiz = id.replace(/\d+$/, '');
+    return raiz === id || !html.includes(`id="${raiz}$\{`);
+  });
+  if (huerfanos.length) {
+    console.error(`ERR la prueba de humo busca ids que no existen: ${huerfanos.join(', ')}`);
+    fallos++;
+  } else {
+    console.log(`OK  los ${ids.size} ids de la prueba de humo existen`);
+  }
+} catch { /* sin prueba de humo, nada que comprobar */ }
+
 // Cada data-accion del HTML debe tener manejador, y cada manejador debe
 // usarse. Sin esto, un botón puede quedarse mudo sin que nada avise: no
 // es un error de sintaxis, simplemente no pasa nada al pulsarlo.

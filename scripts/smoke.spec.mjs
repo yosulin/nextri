@@ -47,7 +47,8 @@ test('la aplicación arranca y se puede jugar', async ({ page }) => {
   // El nombre vive dentro de la tarjeta generada, no en un id propio:
   // las tarjetas ya no se escriben a mano en el HTML.
   await expect(page.locator('.ficha-rival[data-rival="invitado"] h2')).toHaveText('???');
-  await expect(page.locator('#rivalDesc')).toContainText('Circuit');
+  // La descripción vive ahora dentro de la ficha centrada del carrusel.
+  await expect(page.locator('.ficha-rival.centrada h2')).toHaveText('Circuit');
   // Modo Local para probar el flujo de varios jugadores
   await page.locator('[data-accion="modo"][data-modo="local"]').click();
   await expect(page.locator('#localPlayersSection')).toBeVisible();
