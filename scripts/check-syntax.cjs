@@ -180,6 +180,13 @@ try {
   } else {
     console.log(`OK  las ${clases.size} clases de la prueba de humo existen`);
   }
+  // LÍMITE CONOCIDO: esto solo comprueba que cada pieza exista SUELTA en
+  // el HTML, no que un selector compuesto como '.cabecera [data-accion=x]'
+  // describa una relación real de anidamiento. Verificarlo bien pediría
+  // parsear el DOM, no solo grep sobre el texto. Ya se coló un fallo así
+  // (v2.97: el botón de ajustes se movió fuera de .barra-accion y las
+  // piezas seguían existiendo cada una por su lado) — queda anotado en vez
+  // de fingir una cobertura que no hay.
 } catch { /* sin prueba de humo, nada que comprobar */ }
 
 // Cada data-accion del HTML debe tener manejador, y cada manejador debe

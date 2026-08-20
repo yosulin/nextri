@@ -55,7 +55,7 @@ test('la aplicación arranca y se puede jugar', async ({ page }) => {
 
   // 2. Controles que antes eran atributos on* incrustados
   // Las opciones de partida viven ahora dentro de Ajustes (v2.97).
-  await page.locator('.barra-accion [data-accion="abrir-ajustes"]').click();
+  await page.locator('.cabecera [data-accion="abrir-ajustes"]').click();
   await expect(page.locator('#ajustesOverlay')).toHaveClass(/show/);
   const slider = page.locator('#circleSlider');
   await slider.evaluate(el => { el.value = '50'; el.dispatchEvent(new Event('input', { bubbles: true })); });
