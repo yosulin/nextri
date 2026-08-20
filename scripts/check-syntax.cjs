@@ -169,6 +169,17 @@ try {
   } else {
     console.log(`OK  los ${ids.size} ids de la prueba de humo existen`);
   }
+
+  // Lo mismo con las clases: '.marca-texto' se quedó huérfana al comprimir
+  // la cabecera en la v2.93 y este chequeo, que solo miraba ids, no lo vio.
+  const clases = new Set([...prueba.matchAll(/locator\('\.([A-Za-z][\w-]*)/g)].map(m => m[1]));
+  const clasesHuerfanas = [...clases].filter(c => !html.includes(`class="${c}`) && !html.includes(` ${c}"`) && !html.includes(` ${c} `));
+  if (clasesHuerfanas.length) {
+    console.error(`ERR la prueba de humo busca clases que no existen: ${clasesHuerfanas.join(', ')}`);
+    fallos++;
+  } else {
+    console.log(`OK  las ${clases.size} clases de la prueba de humo existen`);
+  }
 } catch { /* sin prueba de humo, nada que comprobar */ }
 
 // Cada data-accion del HTML debe tener manejador, y cada manejador debe
