@@ -12,9 +12,9 @@
 // tampoco está, se devuelve la propia clave: preferible ver "menu.jugar"
 // y detectar el hueco que ver un texto vacío sin saber por qué.
 
-import { ES } from './locales/es.js?v=3.00';
-import { EN } from './locales/en.js?v=3.00';
-import { FR } from './locales/fr.js?v=3.00';
+import { ES } from './locales/es.js?v=3.01';
+import { EN } from './locales/en.js?v=3.01';
+import { FR } from './locales/fr.js?v=3.01';
 
 export const IDIOMAS = {
   es: { nombre: 'Español', bandera: '🇪🇸', textos: ES },
