@@ -10,12 +10,20 @@
 //
 // SVG a mano, sin librerías de gráficas: son cinco puntos y un polígono.
 
+// Etiquetas visibles según lo acordado con Josu, sin tocar las CLAVES ni
+// los valores que calcula perfilDesdeNivel(): solo cambia el texto. Ojo,
+// esto NO es una traducción de nombre 1:1 — dos ejes cambian de qué se
+// nombra a sí mismo por conveniencia visual, así que si algún día se
+// recalibra qué mide cada clave, hay que revisar si la etiqueta sigue
+// siendo honesta:
+//   vision       -> "Estrategia" (cuánto tablero analiza)
+//   construccion -> "Adaptación" (si aprovecha lo que ya ha construido)
 export const EJES_RADAR = [
-  { clave: 'ataque',      etiqueta: 'Ataque' },
-  { clave: 'vision',      etiqueta: 'Visión' },
-  { clave: 'construccion', etiqueta: 'Construye' },
-  { clave: 'defensa',     etiqueta: 'Defensa' },
-  { clave: 'ambicion',    etiqueta: 'Ambición' }
+  { clave: 'ataque',       etiqueta: 'Ataque' },
+  { clave: 'vision',       etiqueta: 'Estrategia' },
+  { clave: 'defensa',      etiqueta: 'Defensa' },
+  { clave: 'construccion', etiqueta: 'Adaptación' },
+  { clave: 'ambicion',     etiqueta: 'Imprevisibilidad' }
 ];
 
 // Traduce los parámetros de juego a valores de 0 a 1 por eje.
