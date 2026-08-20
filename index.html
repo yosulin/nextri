@@ -457,13 +457,26 @@
     display: flex;
     flex-direction: column;
     gap: clamp(12px, 2.5vh, 20px);
+    /* La caja entera también crece: sin esto, aunque #setupPanel tenga
+       altura de sobra, la caja seguiría midiendo solo lo que su
+       contenido necesita y el hueco reaparecería DENTRO de ella. */
+    flex: 1;
+    min-height: 0; /* permite que flex-basis se calcule por contenido, no infinito */
   }
   #setupPanel {
     display: flex; flex-direction: column; align-items: center;
     gap: clamp(10px, 2.5vh, 16px);
     width: 100%; max-width: 480px;
+    /* Crece para ocupar la altura libre del cuerpo, en vez de quedarse en
+       su tamaño natural y dejar un hueco vacío entre la ficha y la barra
+       de botones. */
+    flex: 1;
   }
   .setup-section { display: flex; flex-direction: column; gap: clamp(6px, 1.6vh, 10px); }
+  /* Esta es la única sección que debe absorber el espacio libre: contiene
+     el carrusel de fichas, que es lo que hay que ampliar. */
+  .fila-crece { flex: 1; min-height: 0; }
+  .fila-crece .fichas-rival { flex: 1; }
   .setup-label {
     font-size: clamp(.72rem, 3vw, .78rem);
     font-weight: 700;
@@ -950,7 +963,7 @@
 
   /* ── Carrusel de fichas de rival ── */
   .fichas-rival{
-    display:flex; gap:10px; width:100%;
+    display:flex; gap:10px; width:100%; align-items:stretch;
     overflow-x:auto; scroll-snap-type:x mandatory;
     scrollbar-width:none; -webkit-overflow-scrolling:touch;
     /* touch-action explícito: sin esto algunos navegadores móviles se
@@ -964,7 +977,7 @@
 
   .ficha-rival{
     position:relative; flex:0 0 100%; scroll-snap-align:center;
-    border-radius:22px; overflow:hidden; min-height:auto;
+    border-radius:22px; overflow:hidden;
     display:flex; flex-direction:column;
     text-align:left; cursor:pointer; font-family:'Nunito',sans-serif;
     background:linear-gradient(180deg,
@@ -984,9 +997,17 @@
      FUERA de esta fila, a todo lo ancho, debajo de las dos columnas. */
   .fr-fila{
     position:relative; z-index:1; padding:16px;
-    display:grid; grid-template-columns:1.15fr 1fr; gap:10px; align-items:start;
+    display:grid; grid-template-columns:1.15fr 1fr; gap:10px; align-items:stretch;
+    flex:1;
   }
   .fr-texto{ display:flex; flex-direction:column; min-width:0; }
+  /* El radar absorbe el aire sobrante de la columna de texto, en vez de
+     quedarse pequeño arriba con hueco vacío debajo. */
+  .ficha-rival .fr-radar{ flex:1; align-items:center; }
+  /* El SVG tiene width/height fijos como atributos (para que no se vea
+     roto si algo falla al cargar CSS), pero aquí debe CRECER con el hueco
+     que le da flex:1 en vez de quedarse a su tamaño original. */
+  .fr-radar svg{ width:100%; height:100%; max-height:150px; }
 
   .fr-familia{
     display:inline-block; align-self:flex-start;
@@ -1035,11 +1056,11 @@
   }
   .fr-rasgos::-webkit-scrollbar{ display:none; }
   .fr-rasgo{
-    flex-shrink:0; display:flex; align-items:center; gap:7px;
-    background:var(--bg); border:1px solid var(--border); border-radius:12px;
-    padding:8px 11px; font-size:.72rem;
+    flex-shrink:0; display:flex; align-items:center; gap:8px;
+    background:var(--bg); border:1px solid var(--border); border-radius:13px;
+    padding:10px 13px; font-size:.76rem;
   }
-  .fr-rasgo-ic{ font-size:.95rem; }
+  .fr-rasgo-ic{ font-size:1.05rem; }
   .fr-rasgo b{ display:block; color:var(--text); font-weight:800; }
   .fr-rasgo i{ font-style:normal; color:var(--rival-color); font-weight:700; }
 
@@ -1154,7 +1175,7 @@
        así que en la cabecera solo va el símbolo. El nombre entero sigue
        en el panel de ajustes y en el modal de información. -->
   <div class="marca-mini" aria-label="NEXTRI">
-    <img class="marca-simbolo" src="logo-marca.svg?v=2.95" alt="">
+    <img class="marca-simbolo" src="logo-marca.svg?v=2.96" alt="">
     <!-- El nombre sigue en el DOM (accesibilidad, y la prueba de humo lo
          usa como señal de que la app inicializó), pero visualmente oculto:
          no cabe junto a las pestañas en la cabecera compacta. -->
@@ -1190,7 +1211,7 @@
   <div class="setup-box">
 
     <!-- Solo: elegir rival -->
-    <div class="setup-section" id="soloModeInfo">
+    <div class="setup-section fila-crece" id="soloModeInfo">
       <div class="setup-label" data-i18n="menu.eligeRival">Elige tu rival</div>
       <!-- Carrusel de fichas: se generan desde el catálogo de bots, no a
            mano. Las contiguas asoman por los costados para que se vea que
@@ -1360,7 +1381,7 @@
     <!-- Cabecera con la marca: el panel es "la consola" del juego, así que
          se presenta como tal en vez de como una lista de opciones sueltas -->
     <div class="pc-cabecera">
-      <img class="pc-simbolo" src="logo-marca.svg?v=2.95" alt="" aria-hidden="true">
+      <img class="pc-simbolo" src="logo-marca.svg?v=2.96" alt="" aria-hidden="true">
       <div>
         <h3 id="ajustesTitulo">NEXTRI</h3>
         <span class="pc-version" id="pcVersion"></span>
@@ -1457,37 +1478,37 @@
 // global — funcionaba, pero nada declaraba qué necesitaba cada uno, y una
 // mezcla de versiones en caché podía emparejar mitades incompatibles sin
 // que nada lo detectara.
-import { seedRng, rngNextFrom, rngIntFrom, getRngSeed, getRngState, restoreRngState } from './src/game/random.js?v=2.95';
-import { dist, distSq, segmentPassesOverCircle, pointInTriangle, segmentsIntersect } from './src/game/geometry.js?v=2.95';
+import { seedRng, rngNextFrom, rngIntFrom, getRngSeed, getRngState, restoreRngState } from './src/game/random.js?v=2.96';
+import { dist, distSq, segmentPassesOverCircle, pointInTriangle, segmentsIntersect } from './src/game/geometry.js?v=2.96';
 import { MOVE_REASON_TEXT, edgeKey, edgeExists, connectionCount, areAdjacent,
-         lineIntersectsAny, findNewTriangles, triangleTraps, checkMoveValidity } from './src/game/rules.js?v=2.95';
-import { BOARD_GENERATOR_VERSION, BOARD_QUALITY_TARGET } from './src/game/board-quality.js?v=2.95';
+         lineIntersectsAny, findNewTriangles, triangleTraps, checkMoveValidity } from './src/game/rules.js?v=2.96';
+import { BOARD_GENERATOR_VERSION, BOARD_QUALITY_TARGET } from './src/game/board-quality.js?v=2.96';
 import { ADJACENCY_TARGET, generateCirclePositions, buildCandidateGraph,
-         attemptBoardGeneration, chooseAdjacency, finalizeAdjacency } from './src/game/board.js?v=2.95';
+         attemptBoardGeneration, chooseAdjacency, finalizeAdjacency } from './src/game/board.js?v=2.96';
 import { createPlayer, playerById, nextPlayerId, applyAction, hasAnyLegalMove,
-         replayFromLog } from './src/game/engine.js?v=2.95';
+         replayFromLog } from './src/game/engine.js?v=2.96';
 import { STATE_SCHEMA_VERSION, RULES_VERSION, serializeGameState, restoreGameState,
-         migrateGameSnapshot, isValidGameSnapshot } from './src/game/state.js?v=2.95';
-import { invitadoDeLaSemana } from './src/ai/invitados.js?v=2.95';
+         migrateGameSnapshot, isValidGameSnapshot } from './src/game/state.js?v=2.96';
+import { invitadoDeLaSemana } from './src/ai/invitados.js?v=2.96';
 import { createGuestProgressService, guestProgressRatio, isGuestUnlocked,
-         guestMissingRequirements } from './src/progression/guest-progress.js?v=2.95';
+         guestMissingRequirements } from './src/progression/guest-progress.js?v=2.96';
 import { t, setLocale, getLocale, idiomaInicial, traducirDocumento, IDIOMAS }
-         from './src/i18n/i18n.js?v=2.95';
-import { svgRadar, perfilDesdeNivel, listaEjes, EJES_RADAR } from './src/ui/radar.js?v=2.95';
-import { AI_VERSION, AI_LEVELS, setDifficulty, getDifficulty, RIVALES, setRival, getRival } from './src/ai/levels.js?v=2.95';
-import { chooseAIMove, createsScoringReply } from './src/ai/ai.js?v=2.95';
-import * as Stats from './src/stats/stats.js?v=2.95';
-import { leerMeta, guardarMeta } from './src/stats/repository.js?v=2.95';
+         from './src/i18n/i18n.js?v=2.96';
+import { svgRadar, perfilDesdeNivel, listaEjes, EJES_RADAR } from './src/ui/radar.js?v=2.96';
+import { AI_VERSION, AI_LEVELS, setDifficulty, getDifficulty, RIVALES, setRival, getRival } from './src/ai/levels.js?v=2.96';
+import { chooseAIMove, createsScoringReply } from './src/ai/ai.js?v=2.96';
+import * as Stats from './src/stats/stats.js?v=2.96';
+import { leerMeta, guardarMeta } from './src/stats/repository.js?v=2.96';
 import { victoriasPorRival, aggregateStats, statsByOpponent, statsByCircleCount, ultimasPartidas,
-         formatearDuracion, porcentaje } from './src/stats/aggregates.js?v=2.95';
-import { saveGame, loadSavedGame, clearSavedGame, hasSavedGame } from './src/platform/storage.js?v=2.95';
+         formatearDuracion, porcentaje } from './src/stats/aggregates.js?v=2.96';
+import { saveGame, loadSavedGame, clearSavedGame, hasSavedGame } from './src/platform/storage.js?v=2.96';
 // ── Constantes ──────────────────────────────────────────────────────────────
 // Única fuente de la versión visible — antes se escribía a mano en tres
 // sitios (aquí, el panel de info, y el CACHE de sw.js) y se desincronizaban
 // entre sí. sw.js sigue siendo aparte por necesidad (un service worker no
 // puede leer esta constante, vive en otro archivo) — al subir de versión,
 // solo hace falta tocar ESTA línea y la de sw.js, no una tercera copia más.
-const APP_VERSION = 'v2.95';
+const APP_VERSION = 'v2.96';
 
 // Nombre del producto en un solo sitio. Si algún día cambia (NEXTRI u
 // otro), esto evita perseguirlo por cabecera, aviso de rotación, panel de
@@ -3722,7 +3743,7 @@ function construirTarjetasRival() {
           <div class="fr-radar">${svgRadar(perfil, b.color, 98)}</div>
         </div>
         <div class="fr-retrato-col">
-          ${b.retrato ? `<img class="fr-retrato" src="${b.retrato}?v=2.95" alt="" loading="lazy">` : ''}
+          ${b.retrato ? `<img class="fr-retrato" src="${b.retrato}?v=2.96" alt="" loading="lazy">` : ''}
         </div>
       </div>
       ${b.bloqueable ? '<span class="fr-candado" id="candadoInvitado">🔒</span>' : ''}
@@ -3973,7 +3994,7 @@ function avatarDeRival(id) {
   // Por identidad, no por nombre visible: dos rivales podrían llamarse
   // igual, y los invitados no están en RIVALES.
   const r = RIVALES[id] || (invitadoActual && invitadoActual.id === id ? invitadoActual : null);
-  return r ? `<span class="card-avatar"><img src="${r.retrato}?v=2.95" alt=""></span>` : '🤖';
+  return r ? `<span class="card-avatar"><img src="${r.retrato}?v=2.96" alt=""></span>` : '🤖';
 }
 
 function buildGameUI() {
