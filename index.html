@@ -263,6 +263,17 @@
     50% { transform: scale(1.06); border-color: var(--p1-color); }
   }
 
+  /* Resalte de la pestaña BOT al arrancar, con el mismo lenguaje del
+     pulso del dado: pocos segundos, no permanente, para llamar la
+     atención sobre "aquí puedes cambiar de modo" sin ser un adorno fijo. */
+  .pestana.resaltar {
+    animation: pestana-pulse 1.6s ease-in-out 3;
+  }
+  @keyframes pestana-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 transparent; }
+    50% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--p2-color) 55%, transparent); }
+  }
+
   @keyframes shake {
     0%,100% { transform: rotate(0deg) scale(1); }
     20% { transform: rotate(-12deg) scale(1.08); }
@@ -677,6 +688,37 @@
   .corner-btn.en-cabecera { position: static; flex-shrink: 0; }
   body.in-game .cabecera > .corner-btn { display: none; }
 
+  /* Marca compacta: solo el símbolo, sin el nombre completo, para dejar
+     sitio a las pestañas en la misma fila. */
+  .marca-mini { flex-shrink: 0; }
+  .marca-mini .marca-simbolo { width: 38px; height: 38px; display: block; }
+  body.in-game .marca-mini { display: none; }
+
+  /* Pestañas de modo: sustituyen al bloque "¿Cómo quieres jugar?" que
+     vivía en el menú. Es la misma decisión (Solo/Local) pero tomada desde
+     la cabecera, siempre visible. */
+  .pestanas {
+    display: flex; gap: 2px; flex: 1;
+    background: var(--surface); border: 2px solid var(--border);
+    border-radius: 14px; padding: 3px; min-width: 0;
+  }
+  body.in-game .pestanas { display: none; }
+  .pestana {
+    flex: 1; min-width: 0; border: none; border-radius: 10px;
+    background: transparent; color: var(--muted); cursor: pointer;
+    font-family: 'Nunito', sans-serif; font-weight: 800; font-size: .74rem;
+    letter-spacing: .4px; padding: 8px 4px;
+    display: flex; flex-direction: column; align-items: center; gap: 1px;
+    transition: background .18s, color .18s;
+  }
+  .pestana.is-active { background: var(--p2-light); color: var(--p2-color); }
+  .pestana-online { position: relative; }
+  .pestana-online small {
+    font-size: .52rem; font-weight: 700; letter-spacing: .3px;
+    background: var(--border); color: var(--muted);
+    border-radius: 999px; padding: 1px 6px; margin-top: 1px;
+  }
+
   /* ── Logotipo ── */
   .marca {
     display: flex; align-items: center; justify-content: center;
@@ -804,6 +846,14 @@
   .pc-nav:hover { border-color: var(--p2-color); }
   .pc-nav:active { transform: scale(.985); }
   .pc-flecha { color: var(--muted); font-size: 1.15rem; }
+  .pc-fila-input { cursor: default; }
+  .pc-fila-input:hover { border-color: var(--border); }
+  .pc-input {
+    flex: 1; border: none; background: transparent; outline: none;
+    color: var(--text); font-family: 'Nunito', sans-serif;
+    font-weight: 700; font-size: .9rem;
+  }
+  .pc-input::placeholder { color: var(--muted); font-weight: 600; }
 
   /* Control segmentado: para elegir entre pocas opciones sin abrir nada */
   .segmento { display: flex; gap: 4px; background: var(--surface);
@@ -979,71 +1029,6 @@
   .fr-rasgo b{ display:block; color:var(--text); font-weight:800; }
   .fr-rasgo i{ font-style:normal; color:var(--rival-color); font-weight:700; }
 
-  /* ── Selector de modo y rivales ── */
-  .mode-row { display: flex; gap: 10px; width: 100%; }
-  .mode-btn {
-    flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;
-    background: var(--surface); border: 2px solid var(--border); border-radius: 14px;
-    padding: clamp(8px,2.5vw,12px) 8px; color: var(--muted); cursor: pointer;
-    font-family: 'Nunito', sans-serif; font-weight: 700; font-size: clamp(.8rem,3.5vw,.9rem);
-    transition: border-color .2s, color .2s;
-  }
-  .mode-btn .mode-icon { font-size: clamp(1.1rem, 5vw, 1.4rem); }
-  .mode-btn.is-active { border-color: var(--p1-color); color: var(--p1-color); }
-
-  .rival-row { display: flex; gap: 8px; width: 100%; align-items: stretch; }
-  .rival-btn {
-    position: relative;
-    flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 2px;
-    background: var(--surface); border: 2px solid var(--border); border-radius: 14px;
-    padding: clamp(8px, 2.5vw, 14px) 4px clamp(8px, 2vw, 12px); cursor: pointer; font-family: 'Nunito', sans-serif;
-    transition: border-color .2s, transform .15s;
-  }
-  .rival-btn:active { transform: scale(.97); }
-  /* Cada rival lleva su propio color de marca; el avatar lo hereda con
-     currentColor, así que el SVG no necesita saber nada de temas. */
-  .rival-avatar { display: block; width: clamp(38px, 13vw, 56px); height: clamp(38px, 13vw, 56px); }
-  .rival-avatar img { width: 100%; height: 100%; object-fit: contain; }
-  .rival-btn .rival-name { font-weight: 800; font-size: clamp(.84rem, 3.4vw, .96rem); color: var(--text); }
-  .rival-btn .rival-tag { font-size: clamp(.7rem, 2.8vw, .78rem); color: var(--muted); }
-  .rival-btn.is-active { border-color: var(--rival-color, var(--p2-color)); }
-  .rival-btn.is-active .rival-name { color: var(--rival-color, var(--p2-color)); }
-  .rival-check {
-    position: absolute; top: 6px; right: 6px;
-    width: 20px; height: 20px; border-radius: 50%;
-    background: var(--rival-color, var(--p2-color)); color: #fff;
-    font-size: .7rem; line-height: 20px; text-align: center; font-weight: 700;
-    display: none;
-  }
-  .rival-btn.is-active .rival-check { display: block; }
-
-  /* Ficha del rival elegido: explica la elección sin obligar a probarlos */
-  .rival-desc {
-    display: flex; align-items: center; gap: 12px; text-align: left;
-    background: var(--p2-light); border-radius: 14px; padding: clamp(8px,2.5vw,12px) 12px;
-    margin-top: 10px; font-size: clamp(.78rem, 3.2vw, .86rem); color: var(--muted); line-height: 1.35;
-  }
-  .rival-desc .rd-radar { flex-shrink: 0; line-height: 0; }
-  .rival-desc .rd-texto { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-  .rival-desc .rd-desc { display: block; }
-
-  /* Los ejes en texto acompañan al radar: el gráfico se lee de un vistazo
-     y aquí queda el detalle para quien lo quiera. */
-  .rd-ejes { display: flex; flex-direction: column; gap: 3px; margin-top: 6px; }
-  .rd-ejes .eje { display: grid; grid-template-columns: 58px 1fr; align-items: center; gap: 6px; }
-  .rd-ejes .eje i { font-style: normal; font-size: .72rem; color: var(--muted); }
-  .rd-ejes .eje b {
-    display: block; height: 4px; border-radius: 999px;
-    background: linear-gradient(to right,
-      var(--rival-color) 0 var(--v), var(--border) var(--v) 100%);
-  }
-  .rival-desc strong { display: block; color: var(--text); font-size: .92rem; }
-  .rival-rec {
-    display: inline-block; font-size: .68rem; font-weight: 700;
-    color: var(--p2-color); border: 1px solid var(--p2-color);
-    border-radius: 999px; padding: 1px 8px; margin-left: 4px;
-  }
-
   /* Opciones secundarias: plegadas para no competir con la decisión principal */
   .setup-options { width: 100%; }
   .setup-options > summary {
@@ -1151,25 +1136,27 @@
 <body>
 
 <div class="cabecera">
-  <!-- Perfil: hoy solo abre un aviso, pero el sitio queda reservado desde
-       ya para cuando haya inicio de sesión, en vez de tener que rehacer la
-       cabecera entonces. -->
-  <button class="corner-btn en-cabecera" data-accion="perfil"
-          aria-label="Perfil" title="Perfil">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-      <circle cx="12" cy="8" r="3.6" stroke="currentColor" stroke-width="2"/>
-      <path d="M4.5 20a7.5 7.5 0 0 1 15 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-    </svg>
-  </button>
-
-  <div class="marca">
-  <!-- Logotipo compuesto: la marca en SVG + el nombre como TEXTO REAL, en
-       vez de una imagen recortada. Escala nítido a cualquier densidad de
-       pantalla, se adapta solo a los dos temas (sin necesitar dos
-       versiones) y lo leen los buscadores y lectores de pantalla. -->
-  <img class="marca-simbolo" src="logo-marca.svg?v=2.92" alt="" aria-hidden="true">
-    <h1 class="marca-texto">NEXTRI</h1>
+  <!-- Marca compacta: el nombre completo ya no cabe junto a las pestañas,
+       así que en la cabecera solo va el símbolo. El nombre entero sigue
+       en el panel de ajustes y en el modal de información. -->
+  <div class="marca-mini" aria-label="NEXTRI">
+    <img class="marca-simbolo" src="logo-marca.svg?v=2.93" alt="NEXTRI">
   </div>
+
+  <!-- Las pestañas SON el selector de modo: sustituyen al bloque "¿Cómo
+       quieres jugar?" que vivía más abajo. BOT y LOCAL cambian gameMode
+       igual que antes; ONLINE muestra "Próximamente" y no selecciona nada. -->
+  <nav class="pestanas" role="tablist" aria-label="Modo de juego">
+    <button type="button" class="pestana is-active" role="tab" aria-selected="true"
+            data-accion="modo" data-modo="solo" id="pestanaBot" data-i18n="menu.bot">BOT</button>
+    <button type="button" class="pestana" role="tab" aria-selected="false"
+            data-accion="modo" data-modo="local" data-i18n="menu.local">LOCAL</button>
+    <button type="button" class="pestana pestana-online" role="tab" aria-selected="false"
+            data-accion="abrir-online">
+      <span data-i18n="menu.online">ONLINE</span>
+      <small data-i18n="menu.pronto">PRONTO</small>
+    </button>
+  </nav>
 
   <button class="corner-btn en-cabecera" data-accion="abrir-ajustes"
           aria-label="Ajustes" title="Ajustes">
@@ -1183,19 +1170,6 @@
 <!-- Config de nombres -->
 <div id="setupPanel">
   <div class="setup-box">
-
-    <!-- Cómo jugar: Solo o Local (queda sitio para 'online') -->
-    <div class="setup-section">
-      <div class="setup-label" data-i18n="menu.comoJugar">¿Cómo quieres jugar?</div>
-      <div class="mode-row" role="radiogroup" aria-label="Modo de juego">
-        <button type="button" class="mode-btn is-active" data-accion="modo" data-modo="solo" role="radio" aria-checked="true">
-          <span class="mode-icon">🤖</span><span>Solo</span>
-        </button>
-        <button type="button" class="mode-btn" data-accion="modo" data-modo="local" role="radio" aria-checked="false">
-          <span class="mode-icon">👥</span><span>Local</span>
-        </button>
-      </div>
-    </div>
 
     <!-- Solo: elegir rival -->
     <div class="setup-section" id="soloModeInfo">
@@ -1218,9 +1192,11 @@
       </div>
     </div>
 
-    <!-- Nombres -->
-    <div class="setup-section">
-      <div class="setup-label" id="etiquetaNombres">Tu nombre</div>
+    <!-- Nombres: SOLO en modo Local. El nombre del jugador único de Solo
+         se guarda una vez en ajustes y se reutiliza siempre; no tiene
+         sentido pedirlo en cada partida contra un bot. -->
+    <div class="setup-section" id="nombresSection">
+      <div class="setup-label" id="etiquetaNombres" data-i18n="menu.nombresJugadores">Nombres de los jugadores</div>
       <div class="names-grid" id="namesGrid"></div>
     </div>
 
@@ -1366,10 +1342,20 @@
     <!-- Cabecera con la marca: el panel es "la consola" del juego, así que
          se presenta como tal en vez de como una lista de opciones sueltas -->
     <div class="pc-cabecera">
-      <img class="pc-simbolo" src="logo-marca.svg?v=2.92" alt="" aria-hidden="true">
+      <img class="pc-simbolo" src="logo-marca.svg?v=2.93" alt="" aria-hidden="true">
       <div>
         <h3 id="ajustesTitulo">NEXTRI</h3>
         <span class="pc-version" id="pcVersion"></span>
+      </div>
+    </div>
+
+    <!-- Jugador: se centraliza aquí, no se pide en cada partida Solo -->
+    <div class="pc-grupo">
+      <div class="pc-grupo-tit" data-i18n="ajustes.jugador">Jugador</div>
+      <div class="pc-fila pc-fila-input">
+        <span class="pc-icono">🙂</span>
+        <input type="text" id="nombreGuardadoInput" class="pc-input"
+               data-i18n-attr="placeholder:menu.tuNombre" maxlength="14">
       </div>
     </div>
 
@@ -1453,37 +1439,37 @@
 // global — funcionaba, pero nada declaraba qué necesitaba cada uno, y una
 // mezcla de versiones en caché podía emparejar mitades incompatibles sin
 // que nada lo detectara.
-import { seedRng, rngNextFrom, rngIntFrom, getRngSeed, getRngState, restoreRngState } from './src/game/random.js?v=2.92';
-import { dist, distSq, segmentPassesOverCircle, pointInTriangle, segmentsIntersect } from './src/game/geometry.js?v=2.92';
+import { seedRng, rngNextFrom, rngIntFrom, getRngSeed, getRngState, restoreRngState } from './src/game/random.js?v=2.93';
+import { dist, distSq, segmentPassesOverCircle, pointInTriangle, segmentsIntersect } from './src/game/geometry.js?v=2.93';
 import { MOVE_REASON_TEXT, edgeKey, edgeExists, connectionCount, areAdjacent,
-         lineIntersectsAny, findNewTriangles, triangleTraps, checkMoveValidity } from './src/game/rules.js?v=2.92';
-import { BOARD_GENERATOR_VERSION, BOARD_QUALITY_TARGET } from './src/game/board-quality.js?v=2.92';
+         lineIntersectsAny, findNewTriangles, triangleTraps, checkMoveValidity } from './src/game/rules.js?v=2.93';
+import { BOARD_GENERATOR_VERSION, BOARD_QUALITY_TARGET } from './src/game/board-quality.js?v=2.93';
 import { ADJACENCY_TARGET, generateCirclePositions, buildCandidateGraph,
-         attemptBoardGeneration, chooseAdjacency, finalizeAdjacency } from './src/game/board.js?v=2.92';
+         attemptBoardGeneration, chooseAdjacency, finalizeAdjacency } from './src/game/board.js?v=2.93';
 import { createPlayer, playerById, nextPlayerId, applyAction, hasAnyLegalMove,
-         replayFromLog } from './src/game/engine.js?v=2.92';
+         replayFromLog } from './src/game/engine.js?v=2.93';
 import { STATE_SCHEMA_VERSION, RULES_VERSION, serializeGameState, restoreGameState,
-         migrateGameSnapshot, isValidGameSnapshot } from './src/game/state.js?v=2.92';
-import { invitadoDeLaSemana } from './src/ai/invitados.js?v=2.92';
+         migrateGameSnapshot, isValidGameSnapshot } from './src/game/state.js?v=2.93';
+import { invitadoDeLaSemana } from './src/ai/invitados.js?v=2.93';
 import { createGuestProgressService, guestProgressRatio, isGuestUnlocked,
-         guestMissingRequirements } from './src/progression/guest-progress.js?v=2.92';
+         guestMissingRequirements } from './src/progression/guest-progress.js?v=2.93';
 import { t, setLocale, getLocale, idiomaInicial, traducirDocumento, IDIOMAS }
-         from './src/i18n/i18n.js?v=2.92';
-import { svgRadar, perfilDesdeNivel, listaEjes, EJES_RADAR } from './src/ui/radar.js?v=2.92';
-import { AI_VERSION, AI_LEVELS, setDifficulty, getDifficulty, RIVALES, setRival, getRival } from './src/ai/levels.js?v=2.92';
-import { chooseAIMove, createsScoringReply } from './src/ai/ai.js?v=2.92';
-import * as Stats from './src/stats/stats.js?v=2.92';
-import { leerMeta, guardarMeta } from './src/stats/repository.js?v=2.92';
+         from './src/i18n/i18n.js?v=2.93';
+import { svgRadar, perfilDesdeNivel, listaEjes, EJES_RADAR } from './src/ui/radar.js?v=2.93';
+import { AI_VERSION, AI_LEVELS, setDifficulty, getDifficulty, RIVALES, setRival, getRival } from './src/ai/levels.js?v=2.93';
+import { chooseAIMove, createsScoringReply } from './src/ai/ai.js?v=2.93';
+import * as Stats from './src/stats/stats.js?v=2.93';
+import { leerMeta, guardarMeta } from './src/stats/repository.js?v=2.93';
 import { victoriasPorRival, aggregateStats, statsByOpponent, statsByCircleCount, ultimasPartidas,
-         formatearDuracion, porcentaje } from './src/stats/aggregates.js?v=2.92';
-import { saveGame, loadSavedGame, clearSavedGame, hasSavedGame } from './src/platform/storage.js?v=2.92';
+         formatearDuracion, porcentaje } from './src/stats/aggregates.js?v=2.93';
+import { saveGame, loadSavedGame, clearSavedGame, hasSavedGame } from './src/platform/storage.js?v=2.93';
 // ── Constantes ──────────────────────────────────────────────────────────────
 // Única fuente de la versión visible — antes se escribía a mano en tres
 // sitios (aquí, el panel de info, y el CACHE de sw.js) y se desincronizaban
 // entre sí. sw.js sigue siendo aparte por necesidad (un service worker no
 // puede leer esta constante, vive en otro archivo) — al subir de versión,
 // solo hace falta tocar ESTA línea y la de sw.js, no una tercera copia más.
-const APP_VERSION = 'v2.92';
+const APP_VERSION = 'v2.93';
 
 // Nombre del producto en un solo sitio. Si algún día cambia (NEXTRI u
 // otro), esto evita perseguirlo por cabecera, aviso de rotación, panel de
@@ -1939,6 +1925,18 @@ function mostrarAvisoDoble() {
 }
 
 // ── Tema claro/oscuro ────────────────────────────────────────────────────────
+const NOMBRE_KEY = 'nextri-nombre';
+
+// Nombre del jugador único: se guarda una vez y se reutiliza en Solo, sin
+// pedirlo cada partida. En Local sigue habiendo varios nombres reales, así
+// que ahí el campo de nombres se mantiene tal cual.
+function getNombreGuardado() {
+  try { return localStorage.getItem(NOMBRE_KEY) || ''; } catch { return ''; }
+}
+function setNombreGuardado(nombre) {
+  try { localStorage.setItem(NOMBRE_KEY, nombre.trim().slice(0, 14)); } catch { /* ignorar */ }
+}
+
 const THEME_KEY = 'nextri-theme';
 const THEME_KEY_ANTERIOR = 'juego-circulos-theme'; // antes del cambio de nombre
 
@@ -2121,9 +2119,14 @@ function startGame() {
   // Leer nombres dinámicos
   players = [];
   for (let i = 0; i < numPlayers; i++) {
-    const el = document.getElementById(`nameInput${i}`);
-    const raw = el ? el.value.trim() : '';
-    const name = raw || `Jugador ${i+1}`;
+    let name;
+    if (gameMode === 'solo' && i === 0) {
+      name = getNombreGuardado() || t('menu.tuNombre');
+    } else {
+      const el = document.getElementById(`nameInput${i}`);
+      const raw = el ? el.value.trim() : '';
+      name = raw || `Jugador ${i+1}`;
+    }
     players.push(createPlayer(i, { name }));
   }
   // Modo "1 jugador": la máquina ocupa el segundo puesto automáticamente
@@ -3509,15 +3512,17 @@ async function borrarEstadisticas() {
 function setGameMode(modo) {
   vibrate(HAPTIC.tap);
   gameMode = modo;
-  document.querySelectorAll('[data-accion="modo"]').forEach(b => {
+  // El selector de modo ahora son las pestañas de la cabecera, no un
+  // grupo de botones en el menú.
+  document.querySelectorAll('.pestana[data-modo]').forEach(b => {
     const activo = b.dataset.modo === modo;
     b.classList.toggle('is-active', activo);
-    b.setAttribute('aria-checked', activo ? 'true' : 'false');
+    b.setAttribute('aria-selected', activo ? 'true' : 'false');
   });
   document.getElementById('soloModeInfo').style.display = (modo === 'solo') ? 'flex' : 'none';
-  // En Local son varios nombres, así que la etiqueta cambia con el modo.
-  document.getElementById('etiquetaNombres').textContent =
-    (modo === 'solo') ? t('menu.tuNombre') : t('menu.nombresJugadores');
+  // El bloque de nombres solo tiene sentido en Local: en Solo se usa
+  // directamente el nombre guardado en ajustes, sin pedirlo cada vez.
+  document.getElementById('nombresSection').style.display = (modo === 'local') ? 'flex' : 'none';
   document.getElementById('localPlayersSection').style.display = (modo === 'local') ? 'flex' : 'none';
   // En Solo hay un humano; en Local, los que se elijan (mínimo 2).
   setPlayerCount(modo === 'solo' ? 1 : Math.max(2, numPlayers));
@@ -3591,17 +3596,63 @@ function catalogoBots() {
 }
 
 // Construye las tarjetas desde el catálogo.
-// Fondo decorativo de la ficha: anillos, un polígono y puntos, todo
-// teñido con el color del bot. Vive SEPARADO del retrato (que es una
-// imagen aparte, gif o webp), así que cambiar uno no afecta al otro.
-function fondoFicha(color) {
-  return `<svg class="fr-fondo" viewBox="0 0 400 260" preserveAspectRatio="none" aria-hidden="true">
-    <circle cx="330" cy="46" r="92" fill="none" stroke="${color}" stroke-opacity=".14" stroke-width="1.5"/>
-    <circle cx="330" cy="46" r="58" fill="none" stroke="${color}" stroke-opacity=".08" stroke-width="1.5"/>
-    <path d="M240 44 L300 12 L354 48 L300 88 Z" fill="none" stroke="${color}" stroke-opacity=".10" stroke-width="1.5"/>
-    <g fill="${color}" fill-opacity=".18">
+// Cinco patrones geométricos del mismo lenguaje visual (anillos + una
+// figura + puntos en sus vértices), pero con disposición distinta cada
+// uno, para que cada rival tenga un fondo propio sin diseñar 10 a mano.
+// Vive SEPARADO del retrato (que es una imagen aparte, gif o webp), así
+// que cambiar uno no afecta al otro.
+const PATRONES_FONDO = [
+  // 0: triángulo — el original
+  (c) => `<circle cx="330" cy="46" r="92" fill="none" stroke="${c}" stroke-opacity=".14" stroke-width="1.5"/>
+    <circle cx="330" cy="46" r="58" fill="none" stroke="${c}" stroke-opacity=".08" stroke-width="1.5"/>
+    <path d="M240 44 L300 12 L354 48 L300 88 Z" fill="none" stroke="${c}" stroke-opacity=".10" stroke-width="1.5"/>
+    <g fill="${c}" fill-opacity=".18">
       <circle cx="240" cy="44" r="2.2"/><circle cx="300" cy="12" r="2.2"/><circle cx="354" cy="48" r="2.2"/>
-    </g>
+    </g>`,
+  // 1: hexágono
+  (c) => `<circle cx="320" cy="50" r="96" fill="none" stroke="${c}" stroke-opacity=".13" stroke-width="1.5"/>
+    <polygon points="320,10 356,30 356,70 320,90 284,70 284,30" fill="none" stroke="${c}" stroke-opacity=".11" stroke-width="1.5"/>
+    <g fill="${c}" fill-opacity=".18">
+      <circle cx="320" cy="10" r="2.2"/><circle cx="356" cy="30" r="2.2"/><circle cx="356" cy="70" r="2.2"/>
+      <circle cx="320" cy="90" r="2.2"/><circle cx="284" cy="70" r="2.2"/><circle cx="284" cy="30" r="2.2"/>
+    </g>`,
+  // 2: anillos concéntricos desplazados, sin figura poligonal
+  (c) => `<circle cx="300" cy="40" r="104" fill="none" stroke="${c}" stroke-opacity=".12" stroke-width="1.5"/>
+    <circle cx="330" cy="60" r="70" fill="none" stroke="${c}" stroke-opacity=".10" stroke-width="1.5"/>
+    <circle cx="350" cy="30" r="38" fill="none" stroke="${c}" stroke-opacity=".14" stroke-width="1.5"/>
+    <g fill="${c}" fill-opacity=".18"><circle cx="350" cy="-8" r="2.2"/><circle cx="388" cy="30" r="2.2"/></g>`,
+  // 3: puntos en espiral, sin anillos
+  (c) => {
+    let pts = '', linea = 'M';
+    for (let i = 0; i < 7; i++) {
+      const ang = i * 0.9, rad = 8 + i * 11;
+      const x = (320 + Math.cos(ang) * rad).toFixed(1), y = (50 + Math.sin(ang) * rad).toFixed(1);
+      pts += `<circle cx="${x}" cy="${y}" r="${2.6 - i * 0.15}" fill="${c}" fill-opacity="${.22 - i * 0.02}"/>`;
+      linea += `${i ? 'L' : ''}${x} ${y} `;
+    }
+    return `<path d="${linea}" fill="none" stroke="${c}" stroke-opacity=".08" stroke-width="1.5"/>${pts}`;
+  },
+  // 4: rombo con anillo único, más minimalista
+  (c) => `<circle cx="315" cy="55" r="88" fill="none" stroke="${c}" stroke-opacity=".13" stroke-width="1.5"/>
+    <path d="M315 6 L363 55 L315 104 L267 55 Z" fill="none" stroke="${c}" stroke-opacity=".11" stroke-width="1.5"/>
+    <g fill="${c}" fill-opacity=".2">
+      <circle cx="315" cy="6" r="2.4"/><circle cx="363" cy="55" r="2.4"/>
+      <circle cx="315" cy="104" r="2.4"/><circle cx="267" cy="55" r="2.4"/>
+    </g>`
+];
+
+// Determinista por id de bot: el mismo rival lleva siempre el mismo
+// patrón (no cambia entre partidas ni entre dispositivos), pero rivales
+// distintos no chocan entre sí gracias al reparto por hash.
+function fondoFicha(color, idBot) {
+  // Mezcla tipo FNV-1a: dispersa mejor que una suma simple con cadenas
+  // cortas y parecidas (los ids de un solo carácter de diferencia
+  // acababan agrupados en el mismo patrón).
+  let hash = 2166136261;
+  for (const ch of String(idBot)) { hash ^= ch.charCodeAt(0); hash = Math.imul(hash, 16777619); }
+  const patron = PATRONES_FONDO[Math.abs(hash) % PATRONES_FONDO.length];
+  return `<svg class="fr-fondo" viewBox="0 0 400 260" preserveAspectRatio="none" aria-hidden="true">
+    ${patron(color)}
   </svg>`;
 }
 
@@ -3643,7 +3694,7 @@ function construirTarjetasRival() {
     return `
     <div class="ficha-rival" role="radio" aria-checked="false" tabindex="0"
          data-rival="${b.id}" data-indice="${i}" style="--rival-color:${b.color}">
-      ${fondoFicha(b.color)}
+      ${fondoFicha(b.color, b.id)}
       <div class="fr-contenido">
         <span class="fr-familia">${escapeHtml(familia)}</span>
         <h2>${escapeHtml(b.nombre)}</h2>
@@ -3651,7 +3702,7 @@ function construirTarjetasRival() {
         <div class="fr-desc">${escapeHtml(b.descripcion || '')}</div>
         <div class="fr-radar">${svgRadar(perfil, b.color, 108)}</div>
       </div>
-      ${b.retrato ? `<img class="fr-retrato" src="${b.retrato}?v=2.92" alt="" loading="lazy">` : ''}
+      ${b.retrato ? `<img class="fr-retrato" src="${b.retrato}?v=2.93" alt="" loading="lazy">` : ''}
       ${b.bloqueable ? '<span class="fr-candado" id="candadoInvitado">🔒</span>' : ''}
       <div class="fr-rasgos">${rasgosDestacados(perfil)}</div>
     </div>`;
@@ -3900,7 +3951,7 @@ function avatarDeRival(id) {
   // Por identidad, no por nombre visible: dos rivales podrían llamarse
   // igual, y los invitados no están en RIVALES.
   const r = RIVALES[id] || (invitadoActual && invitadoActual.id === id ? invitadoActual : null);
-  return r ? `<span class="card-avatar"><img src="${r.retrato}?v=2.92" alt=""></span>` : '🤖';
+  return r ? `<span class="card-avatar"><img src="${r.retrato}?v=2.93" alt=""></span>` : '🤖';
 }
 
 function buildGameUI() {
@@ -3954,9 +4005,17 @@ const ACCIONES = {
   tirar:         () => rollDice(),
   tema:          () => toggleTheme(),
   compartir:     () => shareResult(),
-  perfil:        () => { vibrate(HAPTIC.tap); alert(t('perfil.proximamente')); },
-  'abrir-ajustes': () => { vibrate(HAPTIC.select); openDialog(document.body.classList.contains('in-game') ? 'infoOverlay' : 'ajustesOverlay'); },
+  'abrir-online': () => { vibrate(HAPTIC.tap); alert(t('perfil.proximamente')); },
+  'abrir-ajustes': () => {
+    vibrate(HAPTIC.select);
+    if (document.body.classList.contains('in-game')) { openDialog('infoOverlay'); return; }
+    const campo = document.getElementById('nombreGuardadoInput');
+    if (campo) campo.value = getNombreGuardado();
+    openDialog('ajustesOverlay');
+  },
   'abrir-info':  () => { vibrate(HAPTIC.select); closeDialog('ajustesOverlay'); openDialog('infoOverlay'); },
+  // El campo de nombre no tiene una acción de clic propia: se conecta
+  // aparte con su evento 'input', igual que el deslizador de círculos.
   'abrir-stats': () => { vibrate(HAPTIC.select); closeDialog('ajustesOverlay'); mostrarEstadisticas(); },
   'abrir-datos': () => { vibrate(HAPTIC.select); closeDialog('ajustesOverlay'); openDialog('datosOverlay'); },
   'exportar-stats': () => exportarEstadisticas(),
@@ -3976,6 +4035,13 @@ const ACCIONES = {
 // casilla 'change'. Se declaran aquí para que conectarAcciones() sepa a
 // qué evento engancharse.
 const EVENTO_DE = { circulos: 'input', 'orden-aleatorio': 'change' };
+
+function conectarNombreGuardado() {
+  const campo = document.getElementById('nombreGuardadoInput');
+  if (!campo) return;
+  campo.value = getNombreGuardado();
+  campo.addEventListener('input', () => setNombreGuardado(campo.value));
+}
 
 function conectarAcciones() {
   document.querySelectorAll('[data-accion]').forEach(el => {
@@ -4020,6 +4086,9 @@ function iniciarApp() {
   construirTarjetasRival();
   actualizarInvitado();
   elegirRival('circuit');   // rival recomendado por defecto
+  // Resalta la pestaña BOT unos segundos al abrir: "estás aquí, pero
+  // puedes cambiar" — igual que el pulso del dado invita a tirar.
+  setTimeout(() => document.getElementById('pestanaBot')?.classList.add('resaltar'), 250);
   setGameMode('solo');      // el modo más probable al abrir en el móvil
   actualizarResumenOpciones();
   syncResumeButton(); // ofrecer "continuar" solo si hay partida a medias
