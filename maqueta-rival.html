@@ -102,13 +102,13 @@
     border:3px solid var(--border);background:var(--surface);
     transition:border-color .18s, transform .18s;
   }
-  .av span{font-size:.6rem;font-weight:800;color:var(--muted);letter-spacing:.4px}
+  .av span{font-size:.58rem;font-weight:800;color:var(--muted);letter-spacing:.4px;order:-1}
   .av.on img{border-color:var(--avc);transform:scale(1.08)}
   .av.on span{color:var(--avc)}
   .av.bloq{position:relative}
   .av.bloq img{filter:grayscale(1) brightness(.7)}
   .av.bloq::after{
-    content:'🔒';position:absolute;top:16px;font-size:1rem;
+    content:'🔒';position:absolute;bottom:16px;font-size:1rem;
   }
 
   .jugar{
@@ -119,6 +119,32 @@
     display:flex;align-items:center;justify-content:center;gap:8px;
     box-shadow:0 8px 20px -8px var(--rival-cta);
     transition:background .22s, box-shadow .22s;
+  }
+
+  .modo-btn.proximamente{position:relative}
+  .modo-btn.proximamente::after{
+    content:'PRONTO';position:absolute;top:-6px;right:-4px;
+    font-size:.5rem;font-weight:800;letter-spacing:.5px;
+    background:var(--p2-color);color:#fff;border-radius:999px;padding:2px 6px;
+  }
+
+  .capa-online{
+    position:fixed;inset:0;z-index:50;display:none;
+    align-items:center;justify-content:center;padding:24px;
+    background:rgba(0,0,0,.55);backdrop-filter:blur(3px);
+  }
+  .capa-online.ver{display:flex}
+  .co-caja{
+    background:var(--surface);border:2px solid var(--border);border-radius:20px;
+    padding:26px 22px;max-width:340px;text-align:center;
+  }
+  .co-icono{font-size:2.4rem;margin-bottom:8px}
+  .co-caja h3{font-family:'Fredoka One',cursive;font-size:1.3rem;margin-bottom:8px;color:var(--p2-color)}
+  .co-caja p{font-size:.85rem;color:var(--muted);line-height:1.5;margin-bottom:16px}
+  .co-cerrar{
+    width:100%;padding:12px;border:none;border-radius:12px;cursor:pointer;
+    background:var(--p2-color);color:#fff;font-family:'Nunito',sans-serif;
+    font-weight:800;font-size:.92rem;
   }
 
   .nota{max-width:480px;font-size:.72rem;color:var(--muted);text-align:center;line-height:1.5;margin-top:6px}
@@ -147,6 +173,7 @@
   <div class="modo-row">
     <button class="modo-btn on"><span class="ic">🤖</span>Solo</button>
     <button class="modo-btn"><span class="ic">👥</span>Local</button>
+    <button class="modo-btn proximamente" onclick="avisoOnline()"><span class="ic">🌐</span>Online</button>
   </div>
 
   <div class="etiqueta">Elige tu rival</div>
@@ -160,6 +187,16 @@
 </div>
 
 <button class="jugar" id="jugar"></button>
+
+<div class="capa-online" id="capaOnline" onclick="this.classList.remove('ver')">
+  <div class="co-caja">
+    <div class="co-icono">🌐</div>
+    <h3>Online</h3>
+    <p>Próximamente podrás jugar contra otras personas: salas con código,
+       partidas rápidas y tus estadísticas en la nube.</p>
+    <button class="co-cerrar">Entendido</button>
+  </div>
+</div>
 
 <p class="nota">
   Maqueta para validar la interfaz. El engranaje alterna tema claro/oscuro
@@ -252,10 +289,34 @@ function mover(d) {
   pintar();
 }
 
+// Deslizar la ficha con el dedo: en el móvil es el gesto natural, y las
+// flechas se quedan para quien prefiera pulsar. Se exige recorrido mínimo
+// y que el movimiento sea claramente horizontal, para no robarle el
+// gesto al desplazamiento vertical de la página.
+(function gestoFicha() {
+  const ficha = document.getElementById('ficha');
+  let x0 = null, y0 = null;
+  ficha.addEventListener('pointerdown', e => { x0 = e.clientX; y0 = e.clientY; });
+  ficha.addEventListener('pointerup', e => {
+    if (x0 === null) return;
+    const dx = e.clientX - x0, dy = e.clientY - y0;
+    x0 = null;
+    if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.6) {
+      mover(dx < 0 ? 1 : -1);   // arrastrar a la izquierda trae el siguiente
+    }
+  });
+  ficha.addEventListener('pointercancel', () => { x0 = null; });
+})();
+
+function avisoOnline() {
+  const cap = document.getElementById('capaOnline');
+  cap.classList.add('ver');
+}
+
 document.getElementById('avatares').innerHTML = RIVALES.map((r,i)=>`
   <button class="av${r.bloqueado?' bloq':''}" style="--avc:${r.color}" onclick="actual=${i};pintar()">
-    <img src="rivales/${r.id}.png" alt="">
     <span>${r.nombre}</span>
+    <img src="rivales/${r.id}.png" alt="">
   </button>`).join('');
 
 function alternarTema(){
