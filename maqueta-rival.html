@@ -62,9 +62,16 @@
       var(--surface) 70%);
     border:2px solid color-mix(in srgb, var(--rival) 45%, var(--border));
     padding:16px; display:grid; grid-template-columns:1fr auto; gap:10px;
-    min-height:230px; transition:opacity .22s, transform .22s;
+    min-height:230px; transition:transform .26s ease, opacity .26s ease;
   }
-  .ficha.saliendo{opacity:0;transform:scale(.97)}
+  /* Visor que recorta: la ficha sale por un lado y la nueva entra por el
+     otro, en vez de fundirse. Es lo que hace que se perciba como pasar
+     cartas y no como un cambio de contenido. */
+  .visor{overflow:hidden;border-radius:22px}
+  .ficha.sale-izq{transform:translateX(-105%);opacity:0}
+  .ficha.sale-der{transform:translateX(105%);opacity:0}
+  .ficha.entra-izq{transform:translateX(-105%);opacity:0;transition:none}
+  .ficha.entra-der{transform:translateX(105%);opacity:0;transition:none}
   .ficha h2{
     font-family:'Fredoka One',cursive;font-size:1.7rem;line-height:1;
     color:var(--rival);letter-spacing:.5px;
@@ -177,13 +184,14 @@
   </div>
 
   <div class="etiqueta">Elige tu rival</div>
-  <div class="ficha" id="ficha"></div>
-
   <div class="tira">
     <button class="flecha" onclick="mover(-1)" aria-label="Anterior">‹</button>
     <div class="avatares" id="avatares"></div>
     <button class="flecha" onclick="mover(1)" aria-label="Siguiente">›</button>
   </div>
+
+  <div class="visor"><div class="ficha" id="ficha"></div></div>
+
 </div>
 
 <button class="jugar" id="jugar"></button>
@@ -255,11 +263,13 @@ function radar(perfil, color, tam = 116) {
   </svg>`;
 }
 
-function pintar() {
+// dir: 1 avanza (la ficha sale por la izquierda), -1 retrocede, 0 sin
+// movimiento (primera carga o clic directo en un avatar).
+function pintar(dir = 0) {
   const r = RIVALES[actual];
   const ficha = document.getElementById('ficha');
-  ficha.classList.add('saliendo');
-  setTimeout(() => {
+
+  const rellenar = () => {
     ficha.style.setProperty('--rival', r.color);
     document.body.style.setProperty('--rival-cta', r.color);
     ficha.innerHTML = `
@@ -270,8 +280,22 @@ function pintar() {
         <div class="radar">${radar(r.perfil, r.color)}</div>
       </div>
       <img class="retrato" src="rivales/${r.id}.png" alt="">`;
-    ficha.classList.remove('saliendo');
-  }, 180);
+  };
+
+  if (dir === 0) { rellenar(); }
+  else {
+    ficha.classList.add(dir > 0 ? 'sale-izq' : 'sale-der');
+    setTimeout(() => {
+      rellenar();
+      // Colocar la nueva al otro lado SIN animar, y soltarla en el
+      // fotograma siguiente para que el navegador anime la entrada.
+      ficha.classList.remove('sale-izq', 'sale-der');
+      ficha.classList.add(dir > 0 ? 'entra-der' : 'entra-izq');
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        ficha.classList.remove('entra-der', 'entra-izq');
+      }));
+    }, 260);
+  }
 
   document.getElementById('jugar').innerHTML = r.bloqueado
     ? `🔒 ${r.nombre} bloqueado`
@@ -286,7 +310,7 @@ function pintar() {
 
 function mover(d) {
   actual = (actual + d + RIVALES.length) % RIVALES.length;
-  pintar();
+  pintar(d);
 }
 
 // Deslizar la ficha con el dedo: en el móvil es el gesto natural, y las
@@ -308,13 +332,21 @@ function mover(d) {
   ficha.addEventListener('pointercancel', () => { x0 = null; });
 })();
 
+// Al pulsar un avatar, el desplazamiento va en el sentido del salto.
+function irA(i) {
+  if (i === actual) return;
+  const dir = i > actual ? 1 : -1;
+  actual = i;
+  pintar(dir);
+}
+
 function avisoOnline() {
   const cap = document.getElementById('capaOnline');
   cap.classList.add('ver');
 }
 
 document.getElementById('avatares').innerHTML = RIVALES.map((r,i)=>`
-  <button class="av${r.bloqueado?' bloq':''}" style="--avc:${r.color}" onclick="actual=${i};pintar()">
+  <button class="av${r.bloqueado?' bloq':''}" style="--avc:${r.color}" onclick="irA(${i})">
     <span>${r.nombre}</span>
     <img src="rivales/${r.id}.png" alt="">
   </button>`).join('');
