@@ -51,6 +51,7 @@ export const EN = {
   'ajustes.informacion': 'About',
   'ajustes.datos': 'Data',
   'ajustes.idioma': 'Language',
+  'invitado.bloqueadoBoton': '🔒 {rival} locked',
   'perfil.proximamente': 'Your profile will arrive with online play.',
   'ajustes.preferencias': 'Preferences',
   'ajustes.masOpciones': 'More options',

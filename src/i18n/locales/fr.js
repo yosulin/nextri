@@ -51,6 +51,7 @@ export const FR = {
   'ajustes.informacion': 'À propos',
   'ajustes.datos': 'Données',
   'ajustes.idioma': 'Langue',
+  'invitado.bloqueadoBoton': '🔒 {rival} verrouillé',
   'perfil.proximamente': 'Ton profil arrivera avec le jeu en ligne.',
   'ajustes.preferencias': 'Préférences',
   'ajustes.masOpciones': 'Plus d\u2019options',

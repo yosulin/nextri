@@ -894,6 +894,54 @@
   /* Los botones flotantes de tema y ajustes suben por encima de la barra */
 
 
+  /* ── Carrusel de fichas de rival ── */
+  .fichas-rival{
+    display:flex; gap:10px; width:100%;
+    overflow-x:auto; scroll-snap-type:x mandatory;
+    scrollbar-width:none; -webkit-overflow-scrolling:touch;
+    /* touch-action explícito: sin esto algunos navegadores móviles se
+       quedan el gesto horizontal para su propia navegación (el "atrás" al
+       deslizar) y el carrusel no responde al dedo. */
+    touch-action:pan-x pan-y;
+    /* Relleno lateral + fichas a ancho completo = las contiguas asoman */
+    padding:2px 19%; scroll-padding:0 19%;
+  }
+  .fichas-rival::-webkit-scrollbar{display:none}
+
+  .ficha-rival{
+    position:relative; flex:0 0 100%; scroll-snap-align:center;
+    border-radius:20px; overflow:hidden; min-height:212px;
+    padding:14px; display:grid; grid-template-columns:1fr auto; gap:8px;
+    text-align:left; cursor:pointer; font-family:'Nunito',sans-serif;
+    background:linear-gradient(135deg,
+      color-mix(in srgb, var(--rival-color) 22%, var(--surface)), var(--surface) 70%);
+    border:2px solid color-mix(in srgb, var(--rival-color) 45%, var(--border));
+    transition:opacity .25s, transform .25s;
+  }
+  /* Las de los lados se atenúan para que la central mande */
+  .ficha-rival:not(.centrada){ opacity:.42; transform:scale(.94); }
+  .ficha-rival h2{
+    font-family:'Fredoka One',cursive; font-size:1.45rem; line-height:1;
+    color:var(--rival-color); letter-spacing:.5px;
+  }
+  .ficha-rival .fr-apodo{
+    color:var(--rival-color); font-weight:800; font-size:.82rem;
+    opacity:.85; margin-bottom:6px;
+  }
+  .ficha-rival .fr-desc{
+    font-size:.78rem; color:var(--muted); line-height:1.35; max-width:19ch;
+  }
+  .ficha-rival .fr-retrato{
+    position:absolute; right:-6px; bottom:0; width:50%; max-width:180px;
+    filter:drop-shadow(0 8px 18px rgba(0,0,0,.28)); pointer-events:none;
+  }
+  .ficha-rival .fr-radar{ margin-top:8px; }
+  /* Bloqueado: se ve quién es, pero no se puede elegir */
+  .ficha-rival.bloqueada .fr-retrato{ filter:grayscale(1) brightness(.72); }
+  .ficha-rival .fr-candado{
+    position:absolute; top:12px; right:12px; font-size:1.1rem; opacity:.8;
+  }
+
   /* ── Selector de modo y rivales ── */
   .mode-row { display: flex; gap: 10px; width: 100%; }
   .mode-btn {
@@ -1082,7 +1130,7 @@
        vez de una imagen recortada. Escala nítido a cualquier densidad de
        pantalla, se adapta solo a los dos temas (sin necesitar dos
        versiones) y lo leen los buscadores y lectores de pantalla. -->
-  <img class="marca-simbolo" src="logo-marca.svg?v=2.89" alt="" aria-hidden="true">
+  <img class="marca-simbolo" src="logo-marca.svg?v=2.90" alt="" aria-hidden="true">
     <h1 class="marca-texto">NEXTRI</h1>
   </div>
 
@@ -1115,11 +1163,10 @@
     <!-- Solo: elegir rival -->
     <div class="setup-section" id="soloModeInfo">
       <div class="setup-label" data-i18n="menu.eligeRival">Elige tu rival</div>
-      <!-- Las tarjetas se generan desde el catálogo de bots, no a mano:
-           añadir Random, Phantom o un invitado nuevo ya no obliga a tocar
-           el HTML. Ver construirTarjetasRival(). -->
-      <div class="rival-row" id="rivalRow" role="radiogroup" aria-label="Rival"></div>
-      <div class="rival-desc" id="rivalDesc"></div>
+      <!-- Carrusel de fichas: se generan desde el catálogo de bots, no a
+           mano. Las contiguas asoman por los costados para que se vea que
+           hay más rivales sin necesitar flechas ni una tira aparte. -->
+      <div class="fichas-rival" id="fichasRival" role="radiogroup" aria-label="Rival"></div>
     </div>
 
     <!-- Local: cuántos jugadores -->
@@ -1282,7 +1329,7 @@
     <!-- Cabecera con la marca: el panel es "la consola" del juego, así que
          se presenta como tal en vez de como una lista de opciones sueltas -->
     <div class="pc-cabecera">
-      <img class="pc-simbolo" src="logo-marca.svg?v=2.89" alt="" aria-hidden="true">
+      <img class="pc-simbolo" src="logo-marca.svg?v=2.90" alt="" aria-hidden="true">
       <div>
         <h3 id="ajustesTitulo">NEXTRI</h3>
         <span class="pc-version" id="pcVersion"></span>
@@ -1369,35 +1416,35 @@
 // global — funcionaba, pero nada declaraba qué necesitaba cada uno, y una
 // mezcla de versiones en caché podía emparejar mitades incompatibles sin
 // que nada lo detectara.
-import { seedRng, rngNextFrom, rngIntFrom, getRngSeed, getRngState, restoreRngState } from './src/game/random.js?v=2.89';
-import { dist, distSq, segmentPassesOverCircle, pointInTriangle, segmentsIntersect } from './src/game/geometry.js?v=2.89';
+import { seedRng, rngNextFrom, rngIntFrom, getRngSeed, getRngState, restoreRngState } from './src/game/random.js?v=2.90';
+import { dist, distSq, segmentPassesOverCircle, pointInTriangle, segmentsIntersect } from './src/game/geometry.js?v=2.90';
 import { MOVE_REASON_TEXT, edgeKey, edgeExists, connectionCount, areAdjacent,
-         lineIntersectsAny, findNewTriangles, triangleTraps, checkMoveValidity } from './src/game/rules.js?v=2.89';
-import { BOARD_GENERATOR_VERSION, BOARD_QUALITY_TARGET } from './src/game/board-quality.js?v=2.89';
+         lineIntersectsAny, findNewTriangles, triangleTraps, checkMoveValidity } from './src/game/rules.js?v=2.90';
+import { BOARD_GENERATOR_VERSION, BOARD_QUALITY_TARGET } from './src/game/board-quality.js?v=2.90';
 import { ADJACENCY_TARGET, generateCirclePositions, buildCandidateGraph,
-         attemptBoardGeneration, chooseAdjacency, finalizeAdjacency } from './src/game/board.js?v=2.89';
+         attemptBoardGeneration, chooseAdjacency, finalizeAdjacency } from './src/game/board.js?v=2.90';
 import { createPlayer, playerById, nextPlayerId, applyAction, hasAnyLegalMove,
-         replayFromLog } from './src/game/engine.js?v=2.89';
+         replayFromLog } from './src/game/engine.js?v=2.90';
 import { STATE_SCHEMA_VERSION, RULES_VERSION, serializeGameState, restoreGameState,
-         migrateGameSnapshot, isValidGameSnapshot } from './src/game/state.js?v=2.89';
+         migrateGameSnapshot, isValidGameSnapshot } from './src/game/state.js?v=2.90';
 import { invitadoDeLaSemana, progresoDesbloqueo, estaDesbloqueado, loQueFalta,
-         REQUISITOS_DESBLOQUEO } from './src/ai/invitados.js?v=2.89';
+         REQUISITOS_DESBLOQUEO } from './src/ai/invitados.js?v=2.90';
 import { t, setLocale, getLocale, idiomaInicial, traducirDocumento, IDIOMAS }
-         from './src/i18n/i18n.js?v=2.89';
-import { svgRadar, perfilDesdeNivel, listaEjes } from './src/ui/radar.js?v=2.89';
-import { AI_VERSION, AI_LEVELS, setDifficulty, getDifficulty, RIVALES, setRival, getRival } from './src/ai/levels.js?v=2.89';
-import { chooseAIMove, createsScoringReply } from './src/ai/ai.js?v=2.89';
-import * as Stats from './src/stats/stats.js?v=2.89';
+         from './src/i18n/i18n.js?v=2.90';
+import { svgRadar, perfilDesdeNivel, listaEjes } from './src/ui/radar.js?v=2.90';
+import { AI_VERSION, AI_LEVELS, setDifficulty, getDifficulty, RIVALES, setRival, getRival } from './src/ai/levels.js?v=2.90';
+import { chooseAIMove, createsScoringReply } from './src/ai/ai.js?v=2.90';
+import * as Stats from './src/stats/stats.js?v=2.90';
 import { victoriasPorRival, aggregateStats, statsByOpponent, statsByCircleCount, ultimasPartidas,
-         formatearDuracion, porcentaje } from './src/stats/aggregates.js?v=2.89';
-import { saveGame, loadSavedGame, clearSavedGame, hasSavedGame } from './src/platform/storage.js?v=2.89';
+         formatearDuracion, porcentaje } from './src/stats/aggregates.js?v=2.90';
+import { saveGame, loadSavedGame, clearSavedGame, hasSavedGame } from './src/platform/storage.js?v=2.90';
 // ── Constantes ──────────────────────────────────────────────────────────────
 // Única fuente de la versión visible — antes se escribía a mano en tres
 // sitios (aquí, el panel de info, y el CACHE de sw.js) y se desincronizaban
 // entre sí. sw.js sigue siendo aparte por necesidad (un service worker no
 // puede leer esta constante, vive en otro archivo) — al subir de versión,
 // solo hace falta tocar ESTA línea y la de sw.js, no una tercera copia más.
-const APP_VERSION = 'v2.89';
+const APP_VERSION = 'v2.90';
 
 // Nombre del producto en un solo sitio. Si algún día cambia (NEXTRI u
 // otro), esto evita perseguirlo por cabecera, aviso de rotación, panel de
@@ -3445,7 +3492,7 @@ let invitadoDesbloqueado = false;
 
 async function actualizarInvitado() {
   invitadoActual = invitadoDeLaSemana();
-  const btn = document.getElementById('btnInvitado');
+  const btn = document.querySelector('.ficha-rival[data-rival="invitado"]');
   if (!btn) return;
 
   const victorias = victoriasPorRival(await Stats.todasLasPartidas());
@@ -3453,17 +3500,17 @@ async function actualizarInvitado() {
   invitadoDesbloqueado = estaDesbloqueado(victorias);
 
   btn.style.setProperty('--rival-color', invitadoActual.color);
-  const etiquetaNombre = btn.querySelector('.rival-name');
-  const etiquetaApodo = btn.querySelector('.rival-tag');
-  if (etiquetaNombre) etiquetaNombre.textContent = invitadoDesbloqueado ? invitadoActual.nombre : '???';
-  if (etiquetaApodo) etiquetaApodo.textContent = invitadoDesbloqueado ? invitadoActual.apodo : 'Invitado';
+  const h2 = btn.querySelector('h2');
+  if (h2) h2.textContent = invitadoDesbloqueado ? invitadoActual.nombre : '???';
 
-  const cortinilla = document.getElementById('cortinillaInvitado');
-  // La cortinilla ocupa lo que FALTA: al 0% tapa entero, al 100% desaparece.
-  cortinilla.style.height = `${Math.round((1 - progreso) * 100)}%`;
-  cortinilla.classList.toggle('abierta', invitadoDesbloqueado);
-  btn.classList.toggle('bloqueado', !invitadoDesbloqueado);
-  btn.setAttribute('aria-disabled', invitadoDesbloqueado ? 'false' : 'true');
+  // El progreso se refleja en el candado de la ficha: desaparece al
+  // desbloquear, y hasta entonces indica cuánto falta al pulsarlo.
+  btn.classList.toggle('bloqueada', !invitadoDesbloqueado);
+  const candado = document.getElementById('candadoInvitado');
+  if (candado) {
+    candado.style.display = invitadoDesbloqueado ? 'none' : '';
+    candado.title = `${Math.round(progreso * 100)}%`;
+  }
 
   const falta = loQueFalta(victorias);
   btn.title = invitadoDesbloqueado
@@ -3489,24 +3536,94 @@ function catalogoBots() {
 
 // Construye las tarjetas desde el catálogo.
 function construirTarjetasRival() {
-  const fila = document.getElementById('rivalRow');
-  if (!fila) return;
-  fila.innerHTML = catalogoBots().map(b => `
-    <button type="button" class="rival-btn${b.bloqueable ? ' rival-invitado' : ''}"
-            ${b.bloqueable ? 'id="btnInvitado"' : ''}
-            data-accion="rival" data-rival="${b.id}" data-kind="${b.kind}"
-            role="radio" aria-checked="false" style="--rival-color:${b.color}">
-      <span class="rival-check" aria-hidden="true">✓</span>
-      <span class="rival-avatar">${b.retrato ? `<img src="${b.retrato}?v=2.89" alt="" loading="lazy">` : ''}</span>
-      <span class="rival-name">${escapeHtml(b.nombre)}</span>
-      <span class="rival-tag">${escapeHtml(b.apodo)}</span>
-      ${b.bloqueable ? '<span class="cortinilla" id="cortinillaInvitado"><span class="cortinilla-txt">🔒</span></span>' : ''}
-    </button>`).join('');
-  // Las tarjetas nacen después de conectarAcciones(), así que se enlazan
-  // aquí mismo: si no, serían botones mudos.
-  fila.querySelectorAll('[data-accion="rival"]').forEach(el => {
-    el.addEventListener('click', () => elegirRival(el.dataset.rival));
+  const tira = document.getElementById('fichasRival');
+  if (!tira) return;
+  const bots = catalogoBots();
+
+  tira.innerHTML = bots.map((b, i) => {
+    const perfil = perfilDesdeNivel(AI_LEVELS[b.nivel] || AI_LEVELS.medium);
+    return `
+    <div class="ficha-rival" role="radio" aria-checked="false" tabindex="0"
+         data-rival="${b.id}" data-indice="${i}" style="--rival-color:${b.color}">
+      <div>
+        <h2>${escapeHtml(b.nombre)}</h2>
+        <div class="fr-apodo">${escapeHtml(b.apodo)}</div>
+        <div class="fr-desc">${escapeHtml(b.descripcion || '')}</div>
+        <div class="fr-radar">${svgRadar(perfil, b.color, 96)}</div>
+      </div>
+      ${b.retrato ? `<img class="fr-retrato" src="${b.retrato}?v=2.90" alt="" loading="lazy">` : ''}
+      ${b.bloqueable ? '<span class="fr-candado" id="candadoInvitado">🔒</span>' : ''}
+    </div>`;
+  }).join('');
+
+  // Pulsar una ficha lateral la trae al centro; la central ya está elegida.
+  [...tira.children].forEach((f, i) => {
+    f.addEventListener('click', () => irAFicha(i));
+    f.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); irAFicha(i); }
+    });
   });
+
+  seguirCarrusel();
+  irAFicha(indiceRivalActual(bots), false);
+}
+
+// Índice del rival elegido dentro del catálogo, para no dar por hecho que
+// es siempre el mismo al reconstruir (el invitado cambia cada semana).
+function indiceRivalActual(bots) {
+  const activo = bots.findIndex(b => b.id === (rivalEfectivo ? rivalEfectivo.id : getRival().id));
+  return activo >= 0 ? activo : 0;
+}
+
+let carruselEnganchado = false;
+let indiceCentrado = 0;
+
+// Detecta qué ficha queda centrada al soltar. Se espera a que el
+// desplazamiento se detenga para no recalcular en cada fotograma.
+function seguirCarrusel() {
+  if (carruselEnganchado) return;
+  carruselEnganchado = true;
+  const tira = document.getElementById('fichasRival');
+  let temporizador = null;
+  tira.addEventListener('scroll', () => {
+    clearTimeout(temporizador);
+    temporizador = setTimeout(() => {
+      const centro = tira.scrollLeft + tira.clientWidth / 2;
+      let mejor = 0, mejorDist = Infinity;
+      [...tira.children].forEach((f, i) => {
+        const c = f.offsetLeft - tira.offsetLeft + f.clientWidth / 2;
+        const d = Math.abs(c - centro);
+        if (d < mejorDist) { mejorDist = d; mejor = i; }
+      });
+      if (mejor !== indiceCentrado) {
+        indiceCentrado = mejor;
+        // Un toque corto al pasar de ficha: confirma en la mano que el
+        // carrusel ha cambiado, sin tener que mirar.
+        vibrate(HAPTIC.tap);
+        marcarFichaCentrada(mejor);
+        const id = tira.children[mejor].dataset.rival;
+        elegirRival(id, true);
+      }
+    }, 90);
+  }, { passive: true });
+}
+
+function marcarFichaCentrada(i) {
+  const hijos = document.getElementById('fichasRival').children;
+  for (let k = 0; k < hijos.length; k++) {
+    hijos[k].classList.toggle('centrada', k === i);
+    hijos[k].setAttribute('aria-checked', k === i ? 'true' : 'false');
+  }
+}
+
+function irAFicha(i, suave = true) {
+  const tira = document.getElementById('fichasRival');
+  const ficha = tira.children[i];
+  if (!ficha) return;
+  indiceCentrado = i;
+  tira.scrollTo({ left: ficha.offsetLeft - tira.offsetLeft, behavior: suave ? 'smooth' : 'auto' });
+  marcarFichaCentrada(i);
+  elegirRival(ficha.dataset.rival, true);
 }
 
 // Selector de idioma: se genera desde el catálogo de idiomas, así que
@@ -3560,7 +3677,6 @@ function aplicarIdioma() {
   construirSelectorIdioma();
   construirSelectorTema();
   construirTarjetasRival();
-  pintarAvataresRivales();
   actualizarInvitado();
   const activo = document.querySelector('[data-accion="rival"].is-active');
   elegirRival(activo ? activo.dataset.rival : 'circuit');
@@ -3569,68 +3685,37 @@ function aplicarIdioma() {
     gameMode === 'solo' ? t('menu.tuNombre') : t('menu.nombresJugadores');
 }
 
-function pintarAvataresRivales() {
-  document.querySelectorAll('[data-accion="rival"]').forEach(b => {
-    const r = RIVALES[b.dataset.rival];
-    if (!r) return;
-    b.style.setProperty('--rival-color', r.color);
-    const hueco = b.querySelector('.rival-avatar');
-    if (hueco) hueco.innerHTML = `<img src="${r.retrato}?v=2.89" alt="" loading="lazy">`;
-  });
-}
 
-function elegirRival(id) {
-  vibrate(HAPTIC.tap);
+// desdeCarrusel: la ficha ya está en pantalla y la vibración la dispara el
+// propio carrusel, así que no se repite aquí ni se vuelve a pintar nada.
+function elegirRival(id, desdeCarrusel = false) {
+  if (!desdeCarrusel) vibrate(HAPTIC.tap);
   rivalEfectivo = null;
+
   if (id === 'invitado') {
-    if (!invitadoDesbloqueado) { mostrarComoDesbloquear(); return; }
-    // El invitado usa el mismo motor: solo cambia el perfil y el nombre.
-    // El invitado usa los parámetros del nivel equivalente, pero conserva
-    // SU identidad: en estadísticas debe figurar como el invitado que es,
-    // no como el rival fijo cuyo perfil comparte.
-    setRival(invitadoActual.nivel === 'easy' ? 'delta'
-           : invitadoActual.nivel === 'hard' ? 'vector' : 'circuit');
-    rivalEfectivo = { ...invitadoActual, kind: 'guest' };
-    aiDifficulty = getDifficulty();
-    marcarRivalActivo('invitado');
-    pintarFichaRival(invitadoActual);
+    // Bloqueado: se puede mirar su ficha, pero no jugar contra él. El
+    // aviso solo salta si se intenta jugar, no al pasar por delante en el
+    // carrusel, que sería molesto.
+    if (invitadoActual) {
+      // El invitado usa los parámetros del nivel equivalente, pero conserva
+      // SU identidad: en estadísticas debe figurar como el invitado que es,
+      // no como el rival fijo cuyo perfil comparte.
+      setRival(invitadoActual.nivel === 'easy' ? 'delta'
+             : invitadoActual.nivel === 'hard' ? 'vector' : 'circuit');
+      rivalEfectivo = { ...invitadoActual, kind: 'guest' };
+      aiDifficulty = getDifficulty();
+    }
     actualizarTextoJugar();
     return;
   }
+
   setRival(id);
   aiDifficulty = getDifficulty();
-  marcarRivalActivo(id);
-  pintarFichaRival(getRival());
   actualizarTextoJugar();
 }
 
-function marcarRivalActivo(id) {
-  document.querySelectorAll('[data-accion="rival"]').forEach(b => {
-    const activo = b.dataset.rival === id;
-    b.classList.toggle('is-active', activo);
-    b.setAttribute('aria-checked', activo ? 'true' : 'false');
-  });
-}
 
 // Dibuja la ficha de un rival, sea fijo o invitado: los dos tienen nombre,
-// apodo, color, descripción y nivel, así que el mismo código vale.
-function pintarFichaRival(r) {
-  const ficha = document.getElementById('rivalDesc');
-  ficha.style.setProperty('--rival-color', r.color);
-  // El radar se calcula de los parámetros REALES con los que juega, así
-  // que si un día se recalibra un rival, su perfil cambia solo.
-  const perfil = perfilDesdeNivel(AI_LEVELS[r.nivel]);
-  const ejes = listaEjes(perfil).map(e =>
-    `<span class="eje"><i>${escapeHtml(e.etiqueta)}</i><b style="--v:${e.valor}%"></b></span>`).join('');
-  ficha.innerHTML =
-    `<span class="rd-radar">${svgRadar(perfil, r.color, 108)}</span>` +
-    `<span class="rd-texto">` +
-      `<strong>${escapeHtml(r.nombre)} · ${escapeHtml(r.apodo)}</strong>` +
-      `<span class="rd-desc">${escapeHtml(r.descripcion)}</span>` +
-      `<span class="rd-ejes">${ejes}</span>` +
-    `</span>`;
-  actualizarTextoJugar();
-}
 
 // El botón dice exactamente qué va a pasar al pulsarlo.
 async function mostrarComoDesbloquear() {
@@ -3646,7 +3731,14 @@ async function mostrarComoDesbloquear() {
 function actualizarTextoJugar() {
   const btn = document.getElementById('startBtn');
   if (!btn) return;
-  const esInvitado = document.querySelector('[data-rival="invitado"].is-active');
+  const centrada = document.querySelector('.ficha-rival.centrada');
+  const esInvitado = centrada && centrada.dataset.rival === 'invitado';
+  if (esInvitado && !invitadoDesbloqueado) {
+    btn.textContent = t('invitado.bloqueadoBoton', { rival: invitadoActual ? invitadoActual.nombre : '' });
+    btn.dataset.bloqueado = 'si';
+    return;
+  }
+  delete btn.dataset.bloqueado;
   const nombreRival = esInvitado && invitadoActual ? invitadoActual.nombre : getRival().nombre;
   btn.textContent = (gameMode === 'solo')
     ? t('menu.jugarContra', { rival: nombreRival })
@@ -3708,7 +3800,7 @@ function avatarDeRival(id) {
   // Por identidad, no por nombre visible: dos rivales podrían llamarse
   // igual, y los invitados no están en RIVALES.
   const r = RIVALES[id] || (invitadoActual && invitadoActual.id === id ? invitadoActual : null);
-  return r ? `<span class="card-avatar"><img src="${r.retrato}?v=2.89" alt=""></span>` : '🤖';
+  return r ? `<span class="card-avatar"><img src="${r.retrato}?v=2.90" alt=""></span>` : '🤖';
 }
 
 function buildGameUI() {
@@ -3749,7 +3841,13 @@ function buildGameUI() {
 // funciones vivieran en el ámbito global — justo lo que impedía pasar a
 // módulos ES de verdad, donde cada archivo tiene su propio ámbito.
 const ACCIONES = {
-  empezar:       () => { if (gameStatus === 'finished') revanchaDe = ultimaPartidaTerminada; startGame(); },
+  empezar:       () => {
+    // Si el rival centrado está bloqueado, se explica qué falta en vez de
+    // empezar una partida contra alguien que aún no se ha desbloqueado.
+    if (document.getElementById('startBtn')?.dataset.bloqueado) { mostrarComoDesbloquear(); return; }
+    if (gameStatus === 'finished') revanchaDe = ultimaPartidaTerminada;
+    startGame();
+  },
   continuar:     () => onResumeClick(),
   nuevo:         () => confirmNewGame(),
   deshacer:      () => undoLastMove(),
@@ -3820,7 +3918,6 @@ function iniciarApp() {
   construirSelectorIdioma();
   construirSelectorTema();
   construirTarjetasRival();
-  pintarAvataresRivales();
   actualizarInvitado();
   elegirRival('circuit');   // rival recomendado por defecto
   setGameMode('solo');      // el modo más probable al abrir en el móvil

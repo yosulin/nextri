@@ -38,7 +38,9 @@ test('la aplicación arranca y se puede jugar', async ({ page }) => {
   await expect(page.locator('#nameInput0')).toHaveCount(1); // la inicialización corrió
   // Los avatares se pintan desde levels.js al arrancar: si no aparecen,
   // algo falló en esa parte sin lanzar excepción.
-  await expect(page.locator('#rivalRow [data-accion="rival"]')).toHaveCount(4);
+  // Carrusel de fichas: una por rival del catálogo, con la central marcada.
+  await expect(page.locator('#fichasRival .ficha-rival')).toHaveCount(4);
+  await expect(page.locator('.ficha-rival.centrada')).toHaveCount(1);
   // Cuarta tarjeta: el invitado semanal, bloqueado hasta ganar a los tres
   await expect(page.locator('[data-accion="rival"]')).toHaveCount(4);
   await expect(page.locator('#btnInvitado')).toHaveClass(/bloqueado/);
@@ -107,7 +109,7 @@ test('el modo Solo contra la máquina arranca sin errores', async ({ page }) => 
 
   await page.locator('[data-accion="modo"][data-modo="solo"]').click();
   await expect(page.locator('#soloModeInfo')).toBeVisible();
-  await page.locator('[data-accion="rival"][data-rival="vector"]').click();
+  await page.locator('.ficha-rival[data-rival="vector"]').click();
   await expect(page.locator('#startBtn')).toContainText('Vector');
   await page.locator('#startBtn').click();
   await expect(page.locator('#gameUI')).toHaveClass(/is-active/);
