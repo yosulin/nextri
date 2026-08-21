@@ -16,8 +16,8 @@ const limpiar = (s) => s.replace(/^import[^;]+;$/gm, '')
   .replace(/(^|\n)export /g, '$1')
   .replace(/(^|\n)const /g, '$1var ');
 eval(limpiar(radarSrc));
-const AI_LEVELS = eval('(' + levelsSrc.match(/const AI_LEVELS = (\{[\s\S]*?\n\});/)[1] + ')');
-const RIVALES = eval('(' + levelsSrc.match(/const RIVALES = (\{[\s\S]*?\n\});/)[1] + ')');
+const AI_PROFILES = eval('(' + levelsSrc.match(/const AI_PROFILES = (\{[\s\S]*?\n\};)/)[1].slice(0,-1) + ')');
+const RIVALES = eval('(' + levelsSrc.match(/const RIVALES = (\{[\s\S]*?\n\};)/)[1].slice(0,-1) + ')');
 
 let fallos = 0;
 function check(etiqueta, ok, detalle) {
@@ -28,7 +28,10 @@ function check(etiqueta, ok, detalle) {
 console.log('Verificando el radar de perfiles...\n');
 
 const perfiles = {};
-for (const [id, r] of Object.entries(RIVALES)) perfiles[id] = perfilDesdeNivel(AI_LEVELS[r.nivel]);
+for (const [id, r] of Object.entries(RIVALES)) {
+  if (r.profileType === 'derived') continue; // Phantom usa playerRadar(), no un AI_PROFILES fijo
+  perfiles[id] = perfilDesdePerfil(AI_PROFILES[r.profileId]);
+}
 
 // Todos los ejes existen y están dentro de escala
 for (const [id, p] of Object.entries(perfiles)) {
@@ -36,17 +39,13 @@ for (const [id, p] of Object.entries(perfiles)) {
   check(`${id}: todos los ejes entre 0 y 1`, dentro, JSON.stringify(p));
 }
 
-// LO IMPORTANTE: el radar debe reflejar la realidad. Vector juega mejor
-// que Circuit y Circuit mejor que Delta, así que sus ejes deben ordenarse
-// igual. Si alguien recalibra la IA y no toca el radar, esto falla.
-for (const eje of ['ataque', 'construccion', 'defensa', 'ambicion']) {
-  check(`${eje}: Delta < Circuit < Vector`,
-    perfiles.delta[eje] < perfiles.circuit[eje] && perfiles.circuit[eje] < perfiles.vector[eje],
-    `${perfiles.delta[eje]} / ${perfiles.circuit[eje]} / ${perfiles.vector[eje]}`);
-}
-check('visión: Delta < Circuit < Vector',
-  perfiles.delta.vision < perfiles.circuit.vision && perfiles.circuit.vision < perfiles.vector.vision,
-  `${perfiles.delta.vision.toFixed(2)} / ${perfiles.circuit.vision.toFixed(2)} / ${perfiles.vector.vision.toFixed(2)}`);
+// IA2 describe estilo, no una escalera en todos los ejes. Debe haber
+// diferencias reales entre perfiles estáticos: Lumina construye más y
+// Delta asume más riesgo. Phantom se prueba aparte porque su radar sale
+// del modelo vivo del jugador, no de AI_PROFILES.
+check('Lumina construye más que Circuit', perfiles.lumina.construccion > perfiles.circuit.construccion);
+check('Delta asume más riesgo que Circuit', perfiles.delta.riesgo > perfiles.circuit.riesgo);
+check('Vector tiene más visión que Circuit', perfiles.vector.vision > perfiles.circuit.vision);
 
 // La visión sale de un recuento, no de una probabilidad: comprobar que se
 // satura en vez de dispararse fuera de escala con candidateLimit=9999.
@@ -54,11 +53,11 @@ check('visión saturada en 1 con "lo mira todo"', perfiles.vector.vision <= 1);
 
 // Los ejes deben venir de los parámetros REALES, no de constantes sueltas
 check('el ataque coincide con scoringAwareness',
-  perfiles.circuit.ataque === AI_LEVELS.medium.scoringAwareness);
+  perfiles.circuit.ataque === AI_PROFILES.circuit.scoringAwareness);
 check('la defensa coincide con safetyAwareness',
-  perfiles.circuit.defensa === AI_LEVELS.medium.safetyAwareness);
+  perfiles.circuit.defensa === AI_PROFILES.circuit.safetyAwareness);
 check('la construcción coincide con buildingAwareness',
-  perfiles.circuit.construccion === AI_LEVELS.medium.buildingAwareness);
+  perfiles.circuit.construccion === AI_PROFILES.circuit.buildingAwareness);
 
 // El SVG se genera y es válido a simple vista
 const svg = svgRadar(perfiles.circuit, '#2f7ef0', 104);

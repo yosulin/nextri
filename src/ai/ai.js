@@ -22,9 +22,9 @@
 // petaría al cargar — por eso el registro de window.circlesAI() se quedó
 // allí. Dentro de las funciones no hay problema: se leen al llamarlas.
 
-import { AI_LEVELS } from './levels.js?v=3.07';
-import { checkMoveValidity, findNewTriangles, edgeExists, edgeKey } from '../game/rules.js?v=3.07';
-import { rngNextFrom, rngIntFrom } from '../game/random.js?v=3.07';
+import { AI_LEVELS, AI_PROFILES, getAIProfile } from './levels.js?v=3.10';
+import { checkMoveValidity, findNewTriangles, edgeExists, edgeKey } from '../game/rules.js?v=3.10';
+import { rngNextFrom, rngIntFrom } from '../game/random.js?v=3.10';
 
 // isAITurn() vive ahora en index.html: depende del turno actual de la
 // interfaz, no del motor.
@@ -69,6 +69,7 @@ export function weightedPickByGain(scoringMoves, power) {
 // candidatos×candidatos comparaciones). try/finally garantiza que la
 // arista de prueba se retira siempre, incluso si algo de en medio lanzara
 // un error.
+
 export function createsScoringReply(st, i, j) {
   const key = edgeKey(i, j);
   st.edges.add(key);
@@ -78,7 +79,7 @@ export function createsScoringReply(st, i, j) {
       if (k === i || k === j) continue;
       const ik = edgeExists(st, i, k);
       const jk = edgeExists(st, j, k);
-      if (ik === jk) continue; // hace falta que falte EXACTAMENTE el tercer lado
+      if (ik === jk) continue;
       const from = ik ? j : i;
       if (!checkMoveValidity(st, from, k).valid) continue;
       if (findNewTriangles(st, from, k).length > 0) return true;
@@ -89,8 +90,12 @@ export function createsScoringReply(st, i, j) {
   }
 }
 
-export function chooseAIMove(st, debug) {
-  const level = AI_LEVELS[st.aiDifficulty] || AI_LEVELS.medium;
+export function chooseAIMove(st, profile = null, debug = false) {
+  // Compatibilidad con llamadas v1 chooseAIMove(state, debug).
+  if (typeof profile === 'boolean') { debug = profile; profile = null; }
+  const level = typeof profile === 'string'
+    ? (AI_PROFILES[profile] || AI_LEVELS[profile] || getAIProfile())
+    : (profile || AI_PROFILES[st.aiProfileId] || AI_LEVELS[st.aiDifficulty] || getAIProfile());
 
   // Movimientos legales — checkMoveValidity() sigue siendo la única fuente
   // de verdad, aquí no se reimplementa ninguna regla por su cuenta.
@@ -160,7 +165,7 @@ export function chooseAIMove(st, debug) {
   if (debug) {
     const gain = selectedType === 'scoring' ? findNewTriangles(st, move[0], move[1]).length : 0;
     globalThis.aiDebug = {
-      difficulty: st.aiDifficulty, linesLeft: st.linesLeft, legalMoves: legalMoves.length,
+      profileId: level.id || st.aiProfileId || st.aiDifficulty, difficulty: st.aiDifficulty, linesLeft: st.linesLeft, legalMoves: legalMoves.length,
       consideredMoves: visible.length, scoringMoves: scoringMoves.length,
       buildingMoves: buildingMoves.length, safeMoves: safeMoves.length,
       selectedType, selectedMove: move, gain

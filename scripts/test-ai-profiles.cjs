@@ -1,0 +1,23 @@
+#!/usr/bin/env node
+const fs = require('node:fs');
+const path = require('node:path');
+const root = path.join(__dirname, '..');
+const levels = fs.readFileSync(path.join(root, 'src/ai/levels.js'),'utf8');
+const invitados = fs.readFileSync(path.join(root, 'src/ai/invitados.js'),'utf8');
+const capacity = fs.readFileSync(path.join(root, 'src/ai/capacity.js'),'utf8');
+const resolver = fs.readFileSync(path.join(root, 'src/ai/profile-resolver.js'),'utf8');
+const index = fs.readFileSync(path.join(root, 'index.html'),'utf8');
+let fail=0; const ok=(m,v)=>{if(v) console.log('OK: '+m); else {console.error('FALLO: '+m); fail++;}};
+ok('AI_VERSION es 2', /AI_VERSION\s*=\s*2/.test(levels));
+const perfilesBlock = (levels.match(/export const AI_PROFILES = \{([\s\S]*?)\n\};/) || [,''])[1];
+for (const id of ['delta','circuit','vector','lumina']) ok(`perfil estático ${id}`, new RegExp(`\\b${id}: \\{`).test(perfilesBlock));
+ok('Phantom NO es perfil estático', !/\bphantom:\s*\{/.test(perfilesBlock));
+ok('Phantom está definido como perfil derivado', /phantom:\s*\{[\s\S]*?profileType:\s*'derived'/.test(levels));
+ok('Core declaran capacidad adaptativa', ['delta','circuit','vector'].every(id => new RegExp(`${id}: \\{[\\s\\S]*?adaptiveCapacity: true`).test(levels)));
+ok('capacidad adaptativa preparada pero baseline neutro', /playerSkill === null/.test(capacity) && /capacitySource: 'baseline'/.test(capacity));
+ok('resolver separa Phantom de Core', /phantomAIProfile/.test(resolver) && /resolveCapacityAdjustedProfile/.test(resolver));
+ok('orden Invitado → Delta → Circuit → Vector → Phantom → Lumina', /return \[invitado, \.\.\.fijos\]/.test(index) && /\['delta', 'circuit', 'vector', 'phantom', 'lumina'\]/.test(index));
+ok('no existe mini rail redundante', !/id="miniRail"/.test(index) && !/function construirMiniRail/.test(index));
+ok('Chaos no rota como invitado', !/\n\s*chaos:\s*\{/.test(invitados));
+ok('ruleset separado del perfil', fs.existsSync(path.join(root,'src/game/rulesets.js')) && /rulesetId/.test(index) && /aiProfileId/.test(index));
+if(fail) process.exit(1); console.log('Perfiles IA2 y arquitectura de rulesets correctos.');

@@ -57,6 +57,8 @@ Reglas:
 - presupuestos por candidatos/nodos/profundidad, no por tiempo;
 - `performance.now()` solo para medir;
 - no rubber-banding por diferencia de puntuación;
+- la personalidad y la capacidad son dimensiones distintas; Delta/Circuit/Vector podrán ajustar capacidad lentamente con el nivel histórico del jugador sin cambiar personalidad ni reaccionar al marcador de una partida;
+- Phantom es un perfil derivado del modelo del jugador, se desbloquea tras 50 partidas Solo analizadas y sigue aprendiendo; no debe tener personalidad fija hardcodeada;
 - no trampas;
 - no saltarse `checkMoveValidity()`.
 
@@ -97,9 +99,6 @@ Dirección de producto:
 - Random
 - Phantom
 - Lumina (concepto en evolución)
-
-### Savage
-- Chaos
 
 ### Invitados
 - catálogo semanal/estacional
@@ -162,14 +161,13 @@ local
 online
 ```
 
-Y los rulesets futuros:
+Los rulesets son una dimensión independiente del rival. Cualquier bot debe poder jugar cualquier ruleset compatible.
 
 ```text
-classic
-savage
+Bot / aiProfileId  +  rulesetId
 ```
 
-Partidas Savage no afectan al ranking competitivo.
+`classic` contiene las reglas actuales. `savage`, `chaos` u otros podrán cambiar reglas (artefactos, borrar/añadir líneas o puntos, etc.) sin convertirse en identidades de bot. El ranking se decide por ruleset, no por personaje.
 
 ## 9. Offline primero
 
@@ -254,19 +252,24 @@ Los rivales son personajes-mascota premium para público general:
 
 Cada bot debe reconocerse rápidamente incluso en avatar pequeño.
 
-## 14. Chaos / Savage
+## 14. Rulesets alternativos
 
-Chaos es un modo de diversión, no competitivo.
+Classic es el ruleset activo y contiene las reglas actuales.
 
-Savage:
+Savage y Chaos son conceptos de ruleset futuros, no bots. Cualquier rival
+debe poder jugar cualquier ruleset compatible.
+
+Posibles mecánicas de rulesets futuros:
 
 - artefactos;
-- fuera de ranking;
-- reglas separadas del clásico;
-- primero se prueba contra Chaos;
-- solo después llega a Salas Savage.
+- borrar o añadir líneas;
+- borrar o añadir puntos;
+- alterar puntuación o turnos;
+- eventos de tablero.
 
-No vender consumibles que otorguen ventaja en partidas competitivas.
+Savage y Chaos pueden acabar siendo modos distintos; no asumir que uno es
+sinónimo del otro. Ninguno debe afectar al ranking competitivo salvo decisión
+explícita futura.
 
 ## 15. Rendimiento y dependencias
 

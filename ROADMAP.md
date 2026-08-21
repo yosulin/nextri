@@ -1,6 +1,6 @@
 # Hoja de ruta de NEXTRI
 
-Estado a v2.91. Lo marcado como hecho está verificado con pruebas en CI
+Estado de arquitectura actualizado en v3.10. Lo marcado como hecho está verificado con pruebas en CI
 (motor, estado, guardado, RNG, estadísticas, radar, generación de tableros,
 traducciones, progreso semanal, y una prueba que carga la app real en un
 navegador y juega una partida).
@@ -29,12 +29,12 @@ navegador y juega una partida).
    de estadísticas y evento semanal. Empezando por invitados, no por OAuth
    obligatorio: un juego que se comparte por enlace no puede recibir a nadie
    con un muro de acceso.
-4. **IA 2.0**. Requisitos de entrada: generador aleatorio por partida (hoy
+4. **IA 2.0 / calibración**. Perfiles desacoplados del ruleset. Phantom ya usa un modelo vivo separado de estadísticas: aprende decisiones humanas, se desbloquea tras 50 partidas Solo y continúa evolucionando. Siguiente: calibrar la capacidad adaptativa de Delta/Circuit/Vector con estadísticas reales, manteniendo fija su personalidad y sin rubber-band por marcador. Requisitos de evolución: generador aleatorio por partida (hoy
    es único del módulo, y un servidor con varias salas las haría compartir
    secuencia) y una línea base de partidas jugadas con la IA actual, para
    poder comparar `AI_VERSION` 1 contra 2.
 5. **Calibración** de Delta, Circuit y Vector con datos reales.
-6. **Random, Phantom y Chaos**, una vez calibrada la IA 2.0.
+6. **Perfiles adaptativos**: activar el ajuste lento de capacidad de Delta/Circuit/Vector cuando haya suficiente telemetría; después Random. Lumina mantiene perfil propio. Chaos queda reservado como posible ruleset/modo, no como bot obligatorio.
 7. **Beta con usuarios**, repositorio privado y `playnextri.com`.
 8. **Capacitor para Android**, y iOS cuando haya Mac. La lógica se mantiene
    compartida; nada crítico exclusivo de una plataforma.
@@ -56,5 +56,5 @@ navegador y juega una partida).
 
 ## Fuera de alcance por ahora
 
-Modo Savage con artefactos (Chaos es su puerta de entrada), ranking,
+Rulesets Savage/Chaos con artefactos y reglas alternativas, ranking,
 amigos e invitaciones, modo asíncrono por turnos.
