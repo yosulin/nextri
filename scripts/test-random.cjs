@@ -247,6 +247,17 @@ restoreRngState({ seed: 5, streams: {
 const ms = Date.now() - t0;
 check('Restaurar el generador es O(1), no recorre la secuencia', ms < 200, `tardó ${ms}ms`);
 
+// Defensa contra "streams sin sembrar": llamar a rngNextFrom() sin que
+// seedRng() haya corrido antes no debe reventar con un TypeError opaco
+// (esto llegó a pasar en producción — random.js?v=3.07 sirviendo código
+// de una versión vieja tras una actualización de caché a medias). Se
+// vacía streams a mano, simulando exactamente esa condición.
+streams = {};
+let noRevento = true, valor;
+try { valor = rngNextFrom('board'); } catch { noRevento = false; }
+check('rngNextFrom sin sembrar antes no revienta, se auto-siembra',
+  noRevento && typeof valor === 'number' && valor >= 0 && valor < 1);
+
 console.log('');
 if (fallos > 0) { console.error(`${fallos} comprobación(es) fallaron`); process.exit(1); }
 console.log('Todas las comprobaciones pasaron.');

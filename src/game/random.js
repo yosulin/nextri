@@ -58,6 +58,13 @@ export function seedRng(seed) {
 }
 
 export function rngNextFrom(stream) {
+  // Defensa: si se llama antes de sembrar (seedRng nunca se ejecutó en
+  // esta instancia del módulo — puede pasar con una mezcla de versiones
+  // en caché, donde conviven dos copias del módulo cargadas por rutas
+  // distintas) streams.board también sería undefined, y el respaldo no
+  // respaldaba nada: reventaba con "Cannot read properties of undefined
+  // (reading 'calls')" en vez de dar una pista de qué ha pasado.
+  if (streams.board === undefined) seedRng();
   const s = streams[stream] || streams.board;
   s.calls++;
   rngCalls++;
