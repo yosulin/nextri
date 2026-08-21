@@ -703,6 +703,22 @@
 
   /* Marca compacta: solo el símbolo, sin el nombre completo, para dejar
      sitio a las pestañas en la misma fila. */
+  .aviso-actualizacion{
+    position:fixed; left:12px; right:12px; bottom:12px; z-index:60;
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    background:var(--surface); border:2px solid var(--p2-color);
+    border-radius:14px; padding:10px 12px;
+    font-family:'Nunito',sans-serif; font-size:.82rem; color:var(--text);
+    box-shadow:0 8px 24px -8px rgba(0,0,0,.3);
+    animation:aviso-entra .3s ease-out;
+  }
+  @keyframes aviso-entra{ from{ transform:translateY(12px); opacity:0; } to{ transform:translateY(0); opacity:1; } }
+  .aviso-actualizacion button{
+    flex-shrink:0; border:none; border-radius:10px; padding:8px 14px;
+    background:var(--p2-color); color:#fff; font-weight:800; font-size:.8rem;
+    cursor:pointer; font-family:'Nunito',sans-serif;
+  }
+
   .marca-mini { flex-shrink: 0; }
   .marca-mini .marca-simbolo { width: 38px; height: 38px; display: block; }
   .marca-texto-oculto {
@@ -4292,23 +4308,40 @@ if ('serviceWorker' in navigator) {
       // en cada carga hace que el navegador compruebe YA si hay un sw.js
       // distinto, en vez de esperar a que expire su caché.
       reg.update().catch(() => {});
-      // Si ya hay un worker nuevo esperando (instalado pero no activo
-      // porque la pestaña anterior seguía abierta), se activa sin esperar
-      // a que el usuario cierre todas las pestañas.
-      if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
-    }).catch(() => {});
 
-    // En cuanto el nuevo service worker toma el control, recargar una vez
-    // para que la página cargue con los módulos ya actualizados. La
-    // bandera evita un bucle si controllerchange se disparase más de una
-    // vez en la misma carga.
-    let yaRecargado = false;
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (yaRecargado) return;
-      yaRecargado = true;
-      location.reload();
-    });
+      // Si aparece un worker nuevo instalado, se avisa mediante el mismo
+      // aviso de "hay actualización" que ya existe para otros casos, en
+      // vez de recargar la página SOLA por debajo del usuario — hacerlo a
+      // ciegas puede pisar una acción en curso (un formulario a medias,
+      // un clic que estaba en el aire) y en las pruebas automatizadas
+      // provocaba justo eso: la navegación cortaba la prueba a mitad.
+      reg.addEventListener('updatefound', () => {
+        const nuevo = reg.installing;
+        if (!nuevo) return;
+        nuevo.addEventListener('statechange', () => {
+          if (nuevo.state === 'installed' && navigator.serviceWorker.controller) {
+            mostrarAvisoActualizacion(reg);
+          }
+        });
+      });
+    }).catch(() => {});
   });
+
+  // Aviso discreto de que hay versión nueva, con botón para aplicarla
+  // cuando el usuario quiera — nunca de forma automática.
+  function mostrarAvisoActualizacion(reg) {
+    if (document.getElementById('avisoActualizacion')) return;
+    const el = document.createElement('div');
+    el.id = 'avisoActualizacion';
+    el.className = 'aviso-actualizacion';
+    el.innerHTML = `<span>${'Hay una versión nueva'}</span>
+      <button type="button">Actualizar</button>`;
+    el.querySelector('button').addEventListener('click', () => {
+      if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+      navigator.serviceWorker.addEventListener('controllerchange', () => location.reload());
+    });
+    document.body.appendChild(el);
+  }
 }
 let deferredPrompt = null;
 const banner = document.getElementById('installBanner');
