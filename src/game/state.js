@@ -21,11 +21,11 @@
 // descartar en vez de restaurarse mal y a medias.
 // v1 (v2.45-v2.47): sin datos del generador aleatorio.
 // v2 (v2.49+): incluye rng con los tres flujos, y turnPhase.
-import { DIST_EPS, distSq, segmentPassesOverCircle } from './geometry.js?v=3.10';
-import { getRngState, restoreRngState, seedRng } from './random.js?v=3.10';
-import { buildCandidateGraph } from './board.js?v=3.10';
+import { DIST_EPS, distSq, segmentPassesOverCircle } from './geometry.js?v=3.07';
+import { getRngState, restoreRngState, seedRng } from './random.js?v=3.07';
+import { buildCandidateGraph } from './board.js?v=3.07';
 
-export const STATE_SCHEMA_VERSION = 4; // v4: ruleset y perfil IA efectivo congelados por partida
+export const STATE_SCHEMA_VERSION = 3; // v3: ownerId/playerId estables y registro de eventos
 
 // Versión de las REGLAS del juego, distinta de la versión de la app: solo
 // sube si cambia CÓMO se juega, no por cambios visuales. Vive aquí, junto
@@ -56,8 +56,7 @@ export function serializeGameState(g) {
 
     config: {
       circleCount: g.circleCount,
-      aiDifficulty: g.aiDifficulty,
-      rulesetId: g.rulesetId || 'classic'
+      aiDifficulty: g.aiDifficulty
     },
 
     // Semilla y cuántos números se han consumido: sin el contador, una
@@ -94,8 +93,6 @@ export function serializeGameState(g) {
       // revancha sin depender del nombre visible.
       ...(p.opponentId ? { opponentId: p.opponentId } : {}),
       ...(p.opponentKind ? { opponentKind: p.opponentKind } : {}),
-      ...(p.aiProfileId ? { aiProfileId: p.aiProfileId } : {}),
-      ...(p.aiProfileSnapshot ? { aiProfileSnapshot: { ...p.aiProfileSnapshot } } : {}),
       // Color propio del rival: sin esto, al reanudar una partida sus
       // triángulos volvían al color por índice y cambiaban de aspecto.
       ...(p.color ? { color: p.color } : {}),
@@ -162,7 +159,6 @@ export function restoreGameState(snapshot) {
   return {
     circleCount: snapshot.config.circleCount,
     aiDifficulty: snapshot.config.aiDifficulty || 'medium',
-    rulesetId: snapshot.config.rulesetId || 'classic',
     width: b.width, height: b.height,
     circleRadius: b.circleRadius, hitRadius: b.hitRadius,
     minDist: b.minDist, maxDist: b.maxDist, maxDistSq: b.maxDistSq,
@@ -206,17 +202,6 @@ export function migrateGameSnapshot(s) {
   // arrastrar código de compatibilidad que solo existiría para versiones
   // que nunca salieron de un móvil.
   if (s.schemaVersion === 1 || s.schemaVersion === 2) return null;
-  // v3 ya tenía ids estables y RNG reproducible. v4 solo añade campos
-  // opcionales para congelar ruleset/perfil efectivo, así que se puede
-  // migrar sin alterar la partida. Si faltan, el caller los resuelve una vez.
-  if (s.schemaVersion === 3) {
-    return {
-      ...s,
-      schemaVersion: STATE_SCHEMA_VERSION,
-      config: { ...s.config, rulesetId: s.config?.rulesetId || 'classic' },
-      players: Array.isArray(s.players) ? s.players.map(p => ({ ...p })) : s.players
-    };
-  }
   if (false) {
     const semilla = Math.floor(Math.random() * 0xFFFFFFFF);
     seedRng(semilla);
@@ -242,7 +227,6 @@ export function isValidGameSnapshot(s) {
   if (!s.config || !esEnteroEnRango(s.config.circleCount, 5, 500)) return false;
   if (s.config.aiDifficulty !== undefined &&
       !['easy', 'medium', 'hard'].includes(s.config.aiDifficulty)) return false;
-  if (s.config.rulesetId !== undefined && typeof s.config.rulesetId !== 'string') return false;
 
   const b = s.board;
   if (!b || !Array.isArray(b.circles) || b.circles.length === 0) return false;
@@ -273,8 +257,6 @@ export function isValidGameSnapshot(s) {
     if (p.color !== undefined && !/^#[0-9a-f]{6}$/i.test(p.color)) return false;
     if (p.opponentId !== undefined && typeof p.opponentId !== 'string') return false;
     if (p.opponentKind !== undefined && !['core','guest','personal','savage'].includes(p.opponentKind)) return false;
-    if (p.aiProfileId !== undefined && typeof p.aiProfileId !== 'string') return false;
-    if (p.aiProfileSnapshot !== undefined && (!p.aiProfileSnapshot || typeof p.aiProfileSnapshot !== 'object')) return false;
   }
 
   if (!Array.isArray(s.triangles)) return false;
