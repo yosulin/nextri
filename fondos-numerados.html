@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NEXTRI — fondos geométricos numerados</title>
+<style>
+  body{background:#0f1729;color:#e8ecf5;font-family:system-ui,sans-serif;padding:20px;margin:0}
+  h1{font-size:1.1rem;margin-bottom:4px}
+  p{color:#8496b8;font-size:.85rem;margin-bottom:20px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+  .item{background:#1a2438;border:2px solid #2b3a55;border-radius:18px;overflow:hidden}
+  .lienzo{position:relative;height:170px;overflow:hidden;background:linear-gradient(180deg,rgba(47,126,240,.1) 0%,#1a2438 55%)}
+  .lienzo svg{position:absolute;inset:0;width:100%;height:100%}
+  .num{position:absolute;top:10px;left:10px;background:#2f7ef0;color:#fff;font-weight:800;
+       border-radius:999px;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:.85rem;z-index:2}
+  .etq{padding:9px 12px;font-size:.78rem;color:#8496b8}
+</style>
+</head>
+<body>
+<h1>Fondos geométricos numerados (1–8)</h1>
+<p>Mismo color de referencia (#2f7ef0) en todos, para comparar solo la forma. Dime qué números van a cada bot.</p>
+<div class="grid" id="grid"></div>
+
+<script>
+const C = '#2f7ef0';
+
+// Cada patrón es una función que recibe el color y devuelve el <svg> interior.
+const PATRONES = {
+  1: (c) => `
+    <circle cx="330" cy="46" r="92" fill="none" stroke="${c}" stroke-opacity=".14" stroke-width="1.5"/>
+    <circle cx="330" cy="46" r="58" fill="none" stroke="${c}" stroke-opacity=".08" stroke-width="1.5"/>
+    <path d="M240 44 L300 12 L354 48 L300 88 Z" fill="none" stroke="${c}" stroke-opacity=".10" stroke-width="1.5"/>
+    <g fill="${c}" fill-opacity=".18"><circle cx="240" cy="44" r="2.2"/><circle cx="300" cy="12" r="2.2"/><circle cx="354" cy="48" r="2.2"/></g>`,
+  2: (c) => `
+    <circle cx="320" cy="50" r="96" fill="none" stroke="${c}" stroke-opacity=".13" stroke-width="1.5"/>
+    <polygon points="320,10 356,30 356,70 320,90 284,70 284,30" fill="none" stroke="${c}" stroke-opacity=".11" stroke-width="1.5"/>
+    <g fill="${c}" fill-opacity=".18">
+      <circle cx="320" cy="10" r="2.2"/><circle cx="356" cy="30" r="2.2"/><circle cx="356" cy="70" r="2.2"/>
+      <circle cx="320" cy="90" r="2.2"/><circle cx="284" cy="70" r="2.2"/><circle cx="284" cy="30" r="2.2"/>
+    </g>`,
+  3: (c) => `
+    <circle cx="300" cy="40" r="104" fill="none" stroke="${c}" stroke-opacity=".12" stroke-width="1.5"/>
+    <circle cx="330" cy="60" r="70" fill="none" stroke="${c}" stroke-opacity=".10" stroke-width="1.5"/>
+    <circle cx="350" cy="30" r="38" fill="none" stroke="${c}" stroke-opacity=".14" stroke-width="1.5"/>
+    <g fill="${c}" fill-opacity=".18"><circle cx="350" cy="-8" r="2.2"/><circle cx="388" cy="30" r="2.2"/></g>`,
+  4: (c) => { // espiral de puntos con línea de circuito
+    let pts = '', linea = 'M';
+    for (let i = 0; i < 7; i++) {
+      const ang = i * 0.9, rad = 8 + i * 11;
+      const x = (320 + Math.cos(ang) * rad).toFixed(1), y = (50 + Math.sin(ang) * rad).toFixed(1);
+      pts += `<circle cx="${x}" cy="${y}" r="${2.6 - i * 0.15}" fill="${c}" fill-opacity="${(.22 - i * 0.02).toFixed(2)}"/>`;
+      linea += `${i ? 'L' : ''}${x} ${y} `;
+    }
+    return `<path d="${linea}" fill="none" stroke="${c}" stroke-opacity=".08" stroke-width="1.5"/>${pts}`;
+  },
+  5: (c) => `
+    <circle cx="315" cy="55" r="88" fill="none" stroke="${c}" stroke-opacity=".13" stroke-width="1.5"/>
+    <path d="M315 6 L363 55 L315 104 L267 55 Z" fill="none" stroke="${c}" stroke-opacity=".11" stroke-width="1.5"/>
+    <g fill="${c}" fill-opacity=".2">
+      <circle cx="315" cy="6" r="2.4"/><circle cx="363" cy="55" r="2.4"/>
+      <circle cx="315" cy="104" r="2.4"/><circle cx="267" cy="55" r="2.4"/>
+    </g>`,
+  // ── Nuevos, más "circuito impreso" ──────────────────────────────────
+  6: (c) => `
+    <!-- Placa de circuito: líneas en ángulo recto con nodos, como pistas
+         de una PCB. Nada de curvas: todo cibernético y anguloso. -->
+    <path d="M240 20 h60 v30 h40 M300 20 v-14 M260 90 v-40 M340 100 h-50 v-30" fill="none" stroke="${c}" stroke-opacity=".13" stroke-width="1.6"/>
+    <path d="M370 60 h-30 M370 60 v40" fill="none" stroke="${c}" stroke-opacity=".09" stroke-width="1.6"/>
+    <g fill="${c}" fill-opacity=".2">
+      <circle cx="240" cy="20" r="2.4"/><circle cx="300" cy="20" r="2.4"/><circle cx="340" cy="50" r="2.4"/>
+      <circle cx="260" cy="50" r="2.4"/><circle cx="340" cy="100" r="2.4"/><circle cx="370" cy="60" r="2.4"/>
+    </g>`,
+  7: (c) => `
+    <!-- Hexágonos apilados tipo panal, con un anillo grande de fondo:
+         más denso y "tecnológico" que el hexágono simple del 2. -->
+    <circle cx="310" cy="55" r="98" fill="none" stroke="${c}" stroke-opacity=".10" stroke-width="1.5"/>
+    <polygon points="280,20 310,5 340,20 340,50 310,65 280,50" fill="none" stroke="${c}" stroke-opacity=".13" stroke-width="1.4"/>
+    <polygon points="340,50 370,35 400,50 400,80 370,95 340,80" fill="none" stroke="${c}" stroke-opacity=".09" stroke-width="1.4"/>
+    <g fill="${c}" fill-opacity=".2">
+      <circle cx="310" cy="5" r="2"/><circle cx="340" cy="20" r="2"/><circle cx="340" cy="50" r="2"/>
+      <circle cx="280" cy="50" r="2"/><circle cx="310" cy="65" r="2"/><circle cx="280" cy="20" r="2"/>
+    </g>`,
+  8: (c) => `
+    <!-- Retícula/escáner: líneas paralelas finas cruzadas por un marco,
+         sensación de HUD o escaneo, distinta de todo lo anterior. -->
+    <rect x="255" y="10" width="120" height="90" rx="6" fill="none" stroke="${c}" stroke-opacity=".13" stroke-width="1.5"/>
+    <path d="M255 35 h120 M255 65 h120 M290 10 v90 M340 10 v90" stroke="${c}" stroke-opacity=".07" stroke-width="1"/>
+    <g fill="${c}" fill-opacity=".2">
+      <circle cx="255" cy="10" r="2.2"/><circle cx="375" cy="10" r="2.2"/>
+      <circle cx="255" cy="100" r="2.2"/><circle cx="375" cy="100" r="2.2"/>
+    </g>`
+};
+
+const grid = document.getElementById('grid');
+for (let i = 1; i <= 8; i++) {
+  const item = document.createElement('div');
+  item.className = 'item';
+  item.innerHTML = `
+    <div class="lienzo">
+      <span class="num">${i}</span>
+      <svg viewBox="0 0 400 260" preserveAspectRatio="xMidYMid slice">${PATRONES[i](C)}</svg>
+    </div>
+    <div class="etq">Patrón ${i}</div>`;
+  grid.appendChild(item);
+}
+</script>
+</body>
+</html>
