@@ -48,6 +48,16 @@ test('la aplicación arranca y se puede jugar', async ({ page }) => {
   // centraba el carrusel ANTES de que elegirRival('circuit') fijara el
   // rival por defecto).
   await expect(page.locator('.ficha-rival.centrada')).toHaveAttribute('data-rival', 'circuit');
+  // La selección lógica no basta: Circuit debe estar físicamente en el centro
+  // del viewport del carrusel al abrir. Este chequeo evita que vuelva el bug
+  // en el que Circuit estaba activo pero quedaba escondido a la derecha.
+  await expect.poll(async () => page.evaluate(() => {
+    const tira = document.getElementById('fichasRival');
+    const circuit = tira.querySelector('[data-rival="circuit"]');
+    const a = tira.getBoundingClientRect();
+    const b = circuit.getBoundingClientRect();
+    return Math.abs((a.left + a.width / 2) - (b.left + b.width / 2));
+  })).toBeLessThan(3);
   await expect(page.locator('#startBtn')).toContainText('Circuit');
   // Cuarta tarjeta: el invitado semanal, bloqueado hasta ganar a los tres
   await expect(page.locator('#fichasRival .ficha-rival')).toHaveCount(4);
