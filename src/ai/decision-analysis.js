@@ -4,8 +4,8 @@
 // ni conoce a Phantom; únicamente describe la decisión con métricas 0..1.
 // El análisis es determinista y siempre valida jugadas con las reglas reales.
 
-import { checkMoveValidity, findNewTriangles } from '../game/rules.js?v=3.10';
-import { createsScoringReply } from './ai.js?v=3.10';
+import { checkMoveValidity, findNewTriangles } from '../game/rules.js?v=3.11';
+import { createsScoringReply } from './ai.js?v=3.11';
 
 export function analyzeHumanDecision(st, from, to) {
   const chosenValidity = checkMoveValidity(st, from, to);

@@ -1000,6 +1000,9 @@
        note que hay más sin robarle espacio a la central. */
     padding:2px 4%; scroll-padding:0 4%;
   }
+  /* El carrusel no se enseña hasta que Circuit está físicamente colocado.
+     Evita el flash de Delta al inicio y al reconstruir por cambio de idioma. */
+  .fichas-rival.preparando{ opacity:0; pointer-events:none; }
   .fichas-rival::-webkit-scrollbar{display:none}
 
   .ficha-rival{
@@ -1254,7 +1257,7 @@
        así que en la cabecera solo va el símbolo. El nombre entero sigue
        en el panel de ajustes y en el modal de información. -->
   <div class="marca-mini" aria-label="NEXTRI">
-    <img class="marca-simbolo" src="logo-marca.svg?v=3.10" alt="">
+    <img class="marca-simbolo" src="logo-marca.svg?v=3.11" alt="">
     <!-- El nombre sigue en el DOM (accesibilidad, y la prueba de humo lo
          usa como señal de que la app inicializó), pero visualmente oculto:
          no cabe junto a las pestañas en la cabecera compacta. -->
@@ -1442,7 +1445,7 @@
     <!-- Cabecera con la marca: el panel es "la consola" del juego, así que
          se presenta como tal en vez de como una lista de opciones sueltas -->
     <div class="pc-cabecera">
-      <img class="pc-simbolo" src="logo-marca.svg?v=3.10" alt="" aria-hidden="true">
+      <img class="pc-simbolo" src="logo-marca.svg?v=3.11" alt="" aria-hidden="true">
       <div>
         <h3 id="ajustesTitulo">NEXTRI</h3>
         <span class="pc-version" id="pcVersion"></span>
@@ -1565,37 +1568,37 @@
 // global — funcionaba, pero nada declaraba qué necesitaba cada uno, y una
 // mezcla de versiones en caché podía emparejar mitades incompatibles sin
 // que nada lo detectara.
-import { seedRng, rngNextFrom, rngIntFrom, getRngSeed, getRngState, restoreRngState } from './src/game/random.js?v=3.10';
-import { dist, distSq, segmentPassesOverCircle, pointInTriangle, segmentsIntersect } from './src/game/geometry.js?v=3.10';
+import { seedRng, rngNextFrom, rngIntFrom, getRngSeed, getRngState, restoreRngState } from './src/game/random.js?v=3.11';
+import { dist, distSq, segmentPassesOverCircle, pointInTriangle, segmentsIntersect } from './src/game/geometry.js?v=3.11';
 import { MOVE_REASON_TEXT, edgeKey, edgeExists, connectionCount, areAdjacent,
-         lineIntersectsAny, findNewTriangles, triangleTraps, checkMoveValidity } from './src/game/rules.js?v=3.10';
-import { BOARD_GENERATOR_VERSION, BOARD_QUALITY_TARGET } from './src/game/board-quality.js?v=3.10';
+         lineIntersectsAny, findNewTriangles, triangleTraps, checkMoveValidity } from './src/game/rules.js?v=3.11';
+import { BOARD_GENERATOR_VERSION, BOARD_QUALITY_TARGET } from './src/game/board-quality.js?v=3.11';
 import { ADJACENCY_TARGET, generateCirclePositions, buildCandidateGraph,
-         attemptBoardGeneration, chooseAdjacency, finalizeAdjacency } from './src/game/board.js?v=3.10';
+         attemptBoardGeneration, chooseAdjacency, finalizeAdjacency } from './src/game/board.js?v=3.11';
 import { createPlayer, playerById, nextPlayerId, applyAction, hasAnyLegalMove,
-         replayFromLog } from './src/game/engine.js?v=3.10';
+         replayFromLog } from './src/game/engine.js?v=3.11';
 import { STATE_SCHEMA_VERSION, RULES_VERSION, serializeGameState, restoreGameState,
-         migrateGameSnapshot, isValidGameSnapshot } from './src/game/state.js?v=3.10';
-import { invitadoDeLaSemana } from './src/ai/invitados.js?v=3.10';
+         migrateGameSnapshot, isValidGameSnapshot } from './src/game/state.js?v=3.11';
+import { invitadoDeLaSemana } from './src/ai/invitados.js?v=3.11';
 import { createGuestProgressService, guestProgressRatio, isGuestUnlocked,
-         guestMissingRequirements } from './src/progression/guest-progress.js?v=3.10';
+         guestMissingRequirements } from './src/progression/guest-progress.js?v=3.11';
 import { t, setLocale, getLocale, idiomaInicial, traducirDocumento, IDIOMAS }
-         from './src/i18n/i18n.js?v=3.10';
-import { svgRadar, perfilDesdeNivel, listaEjes, EJES_RADAR } from './src/ui/radar.js?v=3.10';
-import { AI_VERSION, AI_LEVELS, setDifficulty, getDifficulty, RIVALES, setRival, getRival } from './src/ai/levels.js?v=3.10';
-import { chooseAIMove, createsScoringReply } from './src/ai/ai.js?v=3.10';
-import * as Stats from './src/stats/stats.js?v=3.10';
-import { leerMeta, guardarMeta } from './src/stats/repository.js?v=3.10';
+         from './src/i18n/i18n.js?v=3.11';
+import { svgRadar, perfilDesdeNivel, listaEjes, EJES_RADAR } from './src/ui/radar.js?v=3.11';
+import { AI_VERSION, AI_LEVELS, setDifficulty, getDifficulty, RIVALES, setRival, getRival } from './src/ai/levels.js?v=3.11';
+import { chooseAIMove, createsScoringReply } from './src/ai/ai.js?v=3.11';
+import * as Stats from './src/stats/stats.js?v=3.11';
+import { leerMeta, guardarMeta } from './src/stats/repository.js?v=3.11';
 import { victoriasPorRival, aggregateStats, statsByOpponent, statsByCircleCount, ultimasPartidas,
-         formatearDuracion, porcentaje } from './src/stats/aggregates.js?v=3.10';
-import { saveGame, loadSavedGame, clearSavedGame, hasSavedGame } from './src/platform/storage.js?v=3.10';
+         formatearDuracion, porcentaje } from './src/stats/aggregates.js?v=3.11';
+import { saveGame, loadSavedGame, clearSavedGame, hasSavedGame } from './src/platform/storage.js?v=3.11';
 // ── Constantes ──────────────────────────────────────────────────────────────
 // Única fuente de la versión visible — antes se escribía a mano en tres
 // sitios (aquí, el panel de info, y el CACHE de sw.js) y se desincronizaban
 // entre sí. sw.js sigue siendo aparte por necesidad (un service worker no
 // puede leer esta constante, vive en otro archivo) — al subir de versión,
 // solo hace falta tocar ESTA línea y la de sw.js, no una tercera copia más.
-const APP_VERSION = 'v3.10';
+const APP_VERSION = 'v3.11';
 
 // Nombre del producto en un solo sitio. Si algún día cambia (NEXTRI u
 // otro), esto evita perseguirlo por cabecera, aviso de rotación, panel de
@@ -3857,7 +3860,7 @@ function construirMiniRail() {
   rail.innerHTML = bots.map((b, i) => `
     <button type="button" class="mini-avatar" data-indice="${i}"
             style="--rival-color:${b.color}" aria-label="${escapeHtml(b.nombre)}">
-      ${b.retrato ? `<img src="${b.retrato}?v=3.10" alt="" loading="lazy">` : '<span class="mini-sin-retrato">?</span>'}
+      ${b.retrato ? `<img src="${b.retrato}?v=3.11" alt="" loading="lazy">` : '<span class="mini-sin-retrato">?</span>'}
       ${b.bloqueable ? '<span class="mini-candado">🔒</span>' : ''}
     </button>`).join('');
   rail.querySelectorAll('[data-indice]').forEach(btn => {
@@ -3898,7 +3901,7 @@ function construirTarjetasRival() {
           <div class="fr-radar">${svgRadar(perfil, b.color, 98)}</div>
         </div>
         <div class="fr-retrato-col">
-          ${b.retrato ? `<img class="fr-retrato" src="${b.retrato}?v=3.10" alt="" loading="lazy">` : ''}
+          ${b.retrato ? `<img class="fr-retrato" src="${b.retrato}?v=3.11" alt="" loading="lazy">` : ''}
         </div>
       </div>
       ${b.bloqueable ? '<span class="fr-candado">🔒</span>' : ''}
@@ -3916,7 +3919,14 @@ function construirTarjetasRival() {
 
   construirMiniRail();
   seguirCarrusel();
-  irAFicha(indiceRivalActual(bots), false);
+  // posicionarCarruselInicial(), no irAFicha() directo: espera varios
+  // frames a que flex/imágenes/dimensiones del viewport estén calculados
+  // antes de medir dónde centrar. irAFicha() mide y desplaza en el mismo
+  // instante, y en un primer pintado (sobre todo en CI, o tras recargar)
+  // el layout puede no estar asentado todavía — el centrado sale mal por
+  // cientos de píxeles. Esta función es de Josu; se había perdido al
+  // revertir parte de la reorganización de IA y no volví a comprobarlo.
+  posicionarCarruselInicial(indiceRivalActual(bots));
 }
 
 // Índice del rival elegido dentro del catálogo, para no dar por hecho que
@@ -3928,6 +3938,7 @@ function indiceRivalActual(bots) {
 
 let carruselEnganchado = false;
 let indiceCentrado = 0;
+let carruselInicializando = false;
 
 // Detecta qué ficha queda centrada al soltar. Se espera a que el
 // desplazamiento se detenga para no recalcular en cada fotograma.
@@ -3937,6 +3948,7 @@ function seguirCarrusel() {
   const tira = document.getElementById('fichasRival');
   let temporizador = null;
   tira.addEventListener('scroll', () => {
+    if (carruselInicializando) return;
     clearTimeout(temporizador);
     temporizador = setTimeout(() => {
       const centro = tira.scrollLeft + tira.clientWidth / 2;
@@ -3992,6 +4004,37 @@ function sincronizarCarruselConRivalActivo() {
 // gap y fichas que dejan asomar las contiguas, ese error hacía que Circuit
 // estuviera seleccionado internamente mientras visualmente Delta ocupaba el
 // protagonismo al abrir la app.
+// Posicionamiento inicial deliberadamente distinto del desplazamiento normal.
+// Se espera a dos frames para que flex, imágenes y dimensiones del viewport
+// estén calculados; se coloca Circuit sin animación y solo entonces se muestra
+// el carrusel. Durante esos frames el listener de scroll queda silenciado para
+// que Delta no pueda convertirse en selección por estar temporalmente en x=0.
+function posicionarCarruselInicial(i) {
+  const tira = document.getElementById('fichasRival');
+  const ficha = tira && tira.children[i];
+  if (!tira || !ficha) return;
+
+  carruselInicializando = true;
+  tira.classList.add('preparando');
+  indiceCentrado = i;
+  marcarFichaCentrada(i);
+  elegirRival(ficha.dataset.rival, true);
+
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    tira.scrollLeft = scrollLeftParaCentrar(tira, ficha);
+
+    // Un frame adicional corrige cualquier ajuste de scroll-snap/layout.
+    requestAnimationFrame(() => {
+      tira.scrollLeft = scrollLeftParaCentrar(tira, ficha);
+      requestAnimationFrame(() => {
+        carruselInicializando = false;
+        sincronizarCarruselConRivalActivo();
+        tira.classList.remove('preparando');
+      });
+    });
+  }));
+}
+
 function scrollLeftParaCentrar(tira, ficha) {
   const cajaTira = tira.getBoundingClientRect();
   const cajaFicha = ficha.getBoundingClientRect();
@@ -4181,7 +4224,7 @@ function avatarDeRival(id) {
   // Por identidad, no por nombre visible: dos rivales podrían llamarse
   // igual, y los invitados no están en RIVALES.
   const r = RIVALES[id] || (invitadoActual && invitadoActual.id === id ? invitadoActual : null);
-  return r ? `<span class="card-avatar"><img src="${r.retrato}?v=3.10" alt=""></span>` : '🤖';
+  return r ? `<span class="card-avatar"><img src="${r.retrato}?v=3.11" alt=""></span>` : '🤖';
 }
 
 function buildGameUI() {

@@ -21,9 +21,9 @@
 // descartar en vez de restaurarse mal y a medias.
 // v1 (v2.45-v2.47): sin datos del generador aleatorio.
 // v2 (v2.49+): incluye rng con los tres flujos, y turnPhase.
-import { DIST_EPS, distSq, segmentPassesOverCircle } from './geometry.js?v=3.10';
-import { getRngState, restoreRngState, seedRng } from './random.js?v=3.10';
-import { buildCandidateGraph } from './board.js?v=3.10';
+import { DIST_EPS, distSq, segmentPassesOverCircle } from './geometry.js?v=3.11';
+import { getRngState, restoreRngState, seedRng } from './random.js?v=3.11';
+import { buildCandidateGraph } from './board.js?v=3.11';
 
 export const STATE_SCHEMA_VERSION = 3; // v3: ownerId/playerId estables y registro de eventos
 
