@@ -1254,7 +1254,7 @@
        así que en la cabecera solo va el símbolo. El nombre entero sigue
        en el panel de ajustes y en el modal de información. -->
   <div class="marca-mini" aria-label="NEXTRI">
-    <img class="marca-simbolo" src="logo-marca.svg?v=3.07" alt="">
+    <img class="marca-simbolo" src="logo-marca.svg?v=3.08" alt="">
     <!-- El nombre sigue en el DOM (accesibilidad, y la prueba de humo lo
          usa como señal de que la app inicializó), pero visualmente oculto:
          no cabe junto a las pestañas en la cabecera compacta. -->
@@ -1442,7 +1442,7 @@
     <!-- Cabecera con la marca: el panel es "la consola" del juego, así que
          se presenta como tal en vez de como una lista de opciones sueltas -->
     <div class="pc-cabecera">
-      <img class="pc-simbolo" src="logo-marca.svg?v=3.07" alt="" aria-hidden="true">
+      <img class="pc-simbolo" src="logo-marca.svg?v=3.08" alt="" aria-hidden="true">
       <div>
         <h3 id="ajustesTitulo">NEXTRI</h3>
         <span class="pc-version" id="pcVersion"></span>
@@ -1565,37 +1565,37 @@
 // global — funcionaba, pero nada declaraba qué necesitaba cada uno, y una
 // mezcla de versiones en caché podía emparejar mitades incompatibles sin
 // que nada lo detectara.
-import { seedRng, rngNextFrom, rngIntFrom, getRngSeed, getRngState, restoreRngState } from './src/game/random.js?v=3.07';
-import { dist, distSq, segmentPassesOverCircle, pointInTriangle, segmentsIntersect } from './src/game/geometry.js?v=3.07';
+import { seedRng, rngNextFrom, rngIntFrom, getRngSeed, getRngState, restoreRngState } from './src/game/random.js?v=3.08';
+import { dist, distSq, segmentPassesOverCircle, pointInTriangle, segmentsIntersect } from './src/game/geometry.js?v=3.08';
 import { MOVE_REASON_TEXT, edgeKey, edgeExists, connectionCount, areAdjacent,
-         lineIntersectsAny, findNewTriangles, triangleTraps, checkMoveValidity } from './src/game/rules.js?v=3.07';
-import { BOARD_GENERATOR_VERSION, BOARD_QUALITY_TARGET } from './src/game/board-quality.js?v=3.07';
+         lineIntersectsAny, findNewTriangles, triangleTraps, checkMoveValidity } from './src/game/rules.js?v=3.08';
+import { BOARD_GENERATOR_VERSION, BOARD_QUALITY_TARGET } from './src/game/board-quality.js?v=3.08';
 import { ADJACENCY_TARGET, generateCirclePositions, buildCandidateGraph,
-         attemptBoardGeneration, chooseAdjacency, finalizeAdjacency } from './src/game/board.js?v=3.07';
+         attemptBoardGeneration, chooseAdjacency, finalizeAdjacency } from './src/game/board.js?v=3.08';
 import { createPlayer, playerById, nextPlayerId, applyAction, hasAnyLegalMove,
-         replayFromLog } from './src/game/engine.js?v=3.07';
+         replayFromLog } from './src/game/engine.js?v=3.08';
 import { STATE_SCHEMA_VERSION, RULES_VERSION, serializeGameState, restoreGameState,
-         migrateGameSnapshot, isValidGameSnapshot } from './src/game/state.js?v=3.07';
-import { invitadoDeLaSemana } from './src/ai/invitados.js?v=3.07';
+         migrateGameSnapshot, isValidGameSnapshot } from './src/game/state.js?v=3.08';
+import { invitadoDeLaSemana } from './src/ai/invitados.js?v=3.08';
 import { createGuestProgressService, guestProgressRatio, isGuestUnlocked,
-         guestMissingRequirements } from './src/progression/guest-progress.js?v=3.07';
+         guestMissingRequirements } from './src/progression/guest-progress.js?v=3.08';
 import { t, setLocale, getLocale, idiomaInicial, traducirDocumento, IDIOMAS }
-         from './src/i18n/i18n.js?v=3.07';
-import { svgRadar, perfilDesdeNivel, listaEjes, EJES_RADAR } from './src/ui/radar.js?v=3.07';
-import { AI_VERSION, AI_LEVELS, setDifficulty, getDifficulty, RIVALES, setRival, getRival } from './src/ai/levels.js?v=3.07';
-import { chooseAIMove, createsScoringReply } from './src/ai/ai.js?v=3.07';
-import * as Stats from './src/stats/stats.js?v=3.07';
-import { leerMeta, guardarMeta } from './src/stats/repository.js?v=3.07';
+         from './src/i18n/i18n.js?v=3.08';
+import { svgRadar, perfilDesdeNivel, listaEjes, EJES_RADAR } from './src/ui/radar.js?v=3.08';
+import { AI_VERSION, AI_LEVELS, setDifficulty, getDifficulty, RIVALES, setRival, getRival } from './src/ai/levels.js?v=3.08';
+import { chooseAIMove, createsScoringReply } from './src/ai/ai.js?v=3.08';
+import * as Stats from './src/stats/stats.js?v=3.08';
+import { leerMeta, guardarMeta } from './src/stats/repository.js?v=3.08';
 import { victoriasPorRival, aggregateStats, statsByOpponent, statsByCircleCount, ultimasPartidas,
-         formatearDuracion, porcentaje } from './src/stats/aggregates.js?v=3.07';
-import { saveGame, loadSavedGame, clearSavedGame, hasSavedGame } from './src/platform/storage.js?v=3.07';
+         formatearDuracion, porcentaje } from './src/stats/aggregates.js?v=3.08';
+import { saveGame, loadSavedGame, clearSavedGame, hasSavedGame } from './src/platform/storage.js?v=3.08';
 // ── Constantes ──────────────────────────────────────────────────────────────
 // Única fuente de la versión visible — antes se escribía a mano en tres
 // sitios (aquí, el panel de info, y el CACHE de sw.js) y se desincronizaban
 // entre sí. sw.js sigue siendo aparte por necesidad (un service worker no
 // puede leer esta constante, vive en otro archivo) — al subir de versión,
 // solo hace falta tocar ESTA línea y la de sw.js, no una tercera copia más.
-const APP_VERSION = 'v3.07';
+const APP_VERSION = 'v3.08';
 
 // Nombre del producto en un solo sitio. Si algún día cambia (NEXTRI u
 // otro), esto evita perseguirlo por cabecera, aviso de rotación, panel de
@@ -3731,43 +3731,61 @@ function catalogoBots() {
 // Vive SEPARADO del retrato (que es una imagen aparte, gif o webp), así
 // que cambiar uno no afecta al otro.
 const PATRONES_FONDO = [
-  // 0: triángulo — el original
+  // galería #1: triángulo con anillos
   (c) => `<circle cx="330" cy="46" r="92" fill="none" stroke="${c}" stroke-opacity=".14" stroke-width="1.5"/>
     <circle cx="330" cy="46" r="58" fill="none" stroke="${c}" stroke-opacity=".08" stroke-width="1.5"/>
     <path d="M240 44 L300 12 L354 48 L300 88 Z" fill="none" stroke="${c}" stroke-opacity=".10" stroke-width="1.5"/>
     <g fill="${c}" fill-opacity=".18">
       <circle cx="240" cy="44" r="2.2"/><circle cx="300" cy="12" r="2.2"/><circle cx="354" cy="48" r="2.2"/>
     </g>`,
-  // 1: hexágono
+  // galería #2: hexágono
   (c) => `<circle cx="320" cy="50" r="96" fill="none" stroke="${c}" stroke-opacity=".13" stroke-width="1.5"/>
     <polygon points="320,10 356,30 356,70 320,90 284,70 284,30" fill="none" stroke="${c}" stroke-opacity=".11" stroke-width="1.5"/>
     <g fill="${c}" fill-opacity=".18">
       <circle cx="320" cy="10" r="2.2"/><circle cx="356" cy="30" r="2.2"/><circle cx="356" cy="70" r="2.2"/>
       <circle cx="320" cy="90" r="2.2"/><circle cx="284" cy="70" r="2.2"/><circle cx="284" cy="30" r="2.2"/>
     </g>`,
-  // 2: anillos concéntricos desplazados, sin figura poligonal
-  (c) => `<circle cx="300" cy="40" r="104" fill="none" stroke="${c}" stroke-opacity=".12" stroke-width="1.5"/>
-    <circle cx="330" cy="60" r="70" fill="none" stroke="${c}" stroke-opacity=".10" stroke-width="1.5"/>
-    <circle cx="350" cy="30" r="38" fill="none" stroke="${c}" stroke-opacity=".14" stroke-width="1.5"/>
-    <g fill="${c}" fill-opacity=".18"><circle cx="350" cy="-8" r="2.2"/><circle cx="388" cy="30" r="2.2"/></g>`,
-  // 3: puntos en espiral, sin anillos
-  (c) => {
-    let pts = '', linea = 'M';
-    for (let i = 0; i < 7; i++) {
-      const ang = i * 0.9, rad = 8 + i * 11;
-      const x = (320 + Math.cos(ang) * rad).toFixed(1), y = (50 + Math.sin(ang) * rad).toFixed(1);
-      pts += `<circle cx="${x}" cy="${y}" r="${2.6 - i * 0.15}" fill="${c}" fill-opacity="${.22 - i * 0.02}"/>`;
-      linea += `${i ? 'L' : ''}${x} ${y} `;
-    }
-    return `<path d="${linea}" fill="none" stroke="${c}" stroke-opacity=".08" stroke-width="1.5"/>${pts}`;
-  },
-  // 4: rombo con anillo único, más minimalista
-  (c) => `<circle cx="315" cy="55" r="88" fill="none" stroke="${c}" stroke-opacity=".13" stroke-width="1.5"/>
-    <path d="M315 6 L363 55 L315 104 L267 55 Z" fill="none" stroke="${c}" stroke-opacity=".11" stroke-width="1.5"/>
+  // galería #7: panal de hexágonos, más denso que el #2
+  (c) => `<circle cx="310" cy="55" r="98" fill="none" stroke="${c}" stroke-opacity=".10" stroke-width="1.5"/>
+    <polygon points="280,20 310,5 340,20 340,50 310,65 280,50" fill="none" stroke="${c}" stroke-opacity=".13" stroke-width="1.4"/>
+    <polygon points="340,50 370,35 400,50 400,80 370,95 340,80" fill="none" stroke="${c}" stroke-opacity=".09" stroke-width="1.4"/>
     <g fill="${c}" fill-opacity=".2">
-      <circle cx="315" cy="6" r="2.4"/><circle cx="363" cy="55" r="2.4"/>
-      <circle cx="315" cy="104" r="2.4"/><circle cx="267" cy="55" r="2.4"/>
-    </g>`
+      <circle cx="310" cy="5" r="2"/><circle cx="340" cy="20" r="2"/><circle cx="340" cy="50" r="2"/>
+      <circle cx="280" cy="50" r="2"/><circle cx="310" cy="65" r="2"/><circle cx="280" cy="20" r="2"/>
+    </g>`,
+  // galería #9: red de nodos conectados en triángulos — el lenguaje del
+  // propio logotipo (nodos y líneas) y del juego (círculos que forman
+  // triángulos), a diferencia de los anteriores que son UNA forma única.
+  (c) => {
+    const nodos = [
+      [250, 15], [310, 8], [365, 35], [385, 85], [340, 115],
+      [270, 100], [230, 60], [300, 60], [350, 70]
+    ];
+    const aristas = [[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,0],[0,7],[1,7],[7,2],[7,8],[2,8],[3,8],[4,8],[6,7]];
+    const lineas = aristas.map(([a,b]) =>
+      `<line x1="${nodos[a][0]}" y1="${nodos[a][1]}" x2="${nodos[b][0]}" y2="${nodos[b][1]}" stroke="${c}" stroke-opacity=".11" stroke-width="1.3"/>`
+    ).join('');
+    const puntos = nodos.map(([x, y], i) =>
+      `<circle cx="${x}" cy="${y}" r="${i % 3 === 0 ? 2.6 : 1.8}" fill="${c}" fill-opacity="${i % 3 === 0 ? .22 : .16}"/>`
+    ).join('');
+    return lineas + puntos;
+  },
+  // galería #10: dos racimos de nodos unidos por una línea larga — mismo
+  // lenguaje que el #9, más disperso, como variante dentro de la familia.
+  (c) => {
+    const racimoA = [[235, 20], [270, 10], [255, 55], [215, 50]];
+    const racimoB = [[350, 60], [390, 50], [380, 95], [340, 100]];
+    const nodos = [...racimoA, ...racimoB];
+    const aristasA = [[0,1],[1,2],[2,0],[2,3],[3,0]];
+    const aristasB = [[4,5],[5,6],[6,4],[6,7],[7,4]];
+    const puente = [[2,4]];
+    const todas = [...aristasA, ...aristasB, ...puente];
+    const lineas = todas.map(([a,b]) =>
+      `<line x1="${nodos[a][0]}" y1="${nodos[a][1]}" x2="${nodos[b][0]}" y2="${nodos[b][1]}" stroke="${c}" stroke-opacity="${(a===2&&b===4)?.07:.12}" stroke-width="1.3"/>`
+    ).join('');
+    const puntos = nodos.map(([x, y]) => `<circle cx="${x}" cy="${y}" r="2.2" fill="${c}" fill-opacity=".2"/>`).join('');
+    return lineas + puntos;
+  }
 ];
 
 // Determinista por id de bot: el mismo rival lleva siempre el mismo
@@ -3839,7 +3857,7 @@ function construirMiniRail() {
   rail.innerHTML = bots.map((b, i) => `
     <button type="button" class="mini-avatar" data-indice="${i}"
             style="--rival-color:${b.color}" aria-label="${escapeHtml(b.nombre)}">
-      ${b.retrato ? `<img src="${b.retrato}?v=3.07" alt="" loading="lazy">` : '<span class="mini-sin-retrato">?</span>'}
+      ${b.retrato ? `<img src="${b.retrato}?v=3.08" alt="" loading="lazy">` : '<span class="mini-sin-retrato">?</span>'}
       ${b.bloqueable ? '<span class="mini-candado">🔒</span>' : ''}
     </button>`).join('');
   rail.querySelectorAll('[data-indice]').forEach(btn => {
@@ -3880,7 +3898,7 @@ function construirTarjetasRival() {
           <div class="fr-radar">${svgRadar(perfil, b.color, 98)}</div>
         </div>
         <div class="fr-retrato-col">
-          ${b.retrato ? `<img class="fr-retrato" src="${b.retrato}?v=3.07" alt="" loading="lazy">` : ''}
+          ${b.retrato ? `<img class="fr-retrato" src="${b.retrato}?v=3.08" alt="" loading="lazy">` : ''}
         </div>
       </div>
       ${b.bloqueable ? '<span class="fr-candado">🔒</span>' : ''}
@@ -4163,7 +4181,7 @@ function avatarDeRival(id) {
   // Por identidad, no por nombre visible: dos rivales podrían llamarse
   // igual, y los invitados no están en RIVALES.
   const r = RIVALES[id] || (invitadoActual && invitadoActual.id === id ? invitadoActual : null);
-  return r ? `<span class="card-avatar"><img src="${r.retrato}?v=3.07" alt=""></span>` : '🤖';
+  return r ? `<span class="card-avatar"><img src="${r.retrato}?v=3.08" alt=""></span>` : '🤖';
 }
 
 function buildGameUI() {
