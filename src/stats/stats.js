@@ -7,9 +7,9 @@
 // Nada de nombres de personas: para estudiar las partidas basta con
 // "human" y "ai", y la identidad no aporta nada.
 
-import { guardarPartida, obtenerPartida, listarPartidas, borrarTodo } from './repository.js?v=3.03';
-import { STATS_SCHEMA_VERSION } from './repository.js?v=3.03';
-import { analizarTimeline } from './aggregates.js?v=3.03';
+import { guardarPartida, obtenerPartida, listarPartidas, borrarTodo } from './repository.js?v=3.04';
+import { STATS_SCHEMA_VERSION } from './repository.js?v=3.04';
+import { analizarTimeline } from './aggregates.js?v=3.04';
 
 export function nuevoId() {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();

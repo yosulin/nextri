@@ -1088,13 +1088,25 @@
   .fr-rasgos{
     position:relative; z-index:1; display:flex; gap:6px;
     padding:0 16px 16px;
+    /* stretch, no la altura por defecto: sin esto cada píldora medía solo
+       lo que necesitaba SU PROPIO contenido, y quedaban descuadradas entre
+       sí y sin llenar la fila. */
+    align-items:stretch;
   }
   .fr-rasgo{
-    flex:1 1 0; min-width:0; display:flex; align-items:center; gap:6px;
+    flex:1 1 0; min-width:0; display:flex; align-items:center;
     background:var(--bg); border:1px solid var(--border); border-radius:13px;
     padding:9px 8px; font-size:clamp(.62rem, 3vw, .76rem);
+    position:relative; overflow:hidden;
   }
-  .fr-rasgo-ic{ font-size:1.05rem; flex-shrink:0; }
+  /* El icono va de FONDO, grande y tenue (color del rival, opacidad baja),
+     no delante del texto compitiendo con él. */
+  .fr-rasgo-ic{
+    position:absolute; right:-6px; bottom:-6px;
+    width:38px; height:38px; color:var(--rival-color); opacity:.16;
+    pointer-events:none;
+  }
+  .fr-rasgo-txt{ position:relative; z-index:1; min-width:0; }
   .fr-rasgo b{ display:block; color:var(--text); font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .fr-rasgo i{ font-style:normal; color:var(--rival-color); font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block; }
 
@@ -1242,7 +1254,7 @@
        así que en la cabecera solo va el símbolo. El nombre entero sigue
        en el panel de ajustes y en el modal de información. -->
   <div class="marca-mini" aria-label="NEXTRI">
-    <img class="marca-simbolo" src="logo-marca.svg?v=3.03" alt="">
+    <img class="marca-simbolo" src="logo-marca.svg?v=3.04" alt="">
     <!-- El nombre sigue en el DOM (accesibilidad, y la prueba de humo lo
          usa como señal de que la app inicializó), pero visualmente oculto:
          no cabe junto a las pestañas en la cabecera compacta. -->
@@ -1430,7 +1442,7 @@
     <!-- Cabecera con la marca: el panel es "la consola" del juego, así que
          se presenta como tal en vez de como una lista de opciones sueltas -->
     <div class="pc-cabecera">
-      <img class="pc-simbolo" src="logo-marca.svg?v=3.03" alt="" aria-hidden="true">
+      <img class="pc-simbolo" src="logo-marca.svg?v=3.04" alt="" aria-hidden="true">
       <div>
         <h3 id="ajustesTitulo">NEXTRI</h3>
         <span class="pc-version" id="pcVersion"></span>
@@ -1553,37 +1565,37 @@
 // global — funcionaba, pero nada declaraba qué necesitaba cada uno, y una
 // mezcla de versiones en caché podía emparejar mitades incompatibles sin
 // que nada lo detectara.
-import { seedRng, rngNextFrom, rngIntFrom, getRngSeed, getRngState, restoreRngState } from './src/game/random.js?v=3.03';
-import { dist, distSq, segmentPassesOverCircle, pointInTriangle, segmentsIntersect } from './src/game/geometry.js?v=3.03';
+import { seedRng, rngNextFrom, rngIntFrom, getRngSeed, getRngState, restoreRngState } from './src/game/random.js?v=3.04';
+import { dist, distSq, segmentPassesOverCircle, pointInTriangle, segmentsIntersect } from './src/game/geometry.js?v=3.04';
 import { MOVE_REASON_TEXT, edgeKey, edgeExists, connectionCount, areAdjacent,
-         lineIntersectsAny, findNewTriangles, triangleTraps, checkMoveValidity } from './src/game/rules.js?v=3.03';
-import { BOARD_GENERATOR_VERSION, BOARD_QUALITY_TARGET } from './src/game/board-quality.js?v=3.03';
+         lineIntersectsAny, findNewTriangles, triangleTraps, checkMoveValidity } from './src/game/rules.js?v=3.04';
+import { BOARD_GENERATOR_VERSION, BOARD_QUALITY_TARGET } from './src/game/board-quality.js?v=3.04';
 import { ADJACENCY_TARGET, generateCirclePositions, buildCandidateGraph,
-         attemptBoardGeneration, chooseAdjacency, finalizeAdjacency } from './src/game/board.js?v=3.03';
+         attemptBoardGeneration, chooseAdjacency, finalizeAdjacency } from './src/game/board.js?v=3.04';
 import { createPlayer, playerById, nextPlayerId, applyAction, hasAnyLegalMove,
-         replayFromLog } from './src/game/engine.js?v=3.03';
+         replayFromLog } from './src/game/engine.js?v=3.04';
 import { STATE_SCHEMA_VERSION, RULES_VERSION, serializeGameState, restoreGameState,
-         migrateGameSnapshot, isValidGameSnapshot } from './src/game/state.js?v=3.03';
-import { invitadoDeLaSemana } from './src/ai/invitados.js?v=3.03';
+         migrateGameSnapshot, isValidGameSnapshot } from './src/game/state.js?v=3.04';
+import { invitadoDeLaSemana } from './src/ai/invitados.js?v=3.04';
 import { createGuestProgressService, guestProgressRatio, isGuestUnlocked,
-         guestMissingRequirements } from './src/progression/guest-progress.js?v=3.03';
+         guestMissingRequirements } from './src/progression/guest-progress.js?v=3.04';
 import { t, setLocale, getLocale, idiomaInicial, traducirDocumento, IDIOMAS }
-         from './src/i18n/i18n.js?v=3.03';
-import { svgRadar, perfilDesdeNivel, listaEjes, EJES_RADAR } from './src/ui/radar.js?v=3.03';
-import { AI_VERSION, AI_LEVELS, setDifficulty, getDifficulty, RIVALES, setRival, getRival } from './src/ai/levels.js?v=3.03';
-import { chooseAIMove, createsScoringReply } from './src/ai/ai.js?v=3.03';
-import * as Stats from './src/stats/stats.js?v=3.03';
-import { leerMeta, guardarMeta } from './src/stats/repository.js?v=3.03';
+         from './src/i18n/i18n.js?v=3.04';
+import { svgRadar, perfilDesdeNivel, listaEjes, EJES_RADAR } from './src/ui/radar.js?v=3.04';
+import { AI_VERSION, AI_LEVELS, setDifficulty, getDifficulty, RIVALES, setRival, getRival } from './src/ai/levels.js?v=3.04';
+import { chooseAIMove, createsScoringReply } from './src/ai/ai.js?v=3.04';
+import * as Stats from './src/stats/stats.js?v=3.04';
+import { leerMeta, guardarMeta } from './src/stats/repository.js?v=3.04';
 import { victoriasPorRival, aggregateStats, statsByOpponent, statsByCircleCount, ultimasPartidas,
-         formatearDuracion, porcentaje } from './src/stats/aggregates.js?v=3.03';
-import { saveGame, loadSavedGame, clearSavedGame, hasSavedGame } from './src/platform/storage.js?v=3.03';
+         formatearDuracion, porcentaje } from './src/stats/aggregates.js?v=3.04';
+import { saveGame, loadSavedGame, clearSavedGame, hasSavedGame } from './src/platform/storage.js?v=3.04';
 // ── Constantes ──────────────────────────────────────────────────────────────
 // Única fuente de la versión visible — antes se escribía a mano en tres
 // sitios (aquí, el panel de info, y el CACHE de sw.js) y se desincronizaban
 // entre sí. sw.js sigue siendo aparte por necesidad (un service worker no
 // puede leer esta constante, vive en otro archivo) — al subir de versión,
 // solo hace falta tocar ESTA línea y la de sw.js, no una tercera copia más.
-const APP_VERSION = 'v3.03';
+const APP_VERSION = 'v3.04';
 
 // Nombre del producto en un solo sitio. Si algún día cambia (NEXTRI u
 // otro), esto evita perseguirlo por cabecera, aviso de rotación, panel de
@@ -3785,7 +3797,23 @@ function nivelDeRasgo(v) {
 // Las tres píldoras de rasgos NO se escriben a mano por bot: salen de los
 // tres ejes con valor más alto de su propio radar. Así, si se recalibra la
 // IA, las píldoras se recalculan solas — igual que el radar del que salen.
-const ICONO_EJE = { ataque: '🎯', vision: '🧠', defensa: '🛡️', construccion: '🧩', ambicion: '🎲' };
+// Icono de cada eje como SVG de un solo trazo, no emoji: se pinta como
+// FONDO grande y tenue dentro de la píldora (dos tonos como mucho, con
+// currentColor para heredar el color del rival) en vez de ir delante del
+// texto compitiendo con él.
+const ICONO_EJE_SVG = {
+  ataque: '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/>',
+  vision: '<path d="M2 12s3.8-6.5 10-6.5S22 12 22 12s-3.8 6.5-10 6.5S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>',
+  defensa: '<path d="M12 2.5 20 6v6c0 5-3.4 8.6-8 9.5-4.6-.9-8-4.5-8-9.5V6Z"/>',
+  construccion: '<rect x="3" y="3" width="7.5" height="7.5" rx="1.2"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.2"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.2"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.2"/>',
+  ambicion: '<path d="M12 2 14.5 9.2 22 9.5 16 14 18 21.5 12 17 6 21.5 8 14 2 9.5 9.5 9.2Z"/>'
+};
+function iconoEjeSvg(clave) {
+  const trazo = ICONO_EJE_SVG[clave];
+  if (!trazo) return '';
+  return `<svg class="fr-rasgo-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true">${trazo}</svg>`;
+}
 function rasgosDestacados(perfil) {
   const top3 = EJES_RADAR
     .map(e => ({ ...e, valor: perfil[e.clave] ?? 0 }))
@@ -3793,8 +3821,8 @@ function rasgosDestacados(perfil) {
     .slice(0, 3);
   return top3.map(e => `
     <div class="fr-rasgo">
-      <span class="fr-rasgo-ic">${ICONO_EJE[e.clave] || '•'}</span>
-      <span><b>${escapeHtml(e.etiqueta)}</b><i>${escapeHtml(nivelDeRasgo(e.valor))}</i></span>
+      ${iconoEjeSvg(e.clave)}
+      <span class="fr-rasgo-txt"><b>${escapeHtml(e.etiqueta)}</b><i>${escapeHtml(nivelDeRasgo(e.valor))}</i></span>
     </div>`).join('');
 }
 
@@ -3811,7 +3839,7 @@ function construirMiniRail() {
   rail.innerHTML = bots.map((b, i) => `
     <button type="button" class="mini-avatar" data-indice="${i}"
             style="--rival-color:${b.color}" aria-label="${escapeHtml(b.nombre)}">
-      ${b.retrato ? `<img src="${b.retrato}?v=3.03" alt="" loading="lazy">` : '<span class="mini-sin-retrato">?</span>'}
+      ${b.retrato ? `<img src="${b.retrato}?v=3.04" alt="" loading="lazy">` : '<span class="mini-sin-retrato">?</span>'}
       ${b.bloqueable ? '<span class="mini-candado">🔒</span>' : ''}
     </button>`).join('');
   rail.querySelectorAll('[data-indice]').forEach(btn => {
@@ -3852,7 +3880,7 @@ function construirTarjetasRival() {
           <div class="fr-radar">${svgRadar(perfil, b.color, 98)}</div>
         </div>
         <div class="fr-retrato-col">
-          ${b.retrato ? `<img class="fr-retrato" src="${b.retrato}?v=3.03" alt="" loading="lazy">` : ''}
+          ${b.retrato ? `<img class="fr-retrato" src="${b.retrato}?v=3.04" alt="" loading="lazy">` : ''}
         </div>
       </div>
       ${b.bloqueable ? '<span class="fr-candado">🔒</span>' : ''}
@@ -4102,7 +4130,7 @@ function avatarDeRival(id) {
   // Por identidad, no por nombre visible: dos rivales podrían llamarse
   // igual, y los invitados no están en RIVALES.
   const r = RIVALES[id] || (invitadoActual && invitadoActual.id === id ? invitadoActual : null);
-  return r ? `<span class="card-avatar"><img src="${r.retrato}?v=3.03" alt=""></span>` : '🤖';
+  return r ? `<span class="card-avatar"><img src="${r.retrato}?v=3.04" alt=""></span>` : '🤖';
 }
 
 function buildGameUI() {
