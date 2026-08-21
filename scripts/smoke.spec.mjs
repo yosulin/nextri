@@ -58,6 +58,16 @@ test('la aplicación arranca y se puede jugar', async ({ page }) => {
     const b = circuit.getBoundingClientRect();
     return Math.abs((a.left + a.width / 2) - (b.left + b.width / 2));
   })).toBeLessThan(3);
+  // Y debe ocupar el centro entre Delta y Vector, no ser solo la selección lógica.
+  const ordenInicial = await page.evaluate(() => {
+    const tira = document.getElementById('fichasRival');
+    const delta = tira.querySelector('[data-rival="delta"]').getBoundingClientRect();
+    const circuit = tira.querySelector('[data-rival="circuit"]').getBoundingClientRect();
+    const vector = tira.querySelector('[data-rival="vector"]').getBoundingClientRect();
+    return { deltaX: delta.left, circuitX: circuit.left, vectorX: vector.left };
+  });
+  expect(ordenInicial.deltaX).toBeLessThan(ordenInicial.circuitX);
+  expect(ordenInicial.vectorX).toBeGreaterThan(ordenInicial.circuitX);
   await expect(page.locator('#startBtn')).toContainText('Circuit');
   // Cuarta tarjeta: el invitado semanal, bloqueado hasta ganar a los tres
   await expect(page.locator('#fichasRival .ficha-rival')).toHaveCount(4);
