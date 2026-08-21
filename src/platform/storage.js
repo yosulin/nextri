@@ -9,7 +9,7 @@
 // la app no arranque por eso sería mucho peor. Ante cualquier duda:
 // devolver null / no hacer nada, nunca propagar el error.
 
-import { serializeGameState, migrateGameSnapshot, isValidGameSnapshot } from '../game/state.js?v=3.04';
+import { serializeGameState, migrateGameSnapshot, isValidGameSnapshot } from '../game/state.js?v=3.05';
 
 export const SAVE_KEY = 'nextri:partida';
 // Clave anterior al cambio de nombre. localStorage va por DOMINIO, no por
