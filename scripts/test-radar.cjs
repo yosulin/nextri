@@ -73,6 +73,14 @@ const cero = Object.fromEntries(EJES_RADAR.map(e => [e.clave, 0]));
 const svgCero = svgRadar(cero, '#000', 100);
 check('un perfil a cero no rompe el SVG', svgCero.includes('<polygon') && !svgCero.includes('NaN'));
 
+// El radar debe dibujar el NOMBRE de cada eje, no solo la telaraña muda.
+// Se le olvidó al generador original: svgRadar() dibujaba el polígono y
+// los anillos, pero nunca el texto — así que el gráfico se veía sin decir
+// qué era cada pico, hasta que se detectó a simple vista en la app.
+check('el radar dibuja el texto de los cinco ejes',
+  EJES_RADAR.every(e => svg.includes(`>${e.etiqueta}<`)),
+  EJES_RADAR.map(e => e.etiqueta).filter(t => !svg.includes(`>${t}<`)).join(', '));
+
 // La lista de ejes en texto acompaña al gráfico
 const lista = listaEjes(perfiles.vector);
 check('la lista tiene una entrada por eje', lista.length === EJES_RADAR.length);

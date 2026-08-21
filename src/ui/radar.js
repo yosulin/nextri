@@ -47,8 +47,13 @@ export function perfilDesdeNivel(nivel) {
 
 // Devuelve el SVG del radar. `valores` son 0..1 por cada eje.
 export function svgRadar(valores, color, tamaño = 120) {
+  // El lienzo interior es más pequeño que el tamaño total: deja un margen
+  // alrededor para las ETIQUETAS de cada eje, que hasta ahora no se
+  // dibujaban en absoluto — el radar solo mostraba la telaraña y el
+  // polígono, sin decir qué era cada pico.
+  const margen = tamaño * 0.22;
   const c = tamaño / 2;
-  const r = tamaño * 0.36;
+  const r = (tamaño - margen * 2) * 0.36;
   const n = EJES_RADAR.length;
   // Se empieza arriba (-90°) para que el primer eje quede vertical.
   const angulo = (i) => (Math.PI * 2 * i / n) - Math.PI / 2;
@@ -81,8 +86,21 @@ export function svgRadar(valores, color, tamaño = 120) {
     return `<circle cx="${x}" cy="${y}" r="2.4" fill="${color}"/>`;
   }).join('');
 
+  // Etiqueta de cada eje, en el borde exterior de la telaraña (no del
+  // polígono, que varía con los valores): así el texto queda fijo aunque
+  // cambie el perfil. text-anchor se elige según a qué lado del centro
+  // cae el punto, para que el texto no quede "colgando" hacia dentro.
+  const etiquetas = EJES_RADAR.map((eje, i) => {
+    const [x, y] = punto(i, r + margen * 0.62);
+    const dx = Math.cos(angulo(i));
+    const anchor = dx > 0.15 ? 'start' : dx < -0.15 ? 'end' : 'middle';
+    return `<text x="${x}" y="${y}" font-size="${(tamaño * 0.072).toFixed(1)}"
+      fill="currentColor" opacity="0.72" text-anchor="${anchor}"
+      dominant-baseline="middle" font-family="Nunito, sans-serif" font-weight="700">${eje.etiqueta}</text>`;
+  }).join('');
+
   return `<svg viewBox="0 0 ${tamaño} ${tamaño}" width="${tamaño}" height="${tamaño}" role="img" aria-hidden="true">
-    <g color="var(--muted)">${rejilla}</g>
+    <g color="var(--muted)">${rejilla}${etiquetas}</g>
     <polygon points="${pts}" fill="${color}" fill-opacity="0.22" stroke="${color}" stroke-width="2" stroke-linejoin="round"/>
     ${vertices}
   </svg>`;
