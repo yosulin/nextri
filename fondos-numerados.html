@@ -15,11 +15,23 @@
   .num{position:absolute;top:10px;left:10px;background:#2f7ef0;color:#fff;font-weight:800;
        border-radius:999px;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:.85rem;z-index:2}
   .etq{padding:9px 12px;font-size:.78rem;color:#8496b8}
+  .item.favorito{border-color:#2f7ef0}
+  .marca-fav{
+    position:absolute;top:10px;right:10px;z-index:2;
+    background:#2f7ef0;color:#fff;font-size:.68rem;font-weight:800;
+    border-radius:999px;padding:3px 9px;
+  }
+  .marca-nuevo{
+    position:absolute;bottom:10px;right:10px;z-index:2;
+    background:#ff8c32;color:#fff;font-size:.62rem;font-weight:800;
+    letter-spacing:.4px;text-transform:uppercase;
+    border-radius:999px;padding:3px 9px;
+  }
 </style>
 </head>
 <body>
 <h1>Fondos geométricos numerados (1–8)</h1>
-<p>Mismo color de referencia (#2f7ef0) en todos, para comparar solo la forma. Dime qué números van a cada bot.</p>
+<p>Mismo color de referencia (#2f7ef0) en todos, para comparar solo la forma. Marcados con ★ los que ya te gustaron (1, 2, 6, 7). El 9 y el 10 son nuevos: una red de nodos conectados en triángulos, inspirados en la captura que pasaste — es el mismo lenguaje del logotipo y del propio juego.</p>
 <div class="grid" id="grid"></div>
 
 <script>
@@ -89,19 +101,64 @@ const PATRONES = {
     <g fill="${c}" fill-opacity=".2">
       <circle cx="255" cy="10" r="2.2"/><circle cx="375" cy="10" r="2.2"/>
       <circle cx="255" cy="100" r="2.2"/><circle cx="375" cy="100" r="2.2"/>
-    </g>`
+    </g>`,
+  9: (c) => {
+    // Constelación de nodos conectados en triángulos: es literalmente el
+    // lenguaje del logotipo (nodos y líneas) y del propio juego (círculos
+    // que se conectan formando triángulos). A diferencia de los patrones
+    // 1-8, que son UNA forma única, este es una RED de varios puntos.
+    const nodos = [
+      [250, 15], [310, 8], [365, 35], [385, 85], [340, 115],
+      [270, 100], [230, 60], [300, 60], [350, 70]
+    ];
+    // Aristas elegidas a mano para que se lean como triángulos, no como
+    // una maraña: cada nodo se conecta a 2-3 vecinos próximos.
+    const aristas = [[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,0],[0,7],[1,7],[7,2],[7,8],[2,8],[3,8],[4,8],[6,7]];
+    const lineas = aristas.map(([a,b]) =>
+      `<line x1="${nodos[a][0]}" y1="${nodos[a][1]}" x2="${nodos[b][0]}" y2="${nodos[b][1]}" stroke="${c}" stroke-opacity=".11" stroke-width="1.3"/>`
+    ).join('');
+    const puntos = nodos.map(([x,y], i) =>
+      `<circle cx="${x}" cy="${y}" r="${i % 3 === 0 ? 2.6 : 1.8}" fill="${c}" fill-opacity="${i % 3 === 0 ? .22 : .16}"/>`
+    ).join('');
+    return lineas + puntos;
+  },
+  10: (c) => {
+    // Misma idea que el 9 pero mas dispersa, con dos "racimos" separados
+    // por una linea larga que los une: sugiere un mapa de red en vez de
+    // un triangulo compacto, para dar variedad dentro del mismo lenguaje.
+    const racimoA = [[235, 20], [270, 10], [255, 55], [215, 50]];
+    const racimoB = [[350, 60], [390, 50], [380, 95], [340, 100]];
+    const nodos = [...racimoA, ...racimoB];
+    const aristasA = [[0,1],[1,2],[2,0],[2,3],[3,0]];
+    const aristasB = [[4,5],[5,6],[6,4],[6,7],[7,4]];
+    const puente = [[2,4]];
+    const todas = [...aristasA, ...aristasB, ...puente];
+    const lineas = todas.map(([a,b]) =>
+      `<line x1="${nodos[a][0]}" y1="${nodos[a][1]}" x2="${nodos[b][0]}" y2="${nodos[b][1]}" stroke="${c}" stroke-opacity="${(a===2&&b===4)?.07:.12}" stroke-width="1.3"/>`
+    ).join('');
+    const puntos = nodos.map(([x,y]) => `<circle cx="${x}" cy="${y}" r="2.2" fill="${c}" fill-opacity=".2"/>`).join('');
+    return lineas + puntos;
+  }
 };
 
+// Favoritos ya confirmados por Josu, para que se vea de un vistazo qué
+// ya está decidido y qué es lo nuevo que falta valorar.
+const FAVORITOS = new Set([1, 2, 6, 7]);
+
 const grid = document.getElementById('grid');
-for (let i = 1; i <= 8; i++) {
+for (let i = 1; i <= 10; i++) {
+  const esFavorito = FAVORITOS.has(i);
+  const esNuevo = i >= 9;
   const item = document.createElement('div');
-  item.className = 'item';
+  item.className = 'item' + (esFavorito ? ' favorito' : '');
   item.innerHTML = `
     <div class="lienzo">
       <span class="num">${i}</span>
+      ${esFavorito ? '<span class="marca-fav">★ Te gusta</span>' : ''}
+      ${esNuevo ? '<span class="marca-nuevo">nuevo</span>' : ''}
       <svg viewBox="0 0 400 260" preserveAspectRatio="xMidYMid slice">${PATRONES[i](C)}</svg>
     </div>
-    <div class="etq">Patrón ${i}</div>`;
+    <div class="etq">Patrón ${i}${esNuevo ? ' — red de nodos, inspirado en tu captura' : ''}</div>`;
   grid.appendChild(item);
 }
 </script>
