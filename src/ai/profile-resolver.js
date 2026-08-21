@@ -4,9 +4,9 @@
 // Identidad del bot + personalidad base + capacidad (si procede) son
 // independientes del ruleset. Phantom deriva su perfil del jugador.
 
-import { AI_PROFILES, RIVALES } from './levels.js?v=3.11';
-import { resolveCapacityAdjustedProfile } from './capacity.js?v=3.11';
-import { phantomAIProfile } from '../progression/player-model.js?v=3.11';
+import { AI_PROFILES, RIVALES } from './levels.js?v=3.12';
+import { resolveCapacityAdjustedProfile } from './capacity.js?v=3.12';
+import { phantomAIProfile } from '../progression/player-model.js?v=3.12';
 
 export function resolveAIProfile({ opponentId, profileId, playerModel = null, playerSkill = null } = {}) {
   if (opponentId === 'phantom' || profileId === 'phantom') return phantomAIProfile(playerModel);
