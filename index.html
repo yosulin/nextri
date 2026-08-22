@@ -1286,7 +1286,7 @@
        así que en la cabecera solo va el símbolo. El nombre entero sigue
        en el panel de ajustes y en el modal de información. -->
   <div class="marca-mini" aria-label="NEXTRI">
-    <img class="marca-simbolo" src="logo-marca.svg?v=3.16" alt="">
+    <img class="marca-simbolo" src="logo-marca.svg?v=3.17" alt="">
     <!-- El nombre sigue en el DOM (accesibilidad, y la prueba de humo lo
          usa como señal de que la app inicializó), pero visualmente oculto:
          no cabe junto a las pestañas en la cabecera compacta. -->
@@ -1474,7 +1474,7 @@
     <!-- Cabecera con la marca: el panel es "la consola" del juego, así que
          se presenta como tal en vez de como una lista de opciones sueltas -->
     <div class="pc-cabecera">
-      <img class="pc-simbolo" src="logo-marca.svg?v=3.16" alt="" aria-hidden="true">
+      <img class="pc-simbolo" src="logo-marca.svg?v=3.17" alt="" aria-hidden="true">
       <div>
         <h3 id="ajustesTitulo">NEXTRI</h3>
         <span class="pc-version" id="pcVersion"></span>
@@ -1597,37 +1597,37 @@
 // global — funcionaba, pero nada declaraba qué necesitaba cada uno, y una
 // mezcla de versiones en caché podía emparejar mitades incompatibles sin
 // que nada lo detectara.
-import { seedRng, rngNextFrom, rngIntFrom, getRngSeed, getRngState, restoreRngState } from './src/game/random.js?v=3.16';
-import { dist, distSq, segmentPassesOverCircle, pointInTriangle, segmentsIntersect } from './src/game/geometry.js?v=3.16';
+import { seedRng, rngNextFrom, rngIntFrom, getRngSeed, getRngState, restoreRngState } from './src/game/random.js?v=3.17';
+import { dist, distSq, segmentPassesOverCircle, pointInTriangle, segmentsIntersect } from './src/game/geometry.js?v=3.17';
 import { MOVE_REASON_TEXT, edgeKey, edgeExists, connectionCount, areAdjacent,
-         lineIntersectsAny, findNewTriangles, triangleTraps, checkMoveValidity } from './src/game/rules.js?v=3.16';
-import { BOARD_GENERATOR_VERSION, BOARD_QUALITY_TARGET } from './src/game/board-quality.js?v=3.16';
+         lineIntersectsAny, findNewTriangles, triangleTraps, checkMoveValidity } from './src/game/rules.js?v=3.17';
+import { BOARD_GENERATOR_VERSION, BOARD_QUALITY_TARGET } from './src/game/board-quality.js?v=3.17';
 import { ADJACENCY_TARGET, generateCirclePositions, buildCandidateGraph,
-         attemptBoardGeneration, chooseAdjacency, finalizeAdjacency } from './src/game/board.js?v=3.16';
+         attemptBoardGeneration, chooseAdjacency, finalizeAdjacency } from './src/game/board.js?v=3.17';
 import { createPlayer, playerById, nextPlayerId, applyAction, hasAnyLegalMove,
-         replayFromLog } from './src/game/engine.js?v=3.16';
+         replayFromLog } from './src/game/engine.js?v=3.17';
 import { STATE_SCHEMA_VERSION, RULES_VERSION, serializeGameState, restoreGameState,
-         migrateGameSnapshot, isValidGameSnapshot } from './src/game/state.js?v=3.16';
-import { invitadoDeLaSemana } from './src/ai/invitados.js?v=3.16';
+         migrateGameSnapshot, isValidGameSnapshot } from './src/game/state.js?v=3.17';
+import { invitadoDeLaSemana } from './src/ai/invitados.js?v=3.17';
 import { createGuestProgressService, guestProgressRatio, isGuestUnlocked,
-         guestMissingRequirements } from './src/progression/guest-progress.js?v=3.16';
+         guestMissingRequirements } from './src/progression/guest-progress.js?v=3.17';
 import { t, setLocale, getLocale, idiomaInicial, traducirDocumento, IDIOMAS }
-         from './src/i18n/i18n.js?v=3.16';
-import { svgRadar, perfilDesdeNivel, listaEjes, EJES_RADAR } from './src/ui/radar.js?v=3.16';
-import { AI_VERSION, AI_LEVELS, setDifficulty, getDifficulty, RIVALES, setRival, getRival } from './src/ai/levels.js?v=3.16';
-import { chooseAIMove, createsScoringReply } from './src/ai/ai.js?v=3.16';
-import * as Stats from './src/stats/stats.js?v=3.16';
-import { leerMeta, guardarMeta } from './src/stats/repository.js?v=3.16';
+         from './src/i18n/i18n.js?v=3.17';
+import { svgRadar, perfilDesdeNivel, listaEjes, EJES_RADAR } from './src/ui/radar.js?v=3.17';
+import { AI_VERSION, AI_LEVELS, setDifficulty, getDifficulty, RIVALES, setRival, getRival } from './src/ai/levels.js?v=3.17';
+import { chooseAIMove, createsScoringReply } from './src/ai/ai.js?v=3.17';
+import * as Stats from './src/stats/stats.js?v=3.17';
+import { leerMeta, guardarMeta } from './src/stats/repository.js?v=3.17';
 import { victoriasPorRival, aggregateStats, statsByOpponent, statsByCircleCount, ultimasPartidas,
-         formatearDuracion, porcentaje } from './src/stats/aggregates.js?v=3.16';
-import { saveGame, loadSavedGame, clearSavedGame, hasSavedGame } from './src/platform/storage.js?v=3.16';
+         formatearDuracion, porcentaje } from './src/stats/aggregates.js?v=3.17';
+import { saveGame, loadSavedGame, clearSavedGame, hasSavedGame } from './src/platform/storage.js?v=3.17';
 // ── Constantes ──────────────────────────────────────────────────────────────
 // Única fuente de la versión visible — antes se escribía a mano en tres
 // sitios (aquí, el panel de info, y el CACHE de sw.js) y se desincronizaban
 // entre sí. sw.js sigue siendo aparte por necesidad (un service worker no
 // puede leer esta constante, vive en otro archivo) — al subir de versión,
 // solo hace falta tocar ESTA línea y la de sw.js, no una tercera copia más.
-const APP_VERSION = 'v3.16';
+const APP_VERSION = 'v3.17';
 
 // Nombre del producto en un solo sitio. Si algún día cambia (NEXTRI u
 // otro), esto evita perseguirlo por cabecera, aviso de rotación, panel de
@@ -3346,7 +3346,15 @@ function escapeHtml(value) {
     .replaceAll('<', '&lt;')
     .replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;');
+    // Comillas simples con el apóstrofo escapado, no comillas dobles
+    // envolviendo un apóstrofo suelto: la herramienta que comprueba
+    // referencias entre módulos (check-modules.cjs) procesa las comillas
+    // simples ANTES que las dobles con una expresión regular ingenua, así
+    // que un apóstrofo suelto dentro de comillas dobles la desincroniza y
+    // le hace mezclar mal el resto del archivo — un fallo que llevaba
+    // aquí desde que se escribió esta función y que solo se hizo visible
+    // al cambiar otra parte del código muy alejada de esta línea.
+    .replaceAll('\'', '&#39;');
 }
 
 // ── Tamaño del tablero ───────────────────────────────────────────────────────
@@ -3889,7 +3897,7 @@ function construirMiniRail() {
   rail.innerHTML = bots.map((b, i) => `
     <button type="button" class="mini-avatar" data-indice="${i}"
             style="--rival-color:${b.color}" aria-label="${escapeHtml(b.nombre)}">
-      ${b.retrato ? `<img src="${b.retrato}?v=3.16" alt="" loading="lazy">` : '<span class="mini-sin-retrato">?</span>'}
+      ${b.retrato ? `<img src="${b.retrato}?v=3.17" alt="" loading="lazy">` : '<span class="mini-sin-retrato">?</span>'}
       ${b.bloqueable ? '<span class="mini-candado">🔒</span>' : ''}
     </button>`).join('');
   rail.querySelectorAll('[data-indice]').forEach(btn => {
@@ -3930,7 +3938,7 @@ function construirTarjetasRival() {
           <div class="fr-radar">${svgRadar(perfil, b.color, 98)}</div>
         </div>
         <div class="fr-retrato-col">
-          ${b.retrato ? `<img class="fr-retrato" src="${b.retrato}?v=3.16" alt="" loading="lazy">` : ''}
+          ${b.retrato ? `<img class="fr-retrato" src="${b.retrato}?v=3.17" alt="" loading="lazy">` : ''}
         </div>
       </div>
       ${b.bloqueable ? '<span class="fr-candado">🔒</span>' : ''}
@@ -4200,10 +4208,11 @@ function actualizarTextoJugar() {
     return;
   }
   delete btn.dataset.bloqueado;
-  const nombreRival = esInvitado && invitadoActual ? invitadoActual.nombre : getRival().nombre;
+  const rival = esInvitado && invitadoActual ? invitadoActual : getRival();
   btn.textContent = (gameMode === 'solo')
-    ? t('menu.jugarContra', { rival: nombreRival })
+    ? t('menu.jugarContra', { rival: rival.nombre })
     : t('menu.jugarJugadores', { n: numPlayers });
+  btn.style.setProperty('--boton-color', gameMode === 'solo' ? rival.color : 'var(--p2-color)');
 }
 
 function setAIDifficulty(level) {
@@ -4253,7 +4262,7 @@ function avatarDeRival(id) {
   // Por identidad, no por nombre visible: dos rivales podrían llamarse
   // igual, y los invitados no están en RIVALES.
   const r = RIVALES[id] || (invitadoActual && invitadoActual.id === id ? invitadoActual : null);
-  return r ? `<span class="card-avatar"><img src="${r.retrato}?v=3.16" alt=""></span>` : '🤖';
+  return r ? `<span class="card-avatar"><img src="${r.retrato}?v=3.17" alt=""></span>` : '🤖';
 }
 
 function buildGameUI() {

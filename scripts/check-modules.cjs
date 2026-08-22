@@ -51,7 +51,7 @@ function declaradoDeVerdad(nombre, fuenteOriginal) {
 
 const NATIVOS = new Set(['Math','Number','String','Array','Object','JSON','Set','Map','Boolean',
   'Date','globalThis','window','localStorage','console','Infinity','NaN','undefined',
-  'Error','performance','isNaN','parseInt','parseFloat','Symbol','Promise','RegExp']);
+  'Error','performance','isNaN','parseInt','parseFloat','Symbol','Promise','RegExp','URL']);
 
 console.log('Comprobando que cada módulo resuelve sus referencias...\n');
 
